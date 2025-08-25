@@ -1,4 +1,3 @@
-- need to figure out how to target testing .csproj files for dotnet/test
 - need to test that nuget/nuget-source and any other action that has changed in this branch
   - CodeBits
   - Dice5
