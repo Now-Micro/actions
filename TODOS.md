@@ -1,3 +1,4 @@
+- dotnet/test should fallback to the solution if the project based on the regex isn't found
 - need to test that nuget/nuget-source and any other action that has changed in this branch
   - CodeBits
   - Dice5
