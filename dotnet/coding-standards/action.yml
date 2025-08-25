@@ -14,16 +14,16 @@ inputs:
   directory:
     description: 'Directory to run coding standards checks in.  This should be the root directory of your .NET solution.'
     required: true
-  nuget-name: 
+  nuget-names: 
     description: 'Name of the NuGet source'
     required: true
-  nuget-password:
+  nuget-passwords:
     description: 'Personal Access Token for authentication'
     required: true
-  nuget-url:
+  nuget-urls:
     description: 'URL of the NuGet feed'
     required: true
-  nuget-username:
+  nuget-usernames:
     description: 'Username for source authentication'
     required: true
   roslyn-version:
@@ -121,12 +121,12 @@ runs:
         cat "$ANALYZERS_DIR/${{ inputs.code-analyzers-name }}.csproj"
 
     - name: Configure Nuget
-      uses: Now-Micro/actions/nuget/configure-source@v1
+      uses: Now-Micro/actions/nuget/configure-sources@v1
       with:
-        nuget-name: ${{ inputs.nuget-name }}
-        nuget-password: ${{ inputs.nuget-password }}
-        nuget-url: ${{ inputs.nuget-url }}
-        nuget-username: ${{ inputs.nuget-username }}
+        nuget-names: ${{ inputs.nuget-names }}
+        nuget-passwords: ${{ inputs.nuget-passwords }}
+        nuget-urls: ${{ inputs.nuget-urls }}
+        nuget-usernames: ${{ inputs.nuget-usernames }}
 
     - name: Restore
       shell: bash
