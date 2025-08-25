@@ -25,7 +25,7 @@ function walk(dir, maxDepth, findSolution, findProject, currentDepth = 0) {
 }
 
 // New BFS search to prioritize shallower matches
-function searchBFS(startDir, maxDepth, findSolution, findProject) {
+function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameRegex) {
   const queue = [{ dir: startDir, depth: 0 }];
   while (queue.length && !(solutionFound && projectFound)) {
     const { dir, depth } = queue.shift();
@@ -48,7 +48,10 @@ function searchBFS(startDir, maxDepth, findSolution, findProject) {
         solutionFound = full;
       }
       if (findProject && !projectFound && entry.name.endsWith('.csproj')) {
-        projectFound = full;
+        const ok = projectNameRegex ? projectNameRegex.test(entry.name) : true;
+        if (ok) {
+          projectFound = full;
+        }
       }
       if (solutionFound && projectFound) break;
     }
@@ -76,15 +79,24 @@ function run() {
     const findSolution = (process.env.INPUT_FIND_SOLUTION || 'true').toLowerCase() === 'true';
     const findProject = (process.env.INPUT_FIND_PROJECT || 'false').toLowerCase() === 'true';
     const githubOutput = process.env.GITHUB_OUTPUT;
+    const projectRegex = process.env.INPUT_PROJECT_REGEX || '';
 
     console.log(`Input directory: ${inputDir}`);
     console.log(`Max depth: ${maxDepth}`);
     console.log(`Find solution: ${findSolution}`);
     console.log(`Find project: ${findProject}`);
+    if (projectRegex) console.log(`Project regex: ${projectRegex}`);
     dlog('Debug mode enabled');
 
     if (!inputDir) { console.error('Input directory is required.'); process.exit(1); }
     if (!fs.existsSync(inputDir) || !fs.statSync(inputDir).isDirectory()) { console.error(`Input directory does not exist or is not a directory: ${inputDir}`); process.exit(1); }
+
+    // Prepare regex if provided
+    let projectNameRegex;
+    if (projectRegex) {
+      try { projectNameRegex = new RegExp(projectRegex); }
+      catch (e) { console.error(`Invalid project regex: ${e.message}`); process.exit(1); }
+    }
 
     const types = findSolution && findProject
       ? '.sln and .csproj'
@@ -94,7 +106,7 @@ function run() {
           ? '.csproj'
           : 'no file types';
     console.log(`Searching for ${types} in ${inputDir} (max depth: ${maxDepth})...`);
-    searchBFS(inputDir, maxDepth, findSolution, findProject);
+    searchBFS(inputDir, maxDepth, findSolution, findProject, projectNameRegex);
 
     if (findProject) {
       console.log(`Project found: ${projectFound || 'None'}`);
