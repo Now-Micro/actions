@@ -345,3 +345,47 @@ test('project-regex selects matching .csproj - 2', () => {
   assert.strictEqual(exitCode, 0);
   assert.match(outputContent, /project-found=.*Api\.Tests\.csproj/);
 });
+
+test('solution-regex selects matching .sln', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'App.sln'), 'sln');
+  fs.writeFileSync(path.join(dir, 'Tests.sln'), 'sln');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '^Tests\\.sln$'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /solution-found=.*Tests\.sln/);
+  assert.match(logs.out, /Solution regex: Tests\\.sln\$/);
+});
+
+test('solution-regex excludes all solutions results in None', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'Only.sln'), 'sln');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '^DoesNotMatch'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(outputContent.trim(), '');
+  assert.match(logs.out, /Solution found: None/);
+});
+
+test('invalid solution-regex exits 1', () => {
+  const dir = makeTempDir();
+  const { exitCode, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '([bad'
+  });
+  assert.strictEqual(exitCode, 1);
+  assert.match(logs.err + logs.out, /Invalid solution regex/);
+});

@@ -8,6 +8,14 @@ function dlog(msg) {
   if (debug) console.log(`[DEBUG] ${msg}`);
 }
 
+function displayRegex(pat) {
+  try {
+    return String(pat)
+      .replace(/^\^+/, '') // remove leading anchors for display
+      .replace(/(\\\.\*)+/g, ''); // remove repeated \.\*
+  } catch { return String(pat); }
+}
+
 // Legacy DFS walk kept for potential reuse/testing
 function walk(dir, maxDepth, findSolution, findProject, currentDepth = 0) {
   dlog(`(DFS) Entering walk: dir='${dir}' depth=${currentDepth}/${maxDepth} findSolution=${findSolution} findProject=${findProject}`);
@@ -25,7 +33,7 @@ function walk(dir, maxDepth, findSolution, findProject, currentDepth = 0) {
 }
 
 // New BFS search to prioritize shallower matches
-function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameRegex) {
+function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex) {
   const queue = [{ dir: startDir, depth: 0 }];
   while (queue.length && !(solutionFound && projectFound)) {
     const { dir, depth } = queue.shift();
@@ -45,7 +53,10 @@ function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameReg
       if (!entry.isFile()) continue;
       const full = path.join(dir, entry.name);
       if (findSolution && !solutionFound && entry.name.endsWith('.sln')) {
-        solutionFound = full;
+        const okSln = solutionNameRegex ? solutionNameRegex.test(entry.name) : true;
+        if (okSln) {
+          solutionFound = full;
+        }
       }
       if (findProject && !projectFound && entry.name.endsWith('.csproj')) {
         const ok = projectNameRegex ? projectNameRegex.test(entry.name) : true;
@@ -80,12 +91,14 @@ function run() {
     const findProject = (process.env.INPUT_FIND_PROJECT || 'false').toLowerCase() === 'true';
     const githubOutput = process.env.GITHUB_OUTPUT;
     const projectRegex = process.env.INPUT_PROJECT_REGEX || '';
+    const solutionRegex = process.env.INPUT_SOLUTION_REGEX || '';
 
     console.log(`Input directory: ${inputDir}`);
     console.log(`Max depth: ${maxDepth}`);
     console.log(`Find solution: ${findSolution}`);
     console.log(`Find project: ${findProject}`);
-    if (projectRegex) console.log(`Project regex: ${projectRegex}`);
+    if (projectRegex) console.log(`Project regex: ${displayRegex(projectRegex)}`);
+    if (solutionRegex) console.log(`Solution regex: ${displayRegex(solutionRegex)}`);
     dlog('Debug mode enabled');
 
     if (!inputDir) { console.error('Input directory is required.'); process.exit(1); }
@@ -97,6 +110,11 @@ function run() {
       try { projectNameRegex = new RegExp(projectRegex); }
       catch (e) { console.error(`Invalid project regex: ${e.message}`); process.exit(1); }
     }
+    let solutionNameRegex;
+    if (solutionRegex) {
+      try { solutionNameRegex = new RegExp(solutionRegex); }
+      catch (e) { console.error(`Invalid solution regex: ${e.message}`); process.exit(1); }
+    }
 
     const types = findSolution && findProject
       ? '.sln and .csproj'
@@ -106,7 +124,7 @@ function run() {
           ? '.csproj'
           : 'no file types';
     console.log(`Searching for ${types} in ${inputDir} (max depth: ${maxDepth})...`);
-    searchBFS(inputDir, maxDepth, findSolution, findProject, projectNameRegex);
+    searchBFS(inputDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex);
 
     if (findProject) {
       console.log(`Project found: ${projectFound || 'None'}`);
