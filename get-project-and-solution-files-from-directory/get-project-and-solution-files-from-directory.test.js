@@ -80,7 +80,6 @@ function runWithEnv(env) {
   return { logs, exitCode, outputContent, errorObj, outputFile: outPath };
 }
 
-// 1. Basic both solution + project found, BFS prefers shallow project.
 test('BFS finds shallow solution and project first', () => {
   const dir = makeTempDir();
   const shallowProj = path.join(dir, 'AppA.csproj');
@@ -110,7 +109,6 @@ test('BFS finds shallow solution and project first', () => {
   assert.doesNotMatch(logs.out, /Deep.csproj/); // deep project not chosen first
 });
 
-// 2. Only solution search
 test('Only solution search writes only solution output', () => {
   const dir = makeTempDir();
   const solution = path.join(dir, 'Only.sln');
@@ -128,7 +126,6 @@ test('Only solution search writes only solution output', () => {
   assert.ok(!/project-name=/.test(outputContent));
 });
 
-// 3. Only project search
 test('Only project search writes only project output', () => {
   const dir = makeTempDir();
   const proj = path.join(dir, 'Only.csproj');
@@ -146,7 +143,6 @@ test('Only project search writes only project output', () => {
   assert.ok(!/solution-name=/.test(outputContent));
 });
 
-// 4. None found scenario (empty directory)
 test('No files found results in no outputs written', () => {
   const dir = makeTempDir();
   const { exitCode, outputContent, logs } = runWithEnv({
@@ -161,7 +157,6 @@ test('No files found results in no outputs written', () => {
   assert.match(logs.out, /Solution found: None/);
 });
 
-// 5. Depth limit prevents detection
 test('Depth limit prevents deeper discovery', () => {
   const dir = makeTempDir();
   const sub = path.join(dir, 'sub');
@@ -178,7 +173,6 @@ test('Depth limit prevents deeper discovery', () => {
   assert.match(logs.out, /Searching for .* in .* \(max depth: 0\)\.\.\./);
 });
 
-// 6. Missing directory error
 test('Missing directory triggers exit 1', () => {
   const missing = path.join(os.tmpdir(), 'definitely-missing-dir-' + Date.now());
   const { exitCode, logs } = runWithEnv({
@@ -191,7 +185,6 @@ test('Missing directory triggers exit 1', () => {
   assert.match(logs.err + logs.out, /does not exist or is not a directory/);
 });
 
-// 7. Blank directory input error
 test('Blank directory input triggers required error', () => {
   const { exitCode, logs } = runWithEnv({
     INPUT_DIRECTORY: '',
@@ -203,7 +196,6 @@ test('Blank directory input triggers required error', () => {
   assert.match(logs.err + logs.out, /Input directory is required/);
 });
 
-// 8. GITHUB_OUTPUT not set -> exit 1
 test('Missing GITHUB_OUTPUT causes exit 1', () => {
   const dir = makeTempDir();
   fs.writeFileSync(path.join(dir, 'X.csproj'), '<Project></Project>');
@@ -218,7 +210,6 @@ test('Missing GITHUB_OUTPUT causes exit 1', () => {
   assert.match(logs.err + logs.out, /GITHUB_OUTPUT not set/);
 });
 
-// 9. Debug mode logs
 test('Debug mode emits [DEBUG] lines', () => {
   const dir = makeTempDir();
   fs.writeFileSync(path.join(dir, 'Y.csproj'), '<Project></Project>');
@@ -233,7 +224,6 @@ test('Debug mode emits [DEBUG] lines', () => {
   assert.match(logs.out, /\[DEBUG]/);
 });
 
-// 10. BFS handles unreadable subdirectory gracefully
 test('BFS continues after unreadable subdirectory', () => {
   const dir = makeTempDir();
   const blocked = path.join(dir, 'blocked');
@@ -256,7 +246,6 @@ test('BFS continues after unreadable subdirectory', () => {
   assert.match(logs.err + logs.out, /Cannot read directory: .*blocked/);
 });
 
-// 11. Legacy DFS walk coverage
 test('Legacy DFS walk finds files (coverage)', () => {
   const dir = makeTempDir();
   fs.writeFileSync(path.join(dir, 'Legacy.sln'), 'Solution');
@@ -267,7 +256,6 @@ test('Legacy DFS walk finds files (coverage)', () => {
   assert.match(logs.out, /Found project: .*Legacy.csproj/);
 });
 
-// 12. DFS walk respects maxDepth early exit
 test('DFS walk maxDepth prevents deeper scanning', () => {
   const dir = makeTempDir();
   const deep = path.join(dir, 'deep');
@@ -278,7 +266,6 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
   assert.doesNotMatch(logs.out, /Found project/);
 });
 
-// 13. Use real demo/coding-standards structure with relative directory input
 {
   const repoRoot = path.resolve(__dirname, '..');
   const demoAbs = path.resolve(repoRoot, 'demo', 'coding-standards');
@@ -297,3 +284,108 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
     assert.match(outputContent, /project-found=.*(Demo\.Linting\.csproj|Demo\.Analyzers\.csproj)/);
   });
 }
+
+test('project-regex selects matching .csproj', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'Api.Backend.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(dir, 'Api.Frontend.csproj'), '<Project></Project>');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_PROJECT_REGEX: 'Frontend\\.csproj$'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /project-found=.*Api\.Frontend\.csproj/);
+  assert.match(logs.out, /Project regex: Frontend\\.csproj\$/);
+});
+
+test('project-regex excludes all projects results in None', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'One.csproj'), '<Project></Project>');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_PROJECT_REGEX: '^DoesNotMatch'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(outputContent.trim(), '');
+  assert.match(logs.out, /Project found: None/);
+});
+
+test('invalid project-regex exits 1', () => {
+  const dir = makeTempDir();
+  const { exitCode, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_PROJECT_REGEX: '([bad'
+  });
+  assert.strictEqual(exitCode, 1);
+  assert.match(logs.err + logs.out, /Invalid project regex/);
+});
+
+test('project-regex selects matching .csproj - 2', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'Api.Backend.csproj'), '<Project></Project>');
+  fs.mkdirSync(path.join(dir, 'Tests'));
+  fs.writeFileSync(path.join(`${dir}/Tests`, 'Api.Frontend.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(dir, 'Api.Tests.csproj'), '<Project></Project>');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_PROJECT_REGEX: '.*Tests.*\\.csproj$'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /project-found=.*Api\.Tests\.csproj/);
+});
+
+test('solution-regex selects matching .sln', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'App.sln'), 'sln');
+  fs.writeFileSync(path.join(dir, 'Tests.sln'), 'sln');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '^Tests\\.sln$'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /solution-found=.*Tests\.sln/);
+  assert.match(logs.out, /Solution regex: Tests\\.sln\$/);
+});
+
+test('solution-regex excludes all solutions results in None', () => {
+  const dir = makeTempDir();
+  fs.writeFileSync(path.join(dir, 'Only.sln'), 'sln');
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '^DoesNotMatch'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(outputContent.trim(), '');
+  assert.match(logs.out, /Solution found: None/);
+});
+
+test('invalid solution-regex exits 1', () => {
+  const dir = makeTempDir();
+  const { exitCode, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '1',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'false',
+    INPUT_SOLUTION_REGEX: '([bad'
+  });
+  assert.strictEqual(exitCode, 1);
+  assert.match(logs.err + logs.out, /Invalid solution regex/);
+});

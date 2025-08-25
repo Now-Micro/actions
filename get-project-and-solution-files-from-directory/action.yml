@@ -20,6 +20,14 @@ inputs:
     description: "Maximum depth to search for .sln or .csproj files."
     required: false
     default: "3"
+  project-regex:
+    description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
+    required: false
+    default: ""
+  solution-regex:
+    description: "Regular expression to identify solution file desired.  If empty, will return the first .sln file found."
+    required: false
+    default: ""
 
 outputs:
   project-found:
@@ -46,8 +54,10 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/get-project-and-solution-files-from-directory.js"
       env:
-        INPUT_DIRECTORY: ${{ inputs.directory }}
-        INPUT_MAX_DEPTH: ${{ inputs.max-depth }}
-        INPUT_FIND_SOLUTION: ${{ inputs.find-solution }}
-        INPUT_FIND_PROJECT: ${{ inputs.find-project }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        INPUT_FIND_PROJECT: ${{ inputs.find-project }}
+        INPUT_FIND_SOLUTION: ${{ inputs.find-solution }}
+        INPUT_MAX_DEPTH: ${{ inputs.max-depth }}
+        INPUT_PROJECT_REGEX: ${{ inputs.project-regex }}
+        INPUT_SOLUTION_REGEX: ${{ inputs.solution-regex }}

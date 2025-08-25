@@ -33,6 +33,7 @@ runs:
       with:
           directory: demo/dotnet
           dotnet-version: '8.0.x'
+          project-regex: '.*Tests\.csproj\s*$'
       
     - name: Lint
       if: ${{ inputs.run-lint-step == 'true' }}
