@@ -43,9 +43,7 @@ runs:
 
     - name: Get Project and Solution Files
       id: get-project-and-solution-files
-      # todo: replace this before publishing
-      # uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
-      uses: ./get-project-and-solution-files-from-directory
+      uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         directory: ${{ inputs.directory }}
         debug-mode: ${{ inputs.debug-mode }}
@@ -63,9 +61,7 @@ runs:
 
     - name: Get Solution Root Directory
       id: get-solution-root-directory
-      # todo: replace this before publishing
-      # uses: Now-Micro/actions/get-unique-root-directories@v1
-      uses: ./get-unique-root-directories
+      uses: Now-Micro/actions/get-unique-root-directories@v1
       with:
         pattern: '^(.*)\/.+\.sln$'
         paths: ${{ steps.get-project-and-solution-files.outputs.solution-found }}
@@ -125,9 +121,7 @@ runs:
         cat "$ANALYZERS_DIR/${{ inputs.code-analyzers-name }}.csproj"
 
     - name: Configure Nuget
-      # todo: replace this before publishing
-      # uses: Now-Micro/actions/nuget/configure-source@v1
-      uses: ./nuget/configure-source
+      uses: Now-Micro/actions/nuget/configure-source@v1
       with:
         nuget-name: ${{ inputs.nuget-name }}
         nuget-password: ${{ inputs.nuget-password }}
