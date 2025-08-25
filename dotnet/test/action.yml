@@ -11,9 +11,13 @@ inputs:
     required: true
     default: '6.0.x'
   max-depth:
-    description: 'Maximum depth to search for .sln or .csproj files'
+    description: "Maximum depth to search for .sln or .csproj files."
     required: false
-    default: '3'
+    default: '5'
+  project-regex:
+    description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -29,9 +33,10 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         max-depth: ${{ inputs.max-depth }}
-        find-solution: true
         find-project: true
-  
+        find-solution: false
+        project-regex: ${{ inputs.project-regex }}
+
     - name: Run tests
       shell: bash
       run: |
