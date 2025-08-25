@@ -14,6 +14,18 @@ jobs:
         with:
           directory: './demo/coding-standards-fail'
   
+  demo-code-standards-fail-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Run demo for code standards
+        uses: ./.github/actions/demo-code-standards
+        with:
+          directory: './demo/coding-standards-fail'
+          roslyn-version: '4.9.2'
+  
   demo-code-standards-success:
     runs-on: ubuntu-latest
     steps:
