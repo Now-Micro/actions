@@ -31,7 +31,7 @@ runs:
       id: get-solution-or-proj
       #  todo: replace with this
       # uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
-      uses: ./get-project-and-solution-files-from-directory@v1
+      uses: ./get-project-and-solution-files-from-directory
       with:
         directory: ${{ inputs.directory }}
         max-depth: ${{ inputs.max-depth }}
