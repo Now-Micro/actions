@@ -29,9 +29,7 @@ runs:
 
     - name: Get solution or project file
       id: get-solution-or-proj
-      #  todo: replace with this
-      # uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
-      uses: ./get-project-and-solution-files-from-directory
+      uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         directory: ${{ inputs.directory }}
         max-depth: ${{ inputs.max-depth }}
