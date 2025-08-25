@@ -257,9 +257,52 @@ test('complex regex: whitespace handling', () => {
 // extra characters test
 test('testing extra characters', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['[".github/workflows/checks.yml"','["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs]"'].join(',');
+  const paths = ['[".github/workflows/checks.yml"','["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
   logHeader('testing extra characters', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
   assert.match(r.outputContent, /unique_root_directories=\["ChannelOnline"\]/);
+});
+
+
+test('testing out is not json 1', () => {
+  const pattern = TESTING_REGEX;
+  const paths = ['[".github/workflows/checks.yml"','["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
+  logHeader('testing extra characters', pattern, paths);
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
+  assert.strictEqual(r.exitCode, 0);
+  assert.match(r.outputContent, /unique_root_directories=ChannelOnline/);
+});
+
+test('testing out is not json 2', () => {
+  const pattern = TESTING_REGEX;
+  const paths = [
+    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+  ].join(',');
+  logHeader('complex regex: whitespace handling', pattern, paths);
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
+  assert.strictEqual(r.exitCode, 0);
+  assert.match(r.outputContent, /unique_root_directories=Solution1,Solution2,Solution3/);
+});
+
+test('testing out is not json 2', () => {
+  const pattern = TESTING_REGEX;
+  const paths = [
+    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+  ].join(',');
+  logHeader('complex regex: whitespace handling', pattern, paths);
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
+  assert.strictEqual(r.exitCode, 0);
+  assert.match(r.outputContent, /unique_root_directories=Solution1,Solution2,Solution3/);
+});
+
+test('inputs can handle booleans too', () => {
+  const pattern = TESTING_REGEX;
+  const paths = [
+    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+  ].join(',');
+  logHeader('complex regex: whitespace handling', pattern, paths);
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: false});
+  assert.strictEqual(r.exitCode, 0);
+  assert.match(r.outputContent, /unique_root_directories=Solution1,Solution2,Solution3/);
 });

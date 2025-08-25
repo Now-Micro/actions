@@ -6,6 +6,10 @@ inputs:
     description: 'Enable debug mode for additional logging.'
     required: false
     default: 'false'
+  output-is-json:
+    description: 'When true, outputs the unique root directories as a JSON array string (e.g. ["root","root2"]).  Otherwise, outputs a comma-separated string (e.g. "root,root2").'
+    required: false
+    default: 'true'
   pattern:
     description: 'Regular expression used to determine which file names should be used for generating unique root directories.'
     required: true
@@ -30,5 +34,6 @@ runs:
       run: node "$GITHUB_ACTION_PATH/unique-root-directories.js"
       env:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_OUTPUT_IS_JSON: ${{ inputs.output-is-json }}
         INPUT_PATHS: ${{ inputs.paths }}
         INPUT_PATTERN: ${{ inputs.pattern }}

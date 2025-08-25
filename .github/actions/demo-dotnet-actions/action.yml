@@ -20,7 +20,7 @@ runs:
   steps:
     - name: Build
       if: ${{ inputs.run-build-step == 'true' }}
-      uses: Now-Micro/actions/dotnet/build@v1
+      uses: ./dotnet/build
       with:   
           solution-file: demo/dotnet/demo.sln
           build-configuration: 'Release'
@@ -29,7 +29,7 @@ runs:
 
     - name: Run tests
       if: ${{ inputs.run-test-step == 'true' }}
-      uses: Now-Micro/actions/dotnet/test@v1
+      uses: ./dotnet/test
       with:
           directory: demo/dotnet
           dotnet-version: '8.0.x'

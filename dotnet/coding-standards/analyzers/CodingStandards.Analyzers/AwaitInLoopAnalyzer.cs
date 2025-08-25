@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
+using System.Linq; // added for OfType
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using System.Linq; // added for OfType
 
 namespace Demo.Analyzers;
 
@@ -13,7 +13,7 @@ public class AwaitInLoopAnalyzer : DiagnosticAnalyzer
     public const string DiagnosticId = "DA0001";
     private static readonly LocalizableString Title = "Avoid await inside loop";
     private static readonly LocalizableString MessageFormat =
-        "'await' used inside loop; consider collecting tasks and awaiting Task.WhenAll";
+        $"'await' used inside loop; consider collecting tasks and awaiting Task.WhenAll;  ({Constants.CodeStandardsUrl})";
     private static readonly LocalizableString Description =
         "Using await inside a loop causes serial execution."; // ensure period
     private const string Category = "Performance";

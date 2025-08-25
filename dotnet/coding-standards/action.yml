@@ -3,13 +3,33 @@ description: 'Ensure coding standards are met using analyzers'
 author: 'Trafera'
 
 inputs:
+  code-analyzers-name:
+    description: 'Name of the code analyzers project.  DO NOT CHANGE THIS UNLESS YOU KNOW WHAT YOU ARE DOING.  IT MUST MATCH THE NAME OF THE FOLDER CONTAINING THE .CSPROJ FILE.'
+    required: false
+    default: 'CodingStandards.Analyzers'
+  debug-mode:
+    description: 'Enable debug mode for additional logging.'
+    required: false
+    default: 'false'
   directory:
     description: 'Directory to run coding standards checks in.  This should be the root directory of your .NET solution.'
     required: true
-  code-analyzers-name:
-    description: 'Name of the code analyzers project to copy to the target directory.'
+  nuget-names: 
+    description: 'Names of the NuGet source (comma-separated)'
     required: false
-    default: 'CodeStandards.Analyzers'
+  nuget-passwords:
+    description: 'Personal Access Tokens for authentication (comma-separated)'
+    required: false
+  nuget-urls:
+    description: 'URLs of the NuGet feed (comma-separated)'
+    required: false
+  nuget-usernames:
+    description: 'Usernames for source authentication (comma-separated)'
+    required: false
+  roslyn-version:
+    description: 'Optional override for Microsoft.CodeAnalysis.CSharp package version used by the analyzers project . If empty, the bundled version is used (see ./analyzers/CodingStandards.Analyzers/CodingStandards.Analyzers.csproj).'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -17,60 +37,130 @@ runs:
     - name: Setup Node.js
       if: inputs.node-project-path != ''
       uses: Now-Micro/actions/setup-node@v1
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
+
     - name: Get Project and Solution Files
       id: get-project-and-solution-files
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         directory: ${{ inputs.directory }}
+        debug-mode: ${{ inputs.debug-mode }}
+        find-project: 'true'
+        max-depth: '3'
+
+    - name: Copy Project File 
+      id: copy-project-file
+      shell: bash
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/project-file-copy
+        cp ${{ steps.get-project-and-solution-files.outputs.project-found }} $GITHUB_WORKSPACE/project-file-copy/${{ steps.get-project-and-solution-files.outputs.project-name }}
+        ls -al $GITHUB_WORKSPACE/project-file-copy
+        cat $GITHUB_WORKSPACE/project-file-copy/${{ steps.get-project-and-solution-files.outputs.project-name }}
+
     - name: Get Solution Root Directory
       id: get-solution-root-directory
       uses: Now-Micro/actions/get-unique-root-directories@v1
       with:
-        pattern: '^(.*)\/.*\.sln$'
+        pattern: '^(.*)\/.+\.sln$'
         paths: ${{ steps.get-project-and-solution-files.outputs.solution-found }}
+        debug-mode: ${{ inputs.debug-mode }}
+        output-is-json: 'false'
+
     - name: Copy Relevant Files
       shell: bash
-      run: |
-        set -euo pipefail
-        RAW='${{ steps.get-solution-root-directory.outputs.unique_root_directories }}'
-        # Parse JSON array (e.g. ["/path/to/root"]) using bash without jq
-        ROOT=$(echo "$RAW" | sed -e 's/^\[\"//' -e 's/\"\]$//' )
-        if [ -z "$ROOT" ] || [ "$ROOT" = "$RAW" ]; then
-          echo "Falling back to inputs.directory"
-          ROOT='${{ inputs.directory }}'
-        fi
-        echo "Directory: ${{ inputs.directory }}"
-        echo "Solution File: ${{ steps.get-project-and-solution-files.outputs.solution-found }}"
-        echo "Project File: ${{ steps.get-project-and-solution-files.outputs.project-found }}"
-        echo "Derived Root: $ROOT"
-        SRC_DIR="./demo/coding-standards"
-        # Ensure target directories exist
-        mkdir -p "$ROOT" "$ROOT/Demo.Analyzers"
-        # Resolve absolute paths to safely compare
-        src_abs=$(cd "$SRC_DIR" && pwd)
-        root_abs=$(cd "$ROOT" && pwd)
-        echo "Source Dir: $src_abs"
-        echo "Root Dir:   $root_abs"
-        # Copy .editorconfig only if contents differ (or destination missing)
-        DEST_FILE="$ROOT/.editorconfig"
-        if [ -f "$DEST_FILE" ] && cmp -s "$SRC_DIR/.editorconfig" "$DEST_FILE"; then
-          echo ".editorconfig is up to date; skipping copy"
-        else
-          cp -f "$SRC_DIR/.editorconfig" "$DEST_FILE"
-        fi
-        # Always refresh analyzers into target (different subpath)
-        cp -fR "$SRC_DIR/analyzers/Demo.Analyzers/." "$ROOT/${{ inputs.code-analyzers-name }}/"
-        ls -al "$ROOT"
+      run: node "$GITHUB_ACTION_PATH/copy-relevant-files.js"
+      env:
+        INPUT_UNIQUE_ROOT_DIRECTORIES: ${{ steps.get-solution-root-directory.outputs.unique_root_directories }}
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        INPUT_CODE_ANALYZERS_NAME: ${{ inputs.code-analyzers-name }}
+        INPUT_SOURCE_DIR: ./dotnet/coding-standards
+        INPUT_ROSLYN_VERSION: ${{ inputs.roslyn-version }}
 
-    # Todo: move this into Nodejs?
-    # - name: Add ItemGroup to Solution
-    #   shell: bash
-    #   run: dotnet sln add ./Demo.Analyzers/Demo.Analyzers.csproj
+    - name: Get Relative Path
+      id: get-relative-path
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/relative-path-finder.js"
+      env: 
+        INPUT_ROOT_FILE: ${{ steps.get-project-and-solution-files.outputs.solution-found }}
+        INPUT_SUBDIRECTORY_FILE: ${{ steps.get-project-and-solution-files.outputs.project-found }}
+
+    - name: Update CSProj File
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/update-csproj-file.js"
+      env:
+        INPUT_CODE_ANALYZERS_NAME: ${{ inputs.code-analyzers-name }}
+        INPUT_PROJECT_FILE: ${{ steps.get-project-and-solution-files.outputs.project-found }}
+        INPUT_INCLUDE_PATH: ${{ steps.get-relative-path.outputs.relative_path }}${{ inputs.code-analyzers-name }}/${{ inputs.code-analyzers-name }}.csproj
+
+    - name: Print File Root Directory
+      shell: bash
+      run: |
+        set -e
+        PROJ_FILE="${{ steps.get-project-and-solution-files.outputs.project-found }}"
+        ROOT_DIR="${{ steps.get-solution-root-directory.outputs.unique_root_directories }}"
+        ANALYZERS_DIR="$ROOT_DIR/${{ inputs.code-analyzers-name }}"
+
+        echo "== Project file directory =="
+        echo "$PROJ_FILE"
+        ls -al "$(dirname "$PROJ_FILE")"
+
+        echo "== Solution root directory =="
+        echo "$ROOT_DIR"
+        ls -al "$ROOT_DIR"
+
+        echo "== Analyzers directory =="
+        echo "$ANALYZERS_DIR"
+        ls -al "$ANALYZERS_DIR"
+
+        echo "== Project file contents =="
+        cat "$PROJ_FILE"
+
+        echo "== Analyzer project file contents =="
+        cat "$ANALYZERS_DIR/${{ inputs.code-analyzers-name }}.csproj"
+
+    - name: Configure Nuget
+      uses: Now-Micro/actions/nuget/configure-sources@v1
+      with:
+        nuget-names: ${{ inputs.nuget-names }}
+        nuget-passwords: ${{ inputs.nuget-passwords }}
+        nuget-urls: ${{ inputs.nuget-urls }}
+        nuget-usernames: ${{ inputs.nuget-usernames }}
+
+    - name: Restore
+      shell: bash
+      id: restore
+      continue-on-error: true
+      run: dotnet restore ${{ steps.get-project-and-solution-files.outputs.solution-found }} -v:q
 
     - name: Build Solution
       shell: bash
-      run: dotnet build ${{ inputs.directory }}
+      if: steps.restore.outcome == 'success'
+      continue-on-error: true
+      run: dotnet build ${{ steps.get-project-and-solution-files.outputs.solution-found }} --no-restore -v:q
 
-    # todo: need to remove the copied over files
+    - name: Clean Up
+      shell: bash
+      run: |
+        set -e
+        # Restore original project file from temp copy
+        cp $GITHUB_WORKSPACE/project-file-copy/${{ steps.get-project-and-solution-files.outputs.project-name }} ${{ steps.get-project-and-solution-files.outputs.project-found }}
+        
+        # Remove analyzers directory that was copied in
+        ROOT_DIR="${{ steps.get-solution-root-directory.outputs.unique_root_directories }}"
+        ANALYZERS_DIR="$ROOT_DIR/${{ inputs.code-analyzers-name }}"
+        if [ -d "$ANALYZERS_DIR" ]; then
+          echo "Removing analyzers directory: $ANALYZERS_DIR"
+          rm -rf "$ANALYZERS_DIR"
+        fi
+
+        # Remove .editorconfig only if it matches the action's source version
+        if [ -f "$ROOT_DIR/.editorconfig" ] && cmp -s "$ROOT_DIR/.editorconfig" "$GITHUB_ACTION_PATH/.editorconfig"; then
+          echo "Removing .editorconfig created by this action"
+          rm -f "$ROOT_DIR/.editorconfig"
+        fi
+
+        # Remove temp project copy folder
+        echo "Removing temporary project copy folder"
+        rm -rf $GITHUB_WORKSPACE/project-file-copy

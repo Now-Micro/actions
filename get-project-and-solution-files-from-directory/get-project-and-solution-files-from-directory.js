@@ -29,16 +29,27 @@ function searchBFS(startDir, maxDepth, findSolution, findProject) {
   const queue = [{ dir: startDir, depth: 0 }];
   while (queue.length && !(solutionFound && projectFound)) {
     const { dir, depth } = queue.shift();
+    dlog(`(BFS) Visiting dir='${dir}' depth=${depth} maxDepth=${maxDepth}`);
     if (depth > maxDepth) continue;
-    dlog(`(BFS) Visiting dir='${dir}' depth=${depth}`);
     let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { console.error(`Cannot read directory: ${dir} (${e.message})`); continue; }
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    }
+    catch (e) {
+      console.error(`Cannot read directory: ${dir} (${e.message})`);
+      continue;
+    }
     // First pass: files at this depth
     for (const entry of entries) {
+      dlog(`(BFS) Examining entry: ${entry.name}`);
       if (!entry.isFile()) continue;
       const full = path.join(dir, entry.name);
-      if (findSolution && !solutionFound && entry.name.endsWith('.sln')) { solutionFound = full; console.log(`Found solution: ${solutionFound}`); }
-      if (findProject && !projectFound && entry.name.endsWith('.csproj')) { projectFound = full; console.log(`Found project: ${projectFound}`); }
+      if (findSolution && !solutionFound && entry.name.endsWith('.sln')) {
+        solutionFound = full;
+      }
+      if (findProject && !projectFound && entry.name.endsWith('.csproj')) {
+        projectFound = full;
+      }
       if (solutionFound && projectFound) break;
     }
     if (solutionFound && projectFound) break;
@@ -46,6 +57,7 @@ function searchBFS(startDir, maxDepth, findSolution, findProject) {
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const next = path.join(dir, entry.name);
+        dlog(`(BFS) Enqueuing directory: ${next}`);
         queue.push({ dir: next, depth: depth + 1 });
       }
     }
@@ -74,16 +86,34 @@ function run() {
     if (!inputDir) { console.error('Input directory is required.'); process.exit(1); }
     if (!fs.existsSync(inputDir) || !fs.statSync(inputDir).isDirectory()) { console.error(`Input directory does not exist or is not a directory: ${inputDir}`); process.exit(1); }
 
-    console.log(`Searching for .sln or .csproj files in ${inputDir}...`);
-    // Use BFS to prioritize shallower files (ensures AppA.csproj preferred over deep project)
+    const types = findSolution && findProject
+      ? '.sln and .csproj'
+      : findSolution
+        ? '.sln'
+        : findProject
+          ? '.csproj'
+          : 'no file types';
+    console.log(`Searching for ${types} in ${inputDir} (max depth: ${maxDepth})...`);
     searchBFS(inputDir, maxDepth, findSolution, findProject);
 
-    console.log(`Project found: ${projectFound || 'None'}`);
-    console.log(`Solution found: ${solutionFound || 'None'}`);
+    if (findProject) {
+      console.log(`Project found: ${projectFound || 'None'}`);
+    }
+    if (findSolution) {
+      console.log(`Solution found: ${solutionFound || 'None'}`);
+    }
 
     if (githubOutput) {
-      if (solutionFound && solutionFound.endsWith('.sln')) { dlog(`Writing solution-found output: ${solutionFound}`); fs.appendFileSync(githubOutput, `solution-found=${solutionFound}\n`); }
-      if (projectFound && projectFound.endsWith('.csproj')) { dlog(`Writing project-found output: ${projectFound}`); fs.appendFileSync(githubOutput, `project-found=${projectFound}\n`); }
+      if (solutionFound && solutionFound.endsWith('.sln')) {
+        dlog(`Writing solution-found output: ${solutionFound}`);
+        fs.appendFileSync(githubOutput, `solution-found=${solutionFound}\n`);
+        fs.appendFileSync(githubOutput, `solution-name=${path.basename(solutionFound)}\n`);
+      }
+      if (projectFound && projectFound.endsWith('.csproj')) {
+        dlog(`Writing project-found output: ${projectFound}`);
+        fs.appendFileSync(githubOutput, `project-found=${projectFound}\n`);
+        fs.appendFileSync(githubOutput, `project-name=${path.basename(projectFound)}\n`);
+      }
     } else { console.error('GITHUB_OUTPUT not set; cannot write outputs'); process.exit(1); }
   } catch (err) {
     console.error('Error:', err.message);

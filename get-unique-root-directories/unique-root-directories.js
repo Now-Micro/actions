@@ -1,8 +1,18 @@
 const fs = require('fs');
 
+function parseBool(val, def) {
+    if (val === undefined || val === null) return def;
+    if (typeof val === 'boolean') return val;
+    const s = String(val).trim().toLowerCase();
+    if (["false","0","no","off"].includes(s)) return false;
+    if (["true","1","yes","on"].includes(s)) return true;
+    return def;
+}
+
 function run() {
     const pattern = process.env.INPUT_PATTERN;
-    const debugMode = process.env.INPUT_DEBUG_MODE ? process.env.INPUT_DEBUG_MODE : true;
+    const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, true);
+    const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
     const raw = process.env.INPUT_PATHS || '';
     // remove ALL occurrences of [, ], ', and " characters throughout each segment
     const dirs = raw.split(',').map(s => s.trim().replace(/["'\[\]]/g, '')).filter(Boolean)
@@ -14,7 +24,8 @@ function run() {
         console.log(`🔍 Cleaned dirs: ${dirs}`);
     }
     if (!pattern) {
-        console.error('INPUT_PATTERN is required'); process.exit(1);
+        console.error('INPUT_PATTERN is required'); 
+        process.exit(1);
     }
     console.log(`🔍 Getting Unique Root Directories from: ${dirs}`);
     console.log(`Using pattern: ${pattern}`);
@@ -44,7 +55,8 @@ function run() {
         }
     }
     const arr = [...set];
-    const json = JSON.stringify(arr);
+    const cleaned = arr.map(s => String(s).replace(/["'\[\]]/g, ''));
+    const json = outputIsJson ? JSON.stringify(cleaned) : cleaned.join(',');
     console.log(`🔍 Unique Root Directories: ${json}`);
     const out = process.env.GITHUB_OUTPUT;
     if (!out) {

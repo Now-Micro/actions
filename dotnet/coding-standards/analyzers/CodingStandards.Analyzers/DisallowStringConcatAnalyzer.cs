@@ -15,7 +15,7 @@ public sealed class DisallowStringConcatAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "Disallow string concatenation / string.Format (use interpolation)";
     private static readonly LocalizableString MessageFormat =
-        "Avoid string concatenation or string.Format; use string interpolation";
+        $"Avoid string concatenation or string.Format; use string interpolation. ({Constants.CodeStandardsUrl})";
     private static readonly LocalizableString Description =
         "Enforces use of C# string interpolation instead of string concatenation or string.Format as demonstrated in CodingStandards examples.";
     private const string Category = "Style";

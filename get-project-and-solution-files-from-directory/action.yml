@@ -28,6 +28,13 @@ outputs:
   solution-found:
     description: "The path to the first .sln file found in the directory or its subdirectories."
     value: ${{ steps.find-file.outputs.solution-found }}
+  project-name:
+    description: "The file name of the found .csproj (basename)."
+    value: ${{ steps.find-file.outputs.project-name }}
+  solution-name:
+    description: "The file name of the found .sln (basename)."
+    value: ${{ steps.find-file.outputs.solution-name }}
+
 runs:
   using: "composite"
   steps:

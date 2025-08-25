@@ -1,15 +1,21 @@
 name: Demo - Code Standards
 description: This workflow demonstrates how to enforce code standards in a .NET and Node.js project.
 
+inputs:
+  directory:
+    description: 'Directory to run coding standards checks in.  This should be the root directory of your .NET solution.'
+    required: true
+  roslyn-version:
+    description: 'Optional override for Microsoft.CodeAnalysis.CSharp package version used by the analyzers'
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
     - name: Build with Code Standards
-      # Todo: change when done
-      # uses: Now-Micro/actions/dotnet/coding-standards@v1
       uses: ./dotnet/coding-standards
       with:
-        directory: './demo/coding-standards'
-
-
-
+        debug-mode: 'true'
+        directory: ${{ inputs.directory }}
+        roslyn-version: ${{ inputs.roslyn-version }}

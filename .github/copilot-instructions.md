@@ -12,14 +12,6 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 - Logging uses concise plain text with optional emoji (e.g. `🔍`). Tests rarely assert on logs except for error/edge cases.
 - Error paths intentionally call `process.exit(1)` after printing a clear message (tests capture by monkey‑patching `process.exit`).
 
-## Key Actions
-- `setup-node`: Standardizes Node version + optional dependency install (referenced by all other actions as first step).
-- `get-changed-files`: Uses git diff between supplied refs (or current HEAD) to emit JSON array `changed_files`. Robust commit existence checks & fetch logic (`ensureCommitExists`).
-- `get-project-and-solution-files-from-directory`: BFS prioritizes shallower discovery of `.sln` & `.csproj`. Legacy DFS kept for coverage & potential reuse. Debug mode controlled by `INPUT_DEBUG_MODE`.
-- `get-unique-root-directories`: Applies a user regex; first capture group becomes the unique root set, output as JSON array `unique_root_directories`.
-- `extract-changelog`: (Shell script) Extracts version‑scoped sections from various changelog filename variants; outputs multiline `changelog-content` plus metadata flags.
-- `testing/assert`: Assertion mini‑framework for workflows. Modes: `exact | endswith | present | absent | regex`. Writes PASS/FAIL lines into a shared summary file. All demo workflows should use this for verifications.
-
 ## Testing Conventions
 - Use built‑in `node:test` with minimal harness helpers (`withEnv`, custom `execAssertion`, etc.).
 - Tests isolate side effects: temp directories created via `fs.mkdtempSync(os.tmpdir())` and cleaned up. No global state leakage.
@@ -32,11 +24,12 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 
 ## Adding / Modifying Actions
 1. Create folder + `action.yml` referencing new JS file (no inline heredoc JS).
-2. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
-3. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
-4. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
-5. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.
-6. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
+2. The `action.yml` file should use `run: node "$GITHUB_ACTION_PATH/my-new-js-file.js"` instead of just `node ./some-action-name/my-new-js-file.js` to ensure that the correct path is used when used by an external repository's workflow.
+3. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
+4. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
+5. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
+6. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.
+7. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
 
 ## Refactoring
 - Analyze the existing implementation.  If it makes sense to separate the code into smaller composite action, propose it to the user and ask how to proceed.

@@ -63,23 +63,13 @@ runs:
         cache: 'npm'
         cache-dependency-path: ${{ inputs.npm-cache-dependency-path }}
 
-    - name: Configure Github NuGet source
-      if: inputs.github-packages-token != ''
-      uses: Now-Micro/actions/nuget/configure-source@v1
+    - name: Configure NuGet sources
+      uses: Now-Micro/actions/nuget/configure-sources@v1
       with:
-        name: 'CodeBits'
-        password: ${{ inputs.github-packages-token }}
-        url: 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
-        username: ${{ github.actor }}
-
-    - name: Configure Azure DevOps source
-      if: inputs.azure-devops-password != ''
-      uses: Now-Micro/actions/nuget/configure-source@v1
-      with:
-        name: 'Code-Hole'
-        password: ${{ inputs.azure-devops-password }}
-        url: 'https://pkgs.dev.azure.com/code-hole/_packaging/NowMicroLibraries/nuget/v3/index.json'
-        username: 'AzureDevOps'
+        names: 'CodeBits, Code-Hole'
+        passwords: '${{ inputs.github-packages-token }}, ${{ inputs.azure-devops-password }}'
+        urls: 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json, https://pkgs.dev.azure.com/code-hole/_packaging/NowMicroLibraries/nuget/v3/index.json'
+        usernames: '${{ github.actor }}, AzureDevOps'
 
     - name: Restore dependencies
       shell: bash

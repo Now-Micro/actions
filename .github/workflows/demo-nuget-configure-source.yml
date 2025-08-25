@@ -5,7 +5,7 @@ on:
 
 jobs:
   direct-configure:
-    name: Direct configure-source usage
+    name: Direct configure-sources usage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,7 +17,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Configure multiple NuGet sources (direct)
-        uses: ./nuget/configure-source
+        uses: ./nuget/configure-sources
         with:
           names: 'DemoSource1, DemoSource2'
           usernames: 'demo-user-1, demo-user-2'
@@ -27,24 +27,8 @@ jobs:
       - name: List configured NuGet sources
         run: dotnet nuget list source
 
-  build-uses-configure:
-    name: dotnet/build uses configure-source
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run build (invokes configure-source internally)
-        uses: ./dotnet/build
-        with:
-          solution-file: demo/dotnet/demo.sln
-          github-packages-token: dummy-github-token
-          azure-devops-password: dummy-ado-token
-          node-project-path: ''
-          upload-artifact-paths: ''
-
   skips-configure:
-    name: Skips configure-source
+    name: Skips configure-sources
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -56,7 +40,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Configure multiple NuGet sources (direct)
-        uses: ./nuget/configure-source
+        uses: ./nuget/configure-sources
         with:
           usernames: 'demo-user-1, demo-user-2'
           passwords: 'demo-pass-1, demo-pass-2'

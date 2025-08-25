@@ -100,10 +100,13 @@ test('BFS finds shallow solution and project first', () => {
     INPUT_DEBUG_MODE: 'false'
   });
   assert.strictEqual(exitCode, 0);
-  assert.match(logs.out, /Found project: .*AppA.csproj/); // shallow
-  assert.match(logs.out, /Found solution: .*Sample.sln/);
+  assert.match(logs.out, /Project found: .*AppA.csproj/); // shallow
+  assert.match(logs.out, /Solution found: .*Sample.sln/);
   assert.match(outputContent, /solution-found=.*Sample.sln/);
   assert.match(outputContent, /project-found=.*AppA.csproj/);
+  // New outputs
+  assert.match(outputContent, /solution-name=Sample\.sln/);
+  assert.match(outputContent, /project-name=AppA\.csproj/);
   assert.doesNotMatch(logs.out, /Deep.csproj/); // deep project not chosen first
 });
 
@@ -119,8 +122,10 @@ test('Only solution search writes only solution output', () => {
     INPUT_FIND_PROJECT: 'false'
   });
   assert.strictEqual(exitCode, 0);
-  assert.match(outputContent, /solution-found=.*Only.sln/);
+  assert.match(outputContent, /solution-found=.*Only\.sln/);
+  assert.match(outputContent, /solution-name=Only\.sln/);
   assert.ok(!/project-found=/.test(outputContent));
+  assert.ok(!/project-name=/.test(outputContent));
 });
 
 // 3. Only project search
@@ -135,8 +140,10 @@ test('Only project search writes only project output', () => {
     INPUT_FIND_PROJECT: 'true'
   });
   assert.strictEqual(exitCode, 0);
-  assert.match(outputContent, /project-found=.*Only.csproj/);
+  assert.match(outputContent, /project-found=.*Only\.csproj/);
+  assert.match(outputContent, /project-name=Only\.csproj/);
   assert.ok(!/solution-found=/.test(outputContent));
+  assert.ok(!/solution-name=/.test(outputContent));
 });
 
 // 4. None found scenario (empty directory)
@@ -168,7 +175,7 @@ test('Depth limit prevents deeper discovery', () => {
   });
   assert.strictEqual(exitCode, 0);
   assert.strictEqual(outputContent.trim(), '');
-  assert.match(logs.out, /Searching for .sln or .csproj/);
+  assert.match(logs.out, /Searching for .* in .* \(max depth: 0\)\.\.\./);
 });
 
 // 6. Missing directory error
@@ -270,3 +277,23 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
   // Should not find project because depth starts at 0 and > maxDepth avoided but recursion not entered
   assert.doesNotMatch(logs.out, /Found project/);
 });
+
+// 13. Use real demo/coding-standards structure with relative directory input
+{
+  const repoRoot = path.resolve(__dirname, '..');
+  const demoAbs = path.resolve(repoRoot, 'demo', 'coding-standards');
+  const demoRel = process.platform === 'win32' ? '.\\demo\\coding-standards' : './demo/coding-standards';
+  const present = fs.existsSync(demoAbs);
+  test('Demo coding-standards directory yields solution and project (relative path input)', { skip: !present }, () => {
+    const { exitCode, outputContent } = runWithEnv({
+      INPUT_DIRECTORY: demoRel,
+      INPUT_MAX_DEPTH: '6',
+      INPUT_FIND_SOLUTION: 'true',
+      INPUT_FIND_PROJECT: 'true'
+    });
+    assert.strictEqual(exitCode, 0);
+    assert.match(outputContent, /solution-found=.*Demo\.Linting\.sln/);
+    // Either Demo.Linting.csproj or Demo.Analyzers.csproj may be chosen first by BFS
+    assert.match(outputContent, /project-found=.*(Demo\.Linting\.csproj|Demo\.Analyzers\.csproj)/);
+  });
+}

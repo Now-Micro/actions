@@ -10,3 +10,5 @@ jobs:
 
       - name: Run demo for code standards
         uses: ./.github/actions/demo-code-standards
+        with:
+          directory: './demo/coding-standards-fail'

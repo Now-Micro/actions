@@ -1,13 +1,5 @@
 # GitHub Actions Monorepo
 
-Composite actions maintained here:
-
-- `setup-node` – Standardized Node.js setup with optional caching and dependency install.
-- `get-changed-files` – Outputs JSON array of changed files between two refs.
-- `get-project-and-solution-files-from-directory` – Finds first `.sln` and/or `.csproj` within a directory tree.
-- `extract-changelog` – Extracts version-specific sections from a changelog file.
-- `nuget` – NuGet related helpers.
-
 ## Action Structure Pattern
 Each action follows a consistent pattern:
 
@@ -72,5 +64,5 @@ node --test --test-reporter tap | Select-String -NotMatch "ok" | Select-String -
 - Windows path issues: prefer forward slashes only when interacting with Git commands; use `path.join` elsewhere.
 - Depth logic: remember `currentDepth > maxDepth` guard; tests should cover boundary (`maxDepth` exactly meets the target directory).
 
-## License
-Internal / TBD.
+## Notes
+These actions have only been tested on Linux runners.
