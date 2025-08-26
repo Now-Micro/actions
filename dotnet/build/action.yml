@@ -1,8 +1,16 @@
 name: 'Build Solution'
 description: 'Build solution with .NET and Node.js components'
 inputs:
-  additional-args:
+  additional-build-args:
     description: 'Additional arguments for dotnet build command'
+    required: false
+    default: ''
+  additional-pack-args:
+    description: 'Additional arguments for dotnet pack command.  Only applicable if mode is "pack".'
+    required: false
+    default: ''
+  additional-publish-args:
+    description: 'Additional arguments for dotnet publish command.  Only applicable if mode is "publish".'
     required: false
     default: ''
   build-configuration:
@@ -13,6 +21,10 @@ inputs:
     description: '.NET version to use'
     required: false
     default: '6.0.x'
+  mode:
+    description: 'Mode of operation (pack/publish).  Use "pack" when building a NuGet package, "publish" otherwise.'
+    required: false
+    default: 'publish'
   node-version:
     description: 'Node.js version to use'
     required: false
@@ -37,8 +49,8 @@ inputs:
   nuget-usernames:
     description: 'Usernames for source authentication (comma-separated)'
     required: false
-  solution-file:
-    description: 'Path to the solution file (e.g., "Legacy/CrmService/CRM-Service.sln" or "DICE-Server.sln")'
+  file-to-build:
+    description: 'Path to the solution/project file (e.g. "Legacy/CrmService/CRM.Service.csproj" or "DICE-Server.sln")'
     required: true
   upload-artifact-paths:
     description: "Paths to the artifacts to be deployed. If not specified, skips uploading artifacts."
@@ -47,7 +59,7 @@ inputs:
   upload-artifacts-name:
     description: 'Name of the uploaded artifacts. If not specified, defaults to "build-artifacts".  Only applicable if `upload-artifact-paths` is given.'
     required: false
-    default: 'build-artifacts'
+    default: ''
 
 outputs:
   build-artifacts-name:
@@ -83,11 +95,11 @@ runs:
 
     - name: Restore dependencies
       shell: bash
-      run: dotnet restore ${{ inputs.solution-file }}
+      run: dotnet restore ${{ inputs.file-to-build }}
 
-    - name: Build solution
+    - name: Build File
       shell: bash
-      run: dotnet build ${{ inputs.solution-file }} --configuration ${{ inputs.build-configuration }} --no-restore ${{ inputs.additional-args }}
+      run: dotnet build ${{ inputs.file-to-build }} --configuration ${{ inputs.build-configuration }} --no-restore ${{ inputs.additional-build-args }}
 
     - name: Install npm dependencies
       if: inputs.node-project-path != ''
@@ -101,20 +113,28 @@ runs:
       working-directory: ${{ inputs.node-project-path }}
       run: npm run build
       
-    - name: Publish solution
-      shell: bash
-      run: dotnet publish ${{ inputs.solution-file }} --configuration ${{ inputs.build-configuration }} --no-restore
-
     - name: Set build version
       id: version
       shell: bash
-      run: echo "version=${{ github.run_number }}" >> $GITHUB_OUTPUT
-    
+      run: |
+        echo "version=${{ github.run_number }}" >> $GITHUB_OUTPUT
+        echo "version=${{ github.run_number }}" >> $GITHUB_ENV
+
+    - name: Publish solution
+      if: inputs.mode != 'pack'
+      shell: bash
+      run: dotnet publish ${{ inputs.file-to-build }} --configuration ${{ inputs.build-configuration }} --no-restore ${{ inputs.additional-publish-args }}
+
+    - name: Pack solution
+      if: inputs.mode == 'pack'
+      shell: bash
+      run: dotnet pack ${{ inputs.file-to-build }} --configuration ${{ inputs.build-configuration }} --no-build ${{ inputs.additional-pack-args }}
+      
     - name: Upload build artifacts
-      if: inputs.upload-artifact-paths != ''
+      if: inputs.upload-artifacts-name != ''
       uses: actions/upload-artifact@v4
       id: upload-artifacts
       with:
-        name: ${{ inputs.upload-artifact-paths != '' && inputs.upload-artifacts-name || '' }}
+        name: ${{ inputs.upload-artifacts-name }}
         path: ${{ inputs.upload-artifact-paths }}
         retention-days: 1

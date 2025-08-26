@@ -18,11 +18,20 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build
+    - name: Build Solution
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
       with:   
-          solution-file: demo/dotnet/demo.sln
+          file-to-build: demo/dotnet/src/Api/Api.csproj
+          build-configuration: 'Release'
+          dotnet-version: '8.0.x'
+          node-version: '18.x'
+
+    - name: Build Project
+      if: ${{ inputs.run-build-step == 'true' }}
+      uses: ./dotnet/build
+      with:   
+          file-to-build: demo/dotnet/demo.csproj
           build-configuration: 'Release'
           dotnet-version: '8.0.x'
           node-version: '18.x'

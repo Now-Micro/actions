@@ -8,22 +8,41 @@ inputs:
   directory:
     description: "The directory to search for a .csproj file."
     required: true
+  dotnet-version:
+    description: "The version of .NET to use."
+    required: false
+    default: "9.0.x"
+  github-token:
+    description: "GitHub token for deploying nuget packages."
+    required: true
+  nuget-names: 
+    description: "Names of the NuGet source (comma-separated)"
+    required: false
+  nuget-passwords:
+    description: "Personal Access Tokens for authentication (comma-separated)"
+    required: false
+  nuget-urls:
+    description: "URLs of the NuGet feed (comma-separated)"
+    required: false 
+  nuget-usernames:
+    description: "Usernames for source authentication (comma-separated)"
+    required: false
   project-regex:
     description: "Regular expression to identify project file desired."
     required: false
+    default: ""
+  run-tests:
+    description: "Whether to run tests as part of the build process."
+    required: false
+    default: "false"
+  version-suffix:
+    description: "Version suffix to append to the package version."
+    required: true
     default: ""
 
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: "8.0.x"
-
     - name: Get Project File
       id: extract-project
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
@@ -34,76 +53,30 @@ runs:
         find-solution: false
         project-regex: ${{ inputs.project-regex }}
 
-    - name: Configure Nuget Sources
-      uses: Now-Micro/actions/nuget/configure-sources@v1
+    - name: Build Project
+      id: build
+      # todo: change to this when done
+      # uses: Now-Micro/actions/dotnet/build@v1
+      uses: ./dotnet/build@v1
       with:
-        names: 'github'
-        passwords: ${{ secrets.GITHUB_TOKEN }}
-        urls: 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
-        usernames: ${{ github.actor }}
-
-    - name: Generate Version Number
-      shell: bash
-      run: echo "VERSION_SUFFIX=${{ github.run_number }}" >> $GITHUB_ENV
-
-    - name: Restore dependencies
-      shell: bash
-      run: dotnet restore "${{ steps.extract-project.outputs.project-found }}" /p:VersionSuffix=${{ env.VERSION_SUFFIX }}
-      working-directory: ${{ matrix.directory }}
-
-    - name: Build
-      shell: bash
-      run: dotnet build --configuration Release --no-restore --property WarningLevel=0 /p:VersionSuffix=${{ env.VERSION_SUFFIX }} "${{ steps.extract-project.outputs.project-found }}"
-      working-directory: ${{ matrix.directory }}
+        additional-build-args: '--property WarningLevel=0 /p:VersionSuffix=${{ inputs.version-suffix }}'
+        additional-pack-args: '--output nupkgs /p:VersionSuffix=${{ inputs.version-suffix }}'
+        dotnet-version: ${{ inputs.dotnet-version }}
+        file-to-build: ${{ steps.extract-project.outputs.project-found }}
+        nuget-names: ${{ inputs.nuget-names }}
+        nuget-passwords: ${{ inputs.nuget-passwords }}
+        nuget-urls: ${{ inputs.nuget-urls }}
+        nuget-usernames: ${{ inputs.nuget-usernames }}
 
     - name: Test
+      if: ${{ inputs.run-tests == 'true' }}
       shell: bash
-      # Adjust or remove testing if each project doesn't have associated tests in the same directory.
       run: dotnet test --no-restore /p:VersionSuffix=${{ env.VERSION_SUFFIX }} "${{ steps.extract-project.outputs.project-found }}"
-      working-directory: ${{ matrix.directory }}
-
-    - name: Check if library project
-      shell: bash
-      id: check-library
-      run: |
-        PROJECT_FILE="${{ steps.extract-project.outputs.project-name }}"
-        
-        # Determine if this should be packaged
-        SHOULD_PACKAGE=true
-        
-        # Check if it's a test project
-        if [[ "$PROJECT_FILE" =~ \.Tests?\.csproj$ ]] || [[ "$PROJECT_FILE" =~ \.Test\.csproj$ ]] || [[ "$PROJECT_FILE" =~ \.Testing\.csproj$ ]]; then
-          SHOULD_PACKAGE=false
-        fi
-        
-        # Check if it's a sample/demo/example project by filename
-        if [[ "$PROJECT_FILE" =~ \.Sample[^/]*\.csproj$ ]] || [[ "$PROJECT_FILE" =~ \.Demo[^/]*\.csproj$ ]] || [[ "$PROJECT_FILE" =~ \.Example[^/]*\.csproj$ ]]; then
-          SHOULD_PACKAGE=false
-        fi
-        
-        # Check if directory path contains samples, tests, or examples
-        if [[ "$PROJECT_FILE" =~ /samples?/ ]] || [[ "$PROJECT_FILE" =~ /tests?/ ]] || [[ "$PROJECT_FILE" =~ /examples?/ ]] || [[ "$PROJECT_FILE" =~ /demos?/ ]]; then
-          SHOULD_PACKAGE=false
-        fi
-        
-        echo "should_package=$SHOULD_PACKAGE" >> $GITHUB_OUTPUT
-        
-        echo "Project analysis:"
-        echo "  File: $PROJECT_FILE"
-        echo "  Should Package: $SHOULD_PACKAGE"
-
-    - name: Pack
-      shell: bash
-      if: ${{ steps.check-library.outputs.should_package == 'true' }}
-      run: |
-        dotnet pack --configuration Release --no-build --output nupkgs /p:VersionSuffix=${{ env.VERSION_SUFFIX }} "${{ steps.extract-project.outputs.project-found }}"
-      working-directory: ${{ matrix.directory }}
 
     - name: Publish NuGet Package
       shell: bash
-      if: ${{ steps.check-library.outputs.should_package == 'true' }}
       run: |
         PACKAGE_DIR=${{ matrix.directory }}/nupkgs
-        dotnet nuget push "$PACKAGE_DIR/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        dotnet nuget push "$PACKAGE_DIR/*.nupkg" --api-key ${{ inputs.github-token }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NUGET_AUTH_TOKEN: ${{ inputs.github-token }}
