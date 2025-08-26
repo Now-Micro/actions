@@ -1,9 +1,6 @@
 name: 'Build Solution'
 description: 'Build solution with .NET and Node.js components'
 inputs:
-  azure-devops-password:
-    description: 'Personal Access Token for Azure DevOps authentication'
-    required: true
   build-configuration:
     description: 'Build configuration (Release/Debug)'
     required: false
@@ -12,9 +9,6 @@ inputs:
     description: '.NET version to use'
     required: false
     default: '6.0.x'
-  github-packages-token:
-    description: 'Personal Access Token for GitHub Packages authentication'
-    required: true
   node-version:
     description: 'Node.js version to use'
     required: false
@@ -27,6 +21,18 @@ inputs:
     description: 'Path to package-lock.json for npm caching'
     required: false
     default: ''
+  nuget-names:
+    description: 'Names of the NuGet source (comma-separated)'
+    required: false
+  nuget-passwords:
+    description: 'Personal Access Tokens for authentication (comma-separated)'
+    required: false
+  nuget-urls:
+    description: 'URLs of the NuGet feed (comma-separated)'
+    required: false
+  nuget-usernames:
+    description: 'Usernames for source authentication (comma-separated)'
+    required: false
   solution-file:
     description: 'Path to the solution file (e.g., "Legacy/CrmService/CRM-Service.sln" or "DICE-Server.sln")'
     required: true
@@ -66,10 +72,10 @@ runs:
     - name: Configure NuGet sources
       uses: Now-Micro/actions/nuget/configure-sources@v1
       with:
-        names: 'CodeBits, Code-Hole'
-        passwords: '${{ inputs.github-packages-token }}, ${{ inputs.azure-devops-password }}'
-        urls: 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json, https://pkgs.dev.azure.com/code-hole/_packaging/NowMicroLibraries/nuget/v3/index.json'
-        usernames: '${{ github.actor }}, AzureDevOps'
+        names: ${{ inputs.nuget-names }}
+        passwords: ${{ inputs.nuget-passwords }}
+        urls: ${{ inputs.nuget-urls }}
+        usernames: ${{ inputs.nuget-usernames }}
 
     - name: Restore dependencies
       shell: bash
