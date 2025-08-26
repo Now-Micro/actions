@@ -22,7 +22,7 @@ runs:
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
       with:   
-          file-to-build: demo/dotnet/src/Api/Api.csproj
+          file-to-build: demo/dotnet/demo.sln
           build-configuration: 'Release'
           dotnet-version: '8.0.x'
           node-version: '18.x'
@@ -31,7 +31,7 @@ runs:
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
       with:   
-          file-to-build: demo/dotnet/demo.csproj
+          file-to-build: demo/dotnet/src/Api/Api.csproj
           build-configuration: 'Release'
           dotnet-version: '8.0.x'
           node-version: '18.x'
@@ -47,4 +47,3 @@ runs:
     - name: Lint
       if: ${{ inputs.run-lint-step == 'true' }}
       uses: ./dotnet/lint
-

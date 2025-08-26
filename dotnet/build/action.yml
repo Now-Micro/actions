@@ -64,7 +64,7 @@ inputs:
 outputs:
   build-artifacts-name:
     description: 'Name of the uploaded build artifacts.  Will be empty if `upload-artifact-paths` is not given.'
-    value: ${{ inputs.upload-artifact-paths != '' && inputs.upload-artifacts-name || '' }}
+    value: ${{ inputs.upload-artifacts-name }}
   build-version:
     description: 'Build version number'
     value: ${{ steps.version.outputs.version }}
