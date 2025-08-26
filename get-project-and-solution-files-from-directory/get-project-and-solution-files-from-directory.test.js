@@ -268,10 +268,10 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
 
 {
   const repoRoot = path.resolve(__dirname, '..');
-  const demoAbs = path.resolve(repoRoot, 'demo', 'coding-standards');
-  const demoRel = process.platform === 'win32' ? '.\\demo\\coding-standards' : './demo/coding-standards';
+  const demoAbs = path.resolve(repoRoot, 'demo', 'get-project-and-solution-files-from-directory');
+  const demoRel = process.platform === 'win32' ? '.\\demo\\get-project-and-solution-files-from-directory' : './demo/get-project-and-solution-files-from-directory';
   const present = fs.existsSync(demoAbs);
-  test('Demo coding-standards directory yields solution and project (relative path input)', { skip: !present }, () => {
+  test('Demo get-project-and-solution-files-from-directory directory yields solution and project (relative path input)', { skip: !present }, () => {
     const { exitCode, outputContent } = runWithEnv({
       INPUT_DIRECTORY: demoRel,
       INPUT_MAX_DEPTH: '6',
@@ -279,9 +279,9 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
       INPUT_FIND_PROJECT: 'true'
     });
     assert.strictEqual(exitCode, 0);
-    assert.match(outputContent, /solution-found=.*Demo\.Linting\.sln/);
+    assert.match(outputContent, /solution-found=.*RootSolution\.sln/);
     // Either Demo.Linting.csproj or Demo.Analyzers.csproj may be chosen first by BFS
-    assert.match(outputContent, /project-found=.*(Demo\.Linting\.csproj|Demo\.Analyzers\.csproj)/);
+    assert.match(outputContent, /project-found=.*Test\.csproj/);
   });
 }
 
