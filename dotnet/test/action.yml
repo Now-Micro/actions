@@ -34,13 +34,14 @@ runs:
         directory: ${{ inputs.directory }}
         max-depth: ${{ inputs.max-depth }}
         find-project: true
-        find-solution: false
+        find-solution: true
         project-regex: ${{ inputs.project-regex }}
 
     - name: Run tests
       shell: bash
       run: |
-        PROJECT_OR_SOLUTION=${{ steps.get-solution-or-proj.outputs.solution-found || steps.get-solution-or-proj.outputs.project-found }}
+        PROJECT_OR_SOLUTION=${{ steps.get-solution-or-proj.outputs.project-found || steps.get-solution-or-proj.outputs.solution-found}}
+        echo "Running: dotnet test $PROJECT_OR_SOLUTION --verbosity normal"
         if [ -z "$PROJECT_OR_SOLUTION" ]; then
           echo "No .sln or .csproj found in ${{ inputs.directory }}"
           exit 1
