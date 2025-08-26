@@ -1,0 +1,82 @@
+name: "Nuget Deploy"
+description: "Deploys a NuGet package to a NuGet feed."
+inputs:
+  debug-mode:
+    description: "Enable debug mode for additional logging."
+    required: false
+    default: "false"
+  directory:
+    description: "The directory to search for a .csproj file."
+    required: true
+  dotnet-version:
+    description: "The version of .NET to use."
+    required: false
+    default: "9.0.x"
+  github-token:
+    description: "GitHub token for deploying nuget packages."
+    required: true
+  nuget-names: 
+    description: "Names of the NuGet source (comma-separated)"
+    required: false
+  nuget-passwords:
+    description: "Personal Access Tokens for authentication (comma-separated)"
+    required: false
+  nuget-urls:
+    description: "URLs of the NuGet feed (comma-separated)"
+    required: false 
+  nuget-usernames:
+    description: "Usernames for source authentication (comma-separated)"
+    required: false
+  project-regex:
+    description: "Regular expression to identify project file desired."
+    required: false
+    default: ""
+  run-tests:
+    description: "Whether to run tests as part of the build process."
+    required: false
+    default: "false"
+  version-suffix:
+    description: "Version suffix to append to the package version."
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Project File
+      id: extract-project
+      uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
+      with:
+        directory: ${{ inputs.directory }}
+        debug-mode: ${{ inputs.debug-mode }}
+        find-project: true
+        find-solution: false
+        project-regex: ${{ inputs.project-regex }}
+
+    - name: Build Project
+      id: build
+      # todo: change to this when done
+      # uses: Now-Micro/actions/dotnet/build@v1
+      uses: ./dotnet/build@v1
+      with:
+        additional-build-args: '--property WarningLevel=0 /p:VersionSuffix=${{ inputs.version-suffix }}'
+        additional-pack-args: '--output nupkgs /p:VersionSuffix=${{ inputs.version-suffix }}'
+        dotnet-version: ${{ inputs.dotnet-version }}
+        file-to-build: ${{ steps.extract-project.outputs.project-found }}
+        nuget-names: ${{ inputs.nuget-names }}
+        nuget-passwords: ${{ inputs.nuget-passwords }}
+        nuget-urls: ${{ inputs.nuget-urls }}
+        nuget-usernames: ${{ inputs.nuget-usernames }}
+
+    - name: Test
+      if: ${{ inputs.run-tests == 'true' }}
+      shell: bash
+      run: dotnet test --no-restore /p:VersionSuffix=${{ env.VERSION_SUFFIX }} "${{ steps.extract-project.outputs.project-found }}"
+
+    - name: Publish NuGet Package
+      shell: bash
+      run: |
+        PACKAGE_DIR=${{ matrix.directory }}/nupkgs
+        dotnet nuget push "$PACKAGE_DIR/*.nupkg" --api-key ${{ inputs.github-token }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+      env:
+        NUGET_AUTH_TOKEN: ${{ inputs.github-token }}
