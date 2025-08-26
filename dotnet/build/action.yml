@@ -1,6 +1,10 @@
 name: 'Build Solution'
 description: 'Build solution with .NET and Node.js components'
 inputs:
+  additional-args:
+    description: 'Additional arguments for dotnet build command'
+    required: false
+    default: ''
   azure-devops-password:
     description: 'Personal Access Token for Azure DevOps authentication'
     required: true
@@ -77,7 +81,7 @@ runs:
 
     - name: Build solution
       shell: bash
-      run: dotnet build ${{ inputs.solution-file }} --configuration ${{ inputs.build-configuration }} --no-restore
+      run: dotnet build ${{ inputs.solution-file }} --configuration ${{ inputs.build-configuration }} --no-restore ${{ inputs.additional-args }}
 
     - name: Install npm dependencies
       if: inputs.node-project-path != ''
