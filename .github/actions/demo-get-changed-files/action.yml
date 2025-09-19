@@ -1,0 +1,75 @@
+name: Demo - Get Changed Files
+description: Demonstrates the get-changed-files action with SHA->SHA and tag/branch inputs
+author: Trafera
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare summary and temp repo
+      id: pre
+      shell: bash
+      run: |
+        echo "summary_file=$(pwd)/gcf-summary.txt" >> $GITHUB_OUTPUT
+        echo "repo_dir=$(mktemp -d)" >> $GITHUB_OUTPUT
+
+    - name: Initialize temp git repo with base/head and refs
+      id: init
+      shell: bash
+      working-directory: ${{ steps.pre.outputs.repo_dir }}
+      run: |
+        git init -q
+        git config user.email "ci@example.com"
+        git config user.name "CI Bot"
+        echo "base" > a.txt
+        git add a.txt
+        git commit -q -m "base"
+        base_sha=$(git rev-parse HEAD)
+        git checkout -q -b branch1
+        echo "head" > b.txt
+        git add b.txt
+        git commit -q -m "head"
+        head_sha=$(git rev-parse HEAD)
+        git tag baseTag "$base_sha"
+        echo "base_sha=$base_sha" >> $GITHUB_OUTPUT
+        echo "head_sha=$head_sha" >> $GITHUB_OUTPUT
+
+    - name: Run get-changed-files (SHA -> SHA)
+      id: r1
+      uses: ./get-changed-files
+      with:
+        base-ref: ${{ steps.init.outputs.base_sha }}
+        head-ref: ${{ steps.init.outputs.head_sha }}
+      working-directory: ${{ steps.pre.outputs.repo_dir }}
+
+    - name: Assert (SHA -> SHA)
+      uses: ./testing/assert
+      with:
+        test-name: "changed files between base and head (sha)"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["b.txt"]'
+        actual: ${{ steps.r1.outputs.changed_files }}
+
+    - name: Run get-changed-files (tag -> branch)
+      id: r2
+      uses: ./get-changed-files
+      with:
+        base-ref: baseTag
+        head-ref: branch1
+      working-directory: ${{ steps.pre.outputs.repo_dir }}
+
+    - name: Assert (tag -> branch)
+      uses: ./testing/assert
+      with:
+        test-name: "changed files between tag and branch"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["b.txt"]'
+        actual: ${{ steps.r2.outputs.changed_files }}
+
+    - name: Summarize
+      shell: bash
+      if: always()
+      run: |
+        echo '=== Get Changed Files Demo Summary ===' >> $GITHUB_STEP_SUMMARY
+        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY

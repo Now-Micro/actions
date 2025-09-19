@@ -4,11 +4,11 @@ author: 'Trafera'
 
 inputs:
   head-ref:
-    description: 'The head branch of the pull request'
+    description: 'The head branch, tag, or sha.'
     required: false
     default: ${{ github.head_ref }}
   base-ref:
-    description: 'The base branch of the pull request'
+    description: 'The base branch, tag, or sha.'
     required: false
     default: ${{ github.base_ref }}
 
