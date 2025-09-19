@@ -67,8 +67,11 @@ function ghRequest(pathname, token) {
 async function findReleaseVersionByKeyword(owner, repo, keyword, token) {
     // List latest 100 releases and find the first matching keyword
     const data = await ghRequest(`/repos/${owner}/${repo}/releases?per_page=100`, token);
+
+    console.log(`🔎 Found ${Array.isArray(data) ? data.length : 0} releases from GitHub API`);
+    console.log({ data });
     if (!Array.isArray(data)) return '';
-    const re = new RegExp(keyword, 'i');
+    const re = new RegExp(keyword, 'ig');
     for (const r of data) {
         const name = r.name || r.tag_name || '';
         if (re.test(name)) {
