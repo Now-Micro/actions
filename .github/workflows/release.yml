@@ -49,9 +49,9 @@ jobs:
     name: Publish release
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create_or_reuse.outputs.release_id }}
-      html_url: ${{ steps.create_or_reuse.outputs.html_url }}
-      upload_url: ${{ steps.create_or_reuse.outputs.upload_url }}
+      release_id: ${{ steps.release_out.outputs.release_id }}
+      html_url: ${{ steps.release_out.outputs.html_url }}
+      upload_url: ${{ steps.release_out.outputs.upload_url }}
 
     steps:
       - name: Check for existing release by tag
@@ -93,6 +93,31 @@ jobs:
               release_id,
             });
             core.info(`Deleted existing release id ${release_id}`);
+
+      - name: Delete tag for existing release (if requested)
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        uses: actions/github-script@v7
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = process.env.TAG_NAME;
+            if (!tag) { core.info('No tag provided to delete'); return; }
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+              core.info(`Deleted ref refs/tags/${tag}`);
+            } catch (e) {
+              if (e.status === 404 || e.status === 422 || e.status === 403) {
+                core.info(`Could not delete ref refs/tags/${tag} (may not exist or is protected): ${e.message}`);
+              } else {
+                throw e;
+              }
+            }
 
       - name: Use existing release (no delete requested)
         id: create_or_reuse
@@ -142,17 +167,27 @@ jobs:
             core.setOutput('html_url', data.html_url || '');
             core.setOutput('upload_url', data.upload_url || '');
 
-      - name: Bubble outputs
-        id: create_or_reuse_finalize
-        if: ${{ steps.create.outcome == 'success' }}
+      - name: Consolidate outputs
+        id: release_out
+        shell: bash
+        env:
+          CREATE_RELEASE_ID: ${{ steps.create.outputs.release_id }}
+          CREATE_HTML_URL: ${{ steps.create.outputs.html_url }}
+          CREATE_UPLOAD_URL: ${{ steps.create.outputs.upload_url }}
+          REUSE_RELEASE_ID: ${{ steps.create_or_reuse.outputs.release_id }}
+          REUSE_HTML_URL: ${{ steps.create_or_reuse.outputs.html_url }}
+          REUSE_UPLOAD_URL: ${{ steps.create_or_reuse.outputs.upload_url }}
         run: |
-          echo "release_id=${{ steps.create.outputs.release_id }}" >> $GITHUB_OUTPUT
-          echo "html_url=${{ steps.create.outputs.html_url }}" >> $GITHUB_OUTPUT
-          echo "upload_url=${{ steps.create.outputs.upload_url }}" >> $GITHUB_OUTPUT
+          release_id="${CREATE_RELEASE_ID:-$REUSE_RELEASE_ID}"
+          html_url="${CREATE_HTML_URL:-$REUSE_HTML_URL}"
+          upload_url="${CREATE_UPLOAD_URL:-$REUSE_UPLOAD_URL}"
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+          echo "html_url=$html_url" >> "$GITHUB_OUTPUT"
+          echo "upload_url=$upload_url" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: always()
         run: |
           echo "Release tag: ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "Deleted existing: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}" >> $GITHUB_STEP_SUMMARY
-          echo "Release URL: ${{ steps.create_or_reuse.outputs.html_url || steps.create_or_reuse_finalize.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "Release URL: ${{ steps.release_out.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
