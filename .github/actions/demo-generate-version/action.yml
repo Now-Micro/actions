@@ -57,9 +57,36 @@ runs:
         infix-value: ${{ inputs.infix }}
         release-keyword: ${{ inputs['release-keyword'] }}
 
+    - name: Run generate-version (releases - initial version)
+      id: rel_initial
+      uses: ./generate-version
+      with:
+        project-file: ${{ steps.pre.outputs.project_file }}
+        infix-value: ${{ inputs.infix }}
+        release-keyword: "initial version"
+
+    - name: Assert version shape (releases - initial version)
+      uses: ./testing/assert
+      with:
+        test-name: "version from releases (initial version) has timestamp"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: regex
+        expected: '^\d+\.\d+\.\d+-[A-Za-z0-9]+-\d{12}$'
+        actual: ${{ steps.rel_initial.outputs['version-number'] }}
+
+    - name: Assert base version is 1.0.0 (releases - initial version)
+      uses: ./testing/assert
+      with:
+        test-name: "base version 1.0.0 for initial version keyword"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: regex
+        expected: '^1\\.0\\.0-'
+        actual: ${{ steps.rel_initial.outputs['version-number'] }}
+
     - name: Summarize
       if: always()
       shell: bash
       run: |
         echo '=== Generate Version Demo Summary ===' >> $GITHUB_STEP_SUMMARY
         cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY
+        echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> $GITHUB_STEP_SUMMARY

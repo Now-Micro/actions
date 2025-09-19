@@ -31,7 +31,7 @@ function readCsprojVersion(file) {
     if (mVer) return toBaseSemVer(mVer[1]);
     const mPrefix = xml.match(/<VersionPrefix>([^<]+)<\/VersionPrefix>/);
     if (mPrefix) return toBaseSemVer(mPrefix[1]);
-    return '1.0.0';
+    return '0.0.1';
 }
 
 function ghRequest(pathname, token) {

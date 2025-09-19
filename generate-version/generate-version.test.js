@@ -104,6 +104,19 @@ test('queries releases and finds matching by keyword (tag_name)', async () => {
     restoreDate();
 });
 
+test("queries releases and finds 'initial version' keyword (case-insensitive)", async () => {
+    const restoreDate = mockDate('2024-02-01T00:00:00Z');
+    const restoreHttps = mockHttpsOnce(200, [
+        { name: 'Initial Version', tag_name: '1.0.0' },
+        { name: 'Other', tag_name: '0.9.0' }
+    ]);
+    const r = await runWith({ INPUT_RELEASE_KEYWORD: 'initial version', INPUT_INFIX_VALUE: 'demo' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=1.0.0-demo-202402010000/);
+    restoreHttps();
+    restoreDate();
+});
+
 test('queries releases but no match, falls back to csproj', async () => {
     const restoreDate = mockDate('2024-01-02T03:04:00Z');
     const restoreHttps = mockHttpsOnce(200, [{ name: 'Other', tag_name: '0.1.0' }]);
@@ -135,7 +148,7 @@ test('uses default 1.0.0 when no version tags in csproj', async () => {
     fs.writeFileSync(csproj, '<Project><PropertyGroup></PropertyGroup></Project>');
     const r = await runWith({ INPUT_PROJECT_FILE: csproj });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=1.0.0-202502030405/);
+    assert.match(r.outputContent, /version_number=0.0.1-202502030405/);
     restoreDate();
 });
 
