@@ -34,4 +34,3 @@ runs:
         INPUT_INFIX_VALUE: ${{ inputs.infix-value }}
         INPUT_PROJECT_FILE: ${{ inputs.project-file }}
         INPUT_RELEASE_KEYWORD: ${{ inputs['release-keyword'] }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

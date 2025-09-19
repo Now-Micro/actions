@@ -20,7 +20,9 @@ runs:
       id: pre
       shell: bash
       run: |
-        echo "summary_file=$(pwd)/gv-summary.txt" >> $GITHUB_OUTPUT
+        echo "summary_file=$(pwd)/gv-summary.txt" >> "$GITHUB_OUTPUT"
+        # ensure summary file exists to avoid cat errors if earlier steps fail
+        touch "$(pwd)/gv-summary.txt"
         mkdir -p _gv
         cat > _gv/Demo.App.csproj <<'EOF'
         <Project Sdk="Microsoft.NET.Sdk">
@@ -30,7 +32,7 @@ runs:
           </PropertyGroup>
         </Project>
         EOF
-        echo "project_file=$(pwd)/_gv/Demo.App.csproj" >> $GITHUB_OUTPUT
+        echo "project_file=$(pwd)/_gv/Demo.App.csproj" >> "$GITHUB_OUTPUT"
 
     - name: Run generate-version (csproj)
       id: csproj
@@ -87,6 +89,12 @@ runs:
       if: always()
       shell: bash
       run: |
-        echo '=== Generate Version Demo Summary ===' >> $GITHUB_STEP_SUMMARY
-        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY
-        echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> $GITHUB_STEP_SUMMARY
+        echo '=== Generate Version Demo Summary ===' >> "$GITHUB_STEP_SUMMARY"
+        if [ -f "${{ steps.pre.outputs.summary_file }}" ]; then
+          cat "${{ steps.pre.outputs.summary_file }}" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "(no per-step summary file present)" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        if [ -n "${{ steps.rel_initial.outputs['version-number'] }}" ]; then
+          echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
+        fi
