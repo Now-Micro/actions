@@ -11,6 +11,10 @@ inputs:
     description: 'The base branch, tag, or sha.'
     required: false
     default: ${{ github.base_ref }}
+  working-directory:
+    description: 'Directory (git repo) to run the diff in. Defaults to repository root.'
+    required: false
+    default: '.'
 
 outputs:
   changed_files:
@@ -26,6 +30,7 @@ runs:
     - name: Determine changed project directories
       id: parse-changes
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: node "$GITHUB_ACTION_PATH/get-changed-files.js"
       env:
         INPUT_HEAD_REF: ${{ inputs.head-ref }}
