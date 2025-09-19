@@ -208,6 +208,8 @@ test('errors when GITHUB_OUTPUT is not set at write time', async () => {
     const r = await (async () => {
         const prev = { ...process.env };
         Object.assign(process.env, { INPUT_PROJECT_FILE: csproj, GITHUB_REPOSITORY: 'owner/repo' });
+        // Ensure GITHUB_OUTPUT is truly absent even on GitHub runners
+        delete process.env.GITHUB_OUTPUT;
         let exitCode = 0; const origExit = process.exit; process.exit = c => { exitCode = c || 0; throw new Error(`__EXIT_${exitCode}__`); };
         let out = '', err = ''; const so = process.stdout.write, se = process.stderr.write;
         process.stdout.write = (c, e, cb) => { out += c; return true; }; process.stderr.write = (c, e, cb) => { err += c; return true; };
