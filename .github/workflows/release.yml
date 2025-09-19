@@ -82,6 +82,7 @@ jobs:
 
       - name: Delete existing release (if requested)
         if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -122,6 +123,7 @@ jobs:
       - name: Use existing release (no delete requested)
         id: create_or_reuse
         if: ${{ steps.get.outputs.exists == 'true' && !inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists == 'true' && !inputs.should-delete-current }}
         run: |
           echo "release_id=${{ steps.get.outputs.id }}" >> $GITHUB_OUTPUT
           echo "html_url=${{ steps.get.outputs.html_url }}" >> $GITHUB_OUTPUT
@@ -130,14 +132,16 @@ jobs:
       - name: Create release
         id: create
         if: ${{ steps.get.outputs.exists != 'true' || inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists != 'true' || inputs.should-delete-current }}
         uses: actions/github-script@v7
         env:
           INPUT_TAG: ${{ inputs.tag }}
           INPUT_NAME: ${{ inputs.name }}
           INPUT_BODY: ${{ inputs.body }}
           INPUT_TARGET: ${{ inputs.target }}
-          INPUT_DRAFT: ${{ inputs.draft }}
+          INPUT_DRAFT: ${{ inputs.draft }}t
           INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          INPUT_GENERATE_NOTES: ${{ inputs.generate-release-notes }}
           INPUT_GENERATE_NOTES: ${{ inputs.generate-release-notes }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
