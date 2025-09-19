@@ -104,6 +104,18 @@ test('queries releases and finds matching by keyword (tag_name)', async () => {
     restoreDate();
 });
 
+test('matches keyword in body and extracts semver from name', async () => {
+    const restoreDate = mockDate('2024-03-04T05:06:00Z');
+    const restoreHttps = mockHttpsOnce(200, [
+        { name: 'Release 2.1.0', body: 'Includes Special Feature' }
+    ]);
+    const r = await runWith({ INPUT_RELEASE_KEYWORD: 'special feature', INPUT_INFIX_VALUE: 'beta' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=2.1.0-beta-202403040506/);
+    restoreHttps();
+    restoreDate();
+});
+
 test("queries releases and finds 'initial version' keyword (case-insensitive)", async () => {
     const restoreDate = mockDate('2024-02-01T00:00:00Z');
     const restoreHttps = mockHttpsOnce(200, [
@@ -196,6 +208,8 @@ test('errors when GITHUB_OUTPUT is not set at write time', async () => {
     const r = await (async () => {
         const prev = { ...process.env };
         Object.assign(process.env, { INPUT_PROJECT_FILE: csproj, GITHUB_REPOSITORY: 'owner/repo' });
+        // Ensure GITHUB_OUTPUT is truly absent even on GitHub runners
+        delete process.env.GITHUB_OUTPUT;
         let exitCode = 0; const origExit = process.exit; process.exit = c => { exitCode = c || 0; throw new Error(`__EXIT_${exitCode}__`); };
         let out = '', err = ''; const so = process.stdout.write, se = process.stderr.write;
         process.stdout.write = (c, e, cb) => { out += c; return true; }; process.stderr.write = (c, e, cb) => { err += c; return true; };

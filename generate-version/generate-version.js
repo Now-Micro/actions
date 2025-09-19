@@ -65,15 +65,26 @@ function ghRequest(pathname, token) {
 }
 
 async function findReleaseVersionByKeyword(owner, repo, keyword, token) {
-    // List latest 100 releases and find the first matching keyword
+    // List latest 100 releases and find the first matching keyword in name or body
     const data = await ghRequest(`/repos/${owner}/${repo}/releases?per_page=100`, token);
+
+    console.log(`🔎 Found ${Array.isArray(data) ? data.length : 0} releases from GitHub API`);
+    console.log({ data });
     if (!Array.isArray(data)) return '';
     const re = new RegExp(keyword, 'i');
     for (const r of data) {
-        const name = r.name || r.tag_name || '';
-        if (re.test(name)) {
-            // Prefer tag_name as semver source
-            const candidate = String(r.tag_name || '').trim() || String(r.name || '').trim();
+        const name = String(r.name || '');
+        const body = String(r.body || '');
+        if (re.test(name) || re.test(body)) {
+            // Extract a semantic version from the name, if present
+            const m = name.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/);
+            if (m) {
+                console.log(`Found matching release: ${name} (${m[0]})`);
+                const fromName = toBaseSemVer(m[0]);
+                if (fromName) return fromName;
+            }
+            // Fallback: try tag_name or the entire name as a candidate
+            const candidate = String(r.tag_name || '').trim() || name.trim();
             const base = toBaseSemVer(candidate);
             if (base) return base;
         }
