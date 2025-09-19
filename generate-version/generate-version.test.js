@@ -104,6 +104,18 @@ test('queries releases and finds matching by keyword (tag_name)', async () => {
     restoreDate();
 });
 
+test('matches keyword in body and extracts semver from name', async () => {
+    const restoreDate = mockDate('2024-03-04T05:06:00Z');
+    const restoreHttps = mockHttpsOnce(200, [
+        { name: 'Release 2.1.0', body: 'Includes Special Feature' }
+    ]);
+    const r = await runWith({ INPUT_RELEASE_KEYWORD: 'special feature', INPUT_INFIX_VALUE: 'beta' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=2.1.0-beta-202403040506/);
+    restoreHttps();
+    restoreDate();
+});
+
 test("queries releases and finds 'initial version' keyword (case-insensitive)", async () => {
     const restoreDate = mockDate('2024-02-01T00:00:00Z');
     const restoreHttps = mockHttpsOnce(200, [
