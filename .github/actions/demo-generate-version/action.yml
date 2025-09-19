@@ -1,0 +1,65 @@
+name: Demo - Generate Version
+description: Demonstrates the generate-version action reading csproj or releases and asserts basic shape
+
+author: Trafera
+
+inputs:
+  infix:
+    description: "Optional infix to include between version and timestamp"
+    required: false
+    default: "demo"
+  release-keyword:
+    description: "Optional keyword to search releases; empty to use project file only"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare summary and temp project
+      id: pre
+      shell: bash
+      run: |
+        echo "summary_file=$(pwd)/gv-summary.txt" >> $GITHUB_OUTPUT
+        mkdir -p _gv
+        cat > _gv/Demo.App.csproj <<'EOF'
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>net8.0</TargetFramework>
+            <Version>2.3.4-beta</Version>
+          </PropertyGroup>
+        </Project>
+        EOF
+        echo "project_file=$(pwd)/_gv/Demo.App.csproj" >> $GITHUB_OUTPUT
+
+    - name: Run generate-version (csproj)
+      id: csproj
+      uses: ./generate-version
+      with:
+        project-file: ${{ steps.pre.outputs.project_file }}
+        infix-value: ${{ inputs.infix }}
+
+    - name: Assert version shape (csproj)
+      uses: ./testing/assert
+      with:
+        test-name: "version from csproj has timestamp"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: regex
+        expected: '^\d+\.\d+\.\d+-[A-Za-z0-9]+-\d{12}$'
+        actual: ${{ steps.csproj.outputs['version-number'] }}
+
+    - name: Run generate-version (releases)
+      id: rel
+      if: ${{ inputs['release-keyword'] != '' }}
+      uses: ./generate-version
+      with:
+        project-file: ${{ steps.pre.outputs.project_file }}
+        infix-value: ${{ inputs.infix }}
+        release-keyword: ${{ inputs['release-keyword'] }}
+
+    - name: Summarize
+      if: always()
+      shell: bash
+      run: |
+        echo '=== Generate Version Demo Summary ===' >> $GITHUB_STEP_SUMMARY
+        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY
