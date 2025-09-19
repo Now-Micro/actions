@@ -75,9 +75,11 @@ async function findReleaseVersionByKeyword(owner, repo, keyword, token) {
     for (const r of data) {
         const name = String(r.name || '');
         const body = String(r.body || '');
+        console.log({ name, body });
         if (re.test(name) || re.test(body)) {
             // Extract a semantic version from the name, if present
             const m = name.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/);
+            console.log({ m });
             if (m) {
                 console.log(`Found matching release: ${name} (${m[0]})`);
                 const fromName = toBaseSemVer(m[0]);
