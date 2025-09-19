@@ -1,0 +1,37 @@
+name: "Generate Version"
+description: "Generates a version number based on whether there is a release in the existing repo that matches a keyword.  If not, it will look in the given .csproj file for the current version"
+author: "Trafera"
+
+inputs:
+  infix-value:
+    description: 'Infix value insert between the version number and the date timestamp (e.g., "beta", "alpha", "rc")'
+    required: false
+    default: ""
+  project-file:
+    description: "Path to the .csproj file for the project being released"
+    required: true
+  release-keyword:
+    description: "Keyword used to look for release version"
+    required: false
+    default: ""
+
+outputs:
+  version-number:
+    description: "Generated version number"
+    value: ${{ steps.calc_version.outputs.version_number }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Calculate version
+      id: calc_version
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/generate-version.js"
+      env:
+        INPUT_INFIX_VALUE: ${{ inputs.infix-value }}
+        INPUT_PROJECT_FILE: ${{ inputs.project-file }}
+        INPUT_RELEASE_KEYWORD: ${{ inputs['release-keyword'] }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
