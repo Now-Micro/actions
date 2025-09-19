@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const { test, beforeEach, afterEach } = require('node:test');
-const { run, ensureCommitExists } = require('./get-changed-files');
+const { run, ensureCommitExists, extractSha } = require('./get-changed-files');
 const { execSync } = require('child_process');
 
 // Utility: create an isolated git repository with initial commit
@@ -77,12 +77,12 @@ function captureRun(envOverrides = {}) {
 let context;
 
 beforeEach(() => {
-  context = initRepo(() => {}); // empty repo initialization
+  context = initRepo(() => { }); // empty repo initialization
 });
 
 afterEach(() => {
   process.chdir(context.prevCwd);
-  try { fs.rmSync(context.dir, { recursive: true, force: true }); } catch {}
+  try { fs.rmSync(context.dir, { recursive: true, force: true }); } catch { }
 });
 
 // Test: no changes when base == head
@@ -153,7 +153,7 @@ test('ensureCommitExists fetches missing branch from origin', () => {
   const remoteSha = execSync('git rev-parse HEAD', { cwd: remoteWork, encoding: 'utf8' }).trim();
 
   // Local test repo currently has no remote and cannot resolve remoteSha yet
-  execSync(`git remote add origin "${bare.replace(/\\/g,'/')}"`); // add remote to local repo
+  execSync(`git remote add origin "${bare.replace(/\\/g, '/')}"`); // add remote to local repo
 
   const ok = ensureCommitExists(remoteSha, '');
   assert.strictEqual(ok, true, 'should fetch remote commit SHA from origin successfully');
@@ -179,8 +179,73 @@ test('ensureCommitExists fetches PR ref for provided pr number', () => {
   execSync(`git push -q origin refs/pull/${prNumber}/head`, { cwd: remoteWork });
 
   // Add remote to local test repo
-  execSync(`git remote add origin "${bare.replace(/\\/g,'/')}"`);
+  execSync(`git remote add origin "${bare.replace(/\\/g, '/')}"`);
 
   const ok = ensureCommitExists(prSha, prNumber);
   assert.strictEqual(ok, true, 'should fetch commit via pull ref');
+});
+
+// New: extractSha resolves branch names locally
+test('extractSha resolves local branch name', () => {
+  // create base commit
+  writeFile('base.txt', 'base');
+  commit('base');
+  // create feature branch with new commit
+  execSync('git checkout -q -b feat/test');
+  writeFile('feat.txt', 'feat');
+  const featSha = commit('feat commit');
+
+  const resolved = extractSha('feat/test', '');
+  assert.strictEqual(resolved, featSha);
+});
+
+// New: extractSha resolves tag names locally
+test('extractSha resolves local tag', () => {
+  writeFile('t1.txt', 't1');
+  const sha = commit('tag base');
+  execSync('git tag v1');
+  const resolved = extractSha('v1', '');
+  assert.strictEqual(resolved, sha);
+});
+
+// New: extractSha fetches remote branch then resolves
+test('extractSha fetches and resolves remote branch', () => {
+  // Setup bare remote with a branch not present locally
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'remote-extract-'));
+  const bare = path.join(tmpBase, 'remote.git');
+  execSync(`git init --bare -q "${bare}"`);
+  const remoteWork = fs.mkdtempSync(path.join(os.tmpdir(), 'remote-extract-work-'));
+  execSync(`git clone -q "${bare}" "${remoteWork}"`);
+  execSync('git config user.email "ci@example.com"', { cwd: remoteWork });
+  execSync('git config user.name "CI Bot"', { cwd: remoteWork });
+  fs.writeFileSync(path.join(remoteWork, 'r.txt'), 'r');
+  execSync('git add r.txt', { cwd: remoteWork });
+  execSync('git commit -q -m "seed"', { cwd: remoteWork });
+  execSync('git checkout -q -b feature/x', { cwd: remoteWork });
+  fs.writeFileSync(path.join(remoteWork, 'x.txt'), 'x');
+  execSync('git add x.txt', { cwd: remoteWork });
+  execSync('git commit -q -m "x"', { cwd: remoteWork });
+  const remoteSha = execSync('git rev-parse HEAD', { cwd: remoteWork, encoding: 'utf8' }).trim();
+  execSync('git push -q origin feature/x', { cwd: remoteWork });
+
+  // Link local repo to remote
+  execSync(`git remote add origin "${bare.replace(/\\/g, '/')}"`);
+
+  const resolved = extractSha('feature/x', '');
+  assert.strictEqual(resolved, remoteSha, 'should resolve to remote branch head');
+});
+
+// New: run() accepts tag/branch inputs
+test('run accepts branch and tag refs', () => {
+  // base commit
+  writeFile('a.txt', 'a');
+  const baseSha = commit('base');
+  execSync('git tag baseTag');
+  // change on branch
+  execSync('git checkout -q -b branch1');
+  writeFile('b.txt', 'b');
+  const headSha = commit('head');
+
+  const { output } = captureRun({ INPUT_BASE_REF: 'baseTag', INPUT_HEAD_REF: 'branch1' });
+  assert.match(output, /changed_files=\["b.txt"\]/);
 });
