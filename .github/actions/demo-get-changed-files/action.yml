@@ -39,7 +39,7 @@ runs:
       with:
         base-ref: ${{ steps.init.outputs.base_sha }}
         head-ref: ${{ steps.init.outputs.head_sha }}
-      working-directory: ${{ steps.pre.outputs.repo_dir }}
+  working-directory: ${{ steps.pre.outputs.repo_dir }}
 
     - name: Assert (SHA -> SHA)
       uses: ./testing/assert
@@ -56,7 +56,7 @@ runs:
       with:
         base-ref: baseTag
         head-ref: branch1
-      working-directory: ${{ steps.pre.outputs.repo_dir }}
+  working-directory: ${{ steps.pre.outputs.repo_dir }}
 
     - name: Assert (tag -> branch)
       uses: ./testing/assert
