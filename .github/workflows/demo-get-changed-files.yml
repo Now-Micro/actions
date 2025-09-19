@@ -1,0 +1,13 @@
+name: Demo - Get Changed Files
+on:
+  workflow_dispatch: {}
+
+jobs:
+  demo-get-changed-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run demo for get-changed-files
+        uses: ./.github/actions/demo-get-changed-files
