@@ -249,3 +249,55 @@ test('run accepts branch and tag refs', () => {
   const { output } = captureRun({ INPUT_BASE_REF: 'baseTag', INPUT_HEAD_REF: 'branch1' });
   assert.match(output, /changed_files=\["b.txt"\]/);
 });
+
+// SanitizeRef coverage: unsafe patterns rejected
+test('extractSha rejects unsafe ref: leading dash', () => {
+  const resolved = extractSha('-bad', '');
+  assert.strictEqual(resolved, '');
+});
+
+test('extractSha rejects unsafe ref: double dots', () => {
+  const resolved = extractSha('feat..x', '');
+  assert.strictEqual(resolved, '');
+});
+
+test('extractSha rejects unsafe ref: special @{ sequence', () => {
+  const resolved = extractSha('main@{1}', '');
+  assert.strictEqual(resolved, '');
+});
+
+test('extractSha rejects unsafe ref: double slash', () => {
+  const resolved = extractSha('feature//x', '');
+  assert.strictEqual(resolved, '');
+});
+
+test('extractSha rejects unsafe ref: trailing dot or slash', () => {
+  assert.strictEqual(extractSha('bad.', ''), '');
+  assert.strictEqual(extractSha('bad/', ''), '');
+});
+
+test('extractSha rejects unsafe ref: lock suffix and invalid chars', () => {
+  assert.strictEqual(extractSha('refs/heads/bad.lock', ''), '');
+  assert.strictEqual(extractSha('feat;rm -rf', ''), '');
+  assert.strictEqual(extractSha('feat\\bad', ''), '');
+});
+
+test('run fails clearly on unsafe base ref', () => {
+  // create a repo with at least one commit so run() environment is valid
+  writeFile('x.txt', 'x');
+  commit('init');
+  const { exitCode, logs } = captureRun({ INPUT_BASE_REF: '-bad', INPUT_HEAD_REF: '' });
+  assert.strictEqual(exitCode, 1);
+  assert.ok(logs.some(l => /Could not resolve base ref '\-bad' to a commit SHA\./.test(l)));
+});
+
+test('extractSha accepts valid complex ref names', () => {
+  // create base commit and a release branch
+  writeFile('r.txt', 'r');
+  commit('base');
+  execSync('git checkout -q -b release/1.0.0');
+  writeFile('rel.txt', 'rel');
+  const relSha = commit('rel');
+  const resolved = extractSha('release/1.0.0', '');
+  assert.strictEqual(resolved, relSha);
+});

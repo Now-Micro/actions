@@ -55,6 +55,23 @@ function getIsSha(value) {
     return /^[0-9a-f]{7,40}$/i.test(v);
 }
 
+// Sanitize a git ref to a safe subset to avoid shell injection and invalid refs.
+// Allows letters, digits, dot, underscore, hyphen, slash. Rejects dangerous patterns.
+function sanitizeRef(value) {
+    const v = String(value || '').trim();
+    if (!v) return '';
+    // Disallow leading dash (could be treated as option), double dots, path traversal, lock file names, and special sequences.
+    if (/^-/.test(v)) return '';
+    if (v.includes('..')) return '';
+    if (v.endsWith('.') || v.endsWith('/')) return '';
+    if (v.includes('@{')) return '';
+    if (v.includes('//')) return '';
+    if (/\.lock(\b|$)/.test(v)) return '';
+    // Only allow a conservative character set
+    if (!/^[A-Za-z0-9._\/-]+$/.test(v)) return '';
+    return v;
+}
+
 /**
  * Resolve a ref (branch name, tag, or SHA) to a commit SHA.
  * Strategy:
@@ -71,6 +88,10 @@ function extractSha(ref, prNumber) {
         if (ensureCommitExists(r, prNumber)) return r;
     }
 
+    const safeRef = sanitizeRef(r);
+    if (!safeRef) return '';
+
+    // Note: safeRef has been sanitized to a conservative character set to avoid command injection.
     const tryRevListRef = (name) => {
         try {
             const out = execSync(`git rev-list -n 1 ${name}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -79,7 +100,7 @@ function extractSha(ref, prNumber) {
             return '';
         }
     };
-    const tryRevList = () => tryRevListRef(r);
+    const tryRevList = () => tryRevListRef(safeRef);
 
     // First attempt: resolve locally
     let sha = tryRevList();
@@ -89,7 +110,7 @@ function extractSha(ref, prNumber) {
     if (hasRemoteOrigin()) {
         try {
             // Try fetching the specific ref (works for branches and tags)
-            execSync(`git fetch origin ${r}`, { stdio: 'ignore' });
+            execSync(`git fetch origin ${safeRef}`, { stdio: 'ignore' });
         } catch {
             // If specific fetch failed, try a broader fetch (including tags)
             try {
@@ -98,7 +119,7 @@ function extractSha(ref, prNumber) {
         }
         // Try the provided name first, then origin/<name>
         sha = tryRevList();
-        if (!sha) sha = tryRevListRef(`origin/${r}`);
+        if (!sha) sha = tryRevListRef(`origin/${safeRef}`);
         if (sha) return sha;
     }
 
