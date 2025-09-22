@@ -2,10 +2,22 @@ name: Demo - NuGet Publish
 description: Demo for nuget/publish composite action
 
 inputs:
+  additional-build-args:
+    description: "Additional arguments to pass to dotnet build"
+    required: false
+    default: ""
+  additional-pack-args:
+    description: "Additional arguments to pass to dotnet pack"
+    required: false
+    default: ""
   directory:
     description: "Directory to search for project"
     required: false
     default: "demo/dotnet/src/Api"
+  github-token:
+    description: "GitHub token for deploying nuget packages."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -21,9 +33,11 @@ runs:
       continue-on-error: true
       uses: ./nuget/publish
       with:
+        additional-build-args: ${{ inputs.additional-build-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }}
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+        github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
 
     - name: Assert nupkg exists
@@ -39,11 +53,13 @@ runs:
       id: nuget_publish_success
       uses: ./nuget/publish
       with:
+        additional-build-args: ${{ inputs.additional-build-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }}
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+        github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
-        publish-source: '.artifacts/nuget-local'
+        publish-source: ".artifacts/nuget-local"
 
     - name: List local publish folder
       shell: bash

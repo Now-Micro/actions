@@ -13,3 +13,8 @@ jobs:
     
       - name: Publish to NuGet
         uses: ./.github/actions/demo-nuget-publish
+        with:
+          directory: "demo/dotnet/src/Api"
+          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          additional-build-args: --property WarningLevel=0 /p:VersionSuffix=1.0.0
+          additional-pack-args: --output nupkgs /p:VersionSuffix=1.0.0 /p:PackageVersion=1.0.0
