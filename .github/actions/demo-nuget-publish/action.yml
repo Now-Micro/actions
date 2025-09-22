@@ -23,7 +23,7 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
         project-regex: 'Api\.csproj$'
 
     - name: Assert nupkg exists
@@ -41,7 +41,7 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
         project-regex: 'Api\.csproj$'
         publish-source: '.artifacts/nuget-local'
 
