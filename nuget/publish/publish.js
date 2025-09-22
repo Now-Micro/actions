@@ -8,7 +8,6 @@ function error(msg) { process.stderr.write(`${msg}\n`); }
 function maskToken(t) { if (!t) return ''; return `${t.slice(0, 3)}…${t.slice(-3)}`; }
 
 function run() {
-    const t0 = Date.now();
     try {
         const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
         const actionPath = process.env.GITHUB_ACTION_PATH || __dirname;
@@ -23,6 +22,12 @@ function run() {
         log(`actionPath: ${actionPath}`);
         log(`pkgDir: ${pkgDir}`);
         log(`publishSource (raw): ${publishSource || '(empty)'}`);
+
+        // Validate nupkgs directory
+        if (!fs.existsSync(pkgDir)) {
+            error('nupkgs directory not found');
+            process.exit(1);
+        }
 
         const allEntries = fs.readdirSync(pkgDir);
         log(`entries in pkgDir: ${allEntries.length}`);
@@ -62,7 +67,6 @@ function run() {
                 fs.copyFileSync(from, to);
             }
             log(`Copied ${files.length} package(s) to ${dest}`);
-            log(`Done in ${Date.now() - t0} ms`);
             return;
         }
 
@@ -84,8 +88,7 @@ function run() {
             error(`dotnet nuget push failed with code ${r.status}`);
             process.exit(r.status || 1);
         }
-        log('Push completed successfully');
-        log(`Done in ${Date.now() - t0} ms`);
+    log('Push completed successfully');
     } catch (e) {
         error(e && e.stack || String(e));
         process.exit(1);

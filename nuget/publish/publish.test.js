@@ -28,6 +28,13 @@ function mkpkg(tmp) {
     return nupkgs;
 }
 
+test('fails when nupkgs missing', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    const r = withEnv({ GITHUB_WORKSPACE: tmp }, () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /nupkgs directory not found/);
+});
+
 test('fails when no nupkg files', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     fs.mkdirSync(path.join(tmp, 'nupkgs'));
