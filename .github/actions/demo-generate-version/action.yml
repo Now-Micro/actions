@@ -72,13 +72,13 @@ runs:
         expected: '^\d+\.\d+\.\d+-[A-Za-z0-9]+-\d{12}$'
         actual: ${{ steps.rel_initial.outputs['version-number'] }}
 
-    - name: Assert base version is 1.0.1 (releases - initial version)
+    - name: Assert fallback to csproj patch (releases - initial version)
       uses: ./testing/assert
       with:
-        test-name: "base version 1.0.1 for initial version keyword (patch bump)"
+        test-name: "falls back to csproj default patch when no semver found in release"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: regex
-        expected: '^1\.0\.1-'
+        expected: '^2\.3\.5-'
         actual: ${{ steps.rel_initial.outputs['version-number'] }}
 
     - name: Run generate-version (csproj - minor bump)
