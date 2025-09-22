@@ -63,15 +63,12 @@ runs:
 
     - name: Build Project (pack)
       id: build
-      # todo: change to this when done
-      # uses: Now-Micro/actions/dotnet/build@v1
-      uses: ./dotnet/build
+      uses: Now-Micro/actions/dotnet/build@v1
       with:
-        mode: "pack"
-        additional-build-args: ${{ inputs.additional-build-args }}
         additional-pack-args: ${{ inputs.additional-pack-args }}
         dotnet-version: ${{ inputs.dotnet-version }}
         file-to-build: ${{ steps.extract-project.outputs.project-found }}
+        mode: "pack"
         nuget-names: ${{ inputs.nuget-names }}
         nuget-passwords: ${{ inputs.nuget-passwords }}
         nuget-urls: ${{ inputs.nuget-urls }}
