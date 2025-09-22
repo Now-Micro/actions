@@ -6,6 +6,10 @@ inputs:
     description: "Directory to search for project"
     required: false
     default: "demo/dotnet/src/Api"
+  github-token:
+    description: "GitHub token for deploying nuget packages."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -23,7 +27,7 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+        github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
 
     - name: Assert nupkg exists
@@ -41,7 +45,7 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+        github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
         publish-source: '.artifacts/nuget-local'
 

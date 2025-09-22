@@ -13,3 +13,6 @@ jobs:
     
       - name: Publish to NuGet
         uses: ./.github/actions/demo-nuget-publish
+        with:
+          directory: "demo/dotnet/src/Api"
+          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
