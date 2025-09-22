@@ -12,7 +12,7 @@ function run() {
     try {
         const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
         const actionPath = process.env.GITHUB_ACTION_PATH || __dirname;
-        const pkgDir = path.join(workspace, 'nupkgs');
+        const pkgDir = process.env.PACKAGE_DIRECTORY || path.join(workspace, 'nupkgs');
         const publishSource = process.env.INPUT_PUBLISH_SOURCE || '';
         const token = process.env.INPUT_GITHUB_TOKEN || '';
 

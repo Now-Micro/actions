@@ -28,6 +28,14 @@ function mkpkg(tmp) {
     return nupkgs;
 }
 
+test('errors when pkg dir missing (ENOENT triggers catch)', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    // No nupkgs folder created
+    const r = withEnv({ GITHUB_WORKSPACE: tmp }, () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /ENOENT|no such file or directory/i);
+});
+
 test('fails when no nupkg files', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     fs.mkdirSync(path.join(tmp, 'nupkgs'));
@@ -45,6 +53,34 @@ test('local publish copies to folder (relative)', () => {
     const dest = path.join(tmp, destRel);
     assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
     assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.nupkg')));
+});
+
+test('local publish reads from PACKAGE_DIRECTORY override', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    const pkgDir = path.join(tmp, 'custom_pkgs');
+    fs.mkdirSync(pkgDir, { recursive: true });
+    fs.writeFileSync(path.join(pkgDir, 'A.1.0.0.nupkg'), 'x');
+    const destRel = '.artifacts/local2';
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: destRel, PACKAGE_DIRECTORY: pkgDir }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const dest = path.join(tmp, destRel);
+    assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
+});
+
+test('default target requires owner when publish-source empty', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, GITHUB_REPOSITORY_OWNER: '' }, () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /GITHUB_REPOSITORY_OWNER is not set/);
+});
+
+test('remote publish attempts push and fails without dotnet', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: 'https://example.com/index.json', INPUT_GITHUB_TOKEN: 'tok_abc123xyz' }, () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /dotnet nuget push failed/);
 });
 
 test('remote publish requires token', () => {
