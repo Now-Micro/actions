@@ -52,8 +52,8 @@ permissions:
 jobs:
   run-node-tests:
     name: Run Node tests
+    if: ${{ !fromJson(inputs['skip-tests']) }}
     runs-on: ubuntu-latest
-    if: ${{ fromJson(inputs.skip-tests) }}
     steps:
       - name: Run Node tests
         uses: ./.github/actions/run-node-tests
@@ -61,11 +61,10 @@ jobs:
   run-demo-workflows:
     name: Run demo workflows
     needs: [run-node-tests]
+    if: ${{ !fromJson(inputs['skip-tests']) }}
     runs-on: ubuntu-latest
-    if: ${{ fromJson(inputs.skip-tests) }}
     steps:
       - name: Run demo composites
-        if: ${{ !fromJson(inputs.skip-tests) }}
         uses: ./.github/actions/run-demo-workflows
 
   publish:
