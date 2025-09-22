@@ -28,7 +28,7 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 3. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
 4. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
 5. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
-6. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.
+6. Add extensive logging for new JS actions. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.
 7. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
 
 ## Refactoring
