@@ -5,5 +5,10 @@ jobs:
   run-tests:
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
       - name: Run Node tests
         uses: ./.github/actions/run-node-tests
