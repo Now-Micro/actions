@@ -25,6 +25,24 @@ function toBaseSemVer(v) {
     return v;
 }
 
+function bumpSemver(ver, type) {
+    const m = ver.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!m) return ver;
+    let [_, ms, ns, ps] = m;
+    let major = parseInt(ms, 10), minor = parseInt(ns, 10), patch = parseInt(ps, 10);
+    switch (type) {
+        case 'major':
+            major += 1; minor = 0; patch = 0; break;
+        case 'minor':
+            minor += 1; patch = 0; break;
+        case 'patch':
+            patch += 1; break;
+        default:
+            return ver; // unknown type: no increment
+    }
+    return `${major}.${minor}.${patch}`;
+}
+
 function readCsprojVersion(file) {
     const xml = fs.readFileSync(file, 'utf8');
     const mVer = xml.match(/<Version>([^<]+)<\/Version>/);
@@ -94,6 +112,7 @@ async function findReleaseVersionByKeyword(owner, repo, keyword, token) {
 
 async function run() {
     console.log('🔧 Starting version generation');
+    const incrementType = (process.env.INPUT_INCREMENT_TYPE || 'patch').trim().toLowerCase();
     const projectFile = process.env.INPUT_PROJECT_FILE;
     const infix = (process.env.INPUT_INFIX_VALUE || '').trim();
     const releaseKeyword = (process.env.INPUT_RELEASE_KEYWORD || '').trim();
@@ -140,11 +159,19 @@ async function run() {
         exitWith(`Invalid semantic base version: ${baseVersion}`);
     }
 
+    // Apply increment type if valid (major/minor/patch); otherwise leave as-is
+    const effectiveVersion = bumpSemver(baseVersion, ['major', 'minor', 'patch'].includes(incrementType) ? incrementType : '');
+    if (effectiveVersion !== baseVersion) {
+        console.log(`🔼 Incremented version (${incrementType}): ${baseVersion} -> ${effectiveVersion}`);
+    } else {
+        console.log(`ℹ️ Using base version without increment: ${baseVersion}`);
+    }
+
     // Build final version: versionNumber-infix-timestamp
     const ts = new Date();
     const pad = n => String(n).padStart(2, '0');
     const timestamp = `${ts.getUTCFullYear()}${pad(ts.getUTCMonth() + 1)}${pad(ts.getUTCDate())}${pad(ts.getUTCHours())}${pad(ts.getUTCMinutes())}`;
-    const parts = [baseVersion];
+    const parts = [effectiveVersion];
     if (infix) parts.push(infix);
     parts.push(timestamp);
     const version = parts.join('-');
