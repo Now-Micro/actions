@@ -49,6 +49,11 @@ jobs:
     name: Run Node tests
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
       - name: Run Node tests
         uses: ./.github/actions/run-node-tests
 
@@ -57,6 +62,11 @@ jobs:
     needs: [run-node-tests]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+            
       - name: Run demo composites
         uses: ./.github/actions/run-demo-workflows
 
