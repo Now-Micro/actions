@@ -2,64 +2,16 @@ name: Demo - Generate Version
 
 on:
   workflow_dispatch:
-    inputs:
-      infix:
-        description: 'Optional infix (e.g., beta, rc)'
-        required: false
-        type: string
-        default: demo
-      release-keyword:
-        description: 'Optional keyword to search releases (leave empty to use project file)'
-        required: false
-        type: string
-        default: ''
 
 jobs:
-  demo:
+  demo-generate-version:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create demo project file
-        id: make_csproj
-        shell: bash
-        run: |
-          demo_dir="${{ github.workspace }}/_demo"
-          mkdir -p "$demo_dir"
-          cat > "$demo_dir/Demo.App.csproj" <<'EOF'
-          <Project Sdk="Microsoft.NET.Sdk">
-            <PropertyGroup>
-              <TargetFramework>net8.0</TargetFramework>
-              <Version>1.2.3-alpha</Version>
-            </PropertyGroup>
-          </Project>
-          EOF
-          echo "project_file=$demo_dir/Demo.App.csproj" >> "$GITHUB_OUTPUT"
-
-      - name: Run generate-version (project-file path)
-        id: gen_from_csproj
-        uses: ./generate-version
+      - name: Run demo for generate-version
+        uses: ./.github/actions/demo-generate-version
         with:
-          project-file: ${{ steps.make_csproj.outputs.project_file }}
-          infix-value: ${{ github.event.inputs.infix }}
+          infix: 'demo'
 
-      - name: Run generate-version (release-keyword, if provided)
-        id: gen_from_releases
-        if: ${{ github.event.inputs['release-keyword'] != '' }}
-        uses: ./generate-version
-        with:
-          project-file: ${{ steps.make_csproj.outputs.project_file }}
-          infix-value: ${{ github.event.inputs.infix }}
-          release-keyword: ${{ github.event.inputs['release-keyword'] }}
-
-      - name: Summary
-        if: always()
-        shell: bash
-        run: |
-          echo '=== Generate Version Demo ===' >> "$GITHUB_STEP_SUMMARY"
-          echo "Project file: ${{ steps.make_csproj.outputs.project_file }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "From csproj: ${{ steps.gen_from_csproj.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
-          if [ -n "${{ github.event.inputs['release-keyword'] }}" ]; then
-            echo "From releases: ${{ steps.gen_from_releases.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
-          fi

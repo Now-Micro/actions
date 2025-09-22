@@ -8,10 +8,6 @@ inputs:
     description: "Optional infix to include between version and timestamp"
     required: false
     default: "demo"
-  release-keyword:
-    description: "Optional keyword to search releases; empty to use project file only"
-    required: false
-    default: ""
 
 runs:
   using: composite
@@ -59,22 +55,13 @@ runs:
         expected: '^2\.3\.5-'
         actual: ${{ steps.csproj.outputs['version-number'] }}
 
-    - name: Run generate-version (releases)
-      id: rel
-      if: ${{ inputs['release-keyword'] != '' }}
-      uses: ./generate-version
-      with:
-        project-file: ${{ steps.pre.outputs.project_file }}
-        infix-value: ${{ inputs.infix }}
-        release-keyword: ${{ inputs['release-keyword'] }}
-
     - name: Run generate-version (releases - initial version)
       id: rel_initial
       uses: ./generate-version
       with:
         project-file: ${{ steps.pre.outputs.project_file }}
         infix-value: ${{ inputs.infix }}
-        release-keyword: "initial version"
+        release-keyword: "initial"
 
     - name: Assert version shape (releases - initial version)
       uses: ./testing/assert
