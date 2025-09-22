@@ -10,7 +10,6 @@
     <VersionSuffix>$(Version_Suffix)</VersionSuffix>
     <Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
     <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Title>Trafera CSI Library</Title>
     <Description>A comprehensive .NET library for interacting with CSI (Computer Software, Inc.) ERP systems through their REST API.</Description>
     <Authors>Trafera</Authors>
