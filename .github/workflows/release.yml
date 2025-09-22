@@ -40,6 +40,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip-tests:
+        description: 'Skip running tests (not recommended)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -47,6 +52,7 @@ permissions:
 jobs:
   run-node-tests:
     name: Run Node tests
+    if: ${{ inputs.skip-tests != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -59,6 +65,7 @@ jobs:
 
   run-demo-workflows:
     name: Run demo workflows
+    if: ${{ inputs.skip-tests != 'true' }}
     needs: [run-node-tests]
     runs-on: ubuntu-latest
     steps:
