@@ -23,11 +23,6 @@ function run() {
         log(`pkgDir: ${pkgDir}`);
         log(`publishSource (raw): ${publishSource || '(empty)'}`);
 
-        // Validate nupkgs directory
-        if (!fs.existsSync(pkgDir)) {
-            error('nupkgs directory not found');
-            process.exit(1);
-        }
 
         const allEntries = fs.readdirSync(pkgDir);
         log(`entries in pkgDir: ${allEntries.length}`);
