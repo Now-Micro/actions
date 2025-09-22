@@ -70,6 +70,7 @@ jobs:
   publish:
     name: Publish release
     needs: [run-node-tests, run-demo-workflows]
+    if: ${{ fromJson(inputs['skip-tests']) || (needs.run-node-tests.result == 'success' && needs.run-demo-workflows.result == 'success') }}
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release_out.outputs.release_id }}
