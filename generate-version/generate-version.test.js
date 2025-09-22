@@ -91,7 +91,7 @@ test('fails when neither project-file nor release-keyword provided', async () =>
     assert.match(r.err, /required when release-keyword/);
 });
 
-test('queries releases and finds matching by keyword (tag_name)', async () => {
+test('queries releases and finds matching by keyword (tag_name) with default patch bump', async () => {
     const restoreDate = mockDate('2024-10-10T12:34:00Z');
     const restoreHttps = mockHttpsOnce(200, [
         { name: 'Unrelated', tag_name: '0.9.0' },
@@ -99,7 +99,8 @@ test('queries releases and finds matching by keyword (tag_name)', async () => {
     ]);
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'Important', INPUT_INFIX_VALUE: 'beta' });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=1.2.3-beta-202410101234/);
+    // default increment-type is patch => 1.2.4
+    assert.match(r.outputContent, /version_number=1.2.4-beta-202410101234/);
     restoreHttps();
     restoreDate();
 });
@@ -111,12 +112,13 @@ test('matches keyword in body and extracts semver from name', async () => {
     ]);
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'special feature', INPUT_INFIX_VALUE: 'beta' });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=2.1.0-beta-202403040506/);
+    // default patch bump from 2.1.0 -> 2.1.1
+    assert.match(r.outputContent, /version_number=2.1.1-beta-202403040506/);
     restoreHttps();
     restoreDate();
 });
 
-test("queries releases and finds 'initial version' keyword (case-insensitive)", async () => {
+test("queries releases and finds 'initial version' keyword (case-insensitive) with patch bump", async () => {
     const restoreDate = mockDate('2024-02-01T00:00:00Z');
     const restoreHttps = mockHttpsOnce(200, [
         { name: 'Initial Version', tag_name: '1.0.0' },
@@ -124,12 +126,12 @@ test("queries releases and finds 'initial version' keyword (case-insensitive)", 
     ]);
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'initial version', INPUT_INFIX_VALUE: 'demo' });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=1.0.0-demo-202402010000/);
+    assert.match(r.outputContent, /version_number=1.0.1-demo-202402010000/);
     restoreHttps();
     restoreDate();
 });
 
-test('queries releases but no match, falls back to csproj', async () => {
+test('queries releases but no match, falls back to csproj and bumps patch', async () => {
     const restoreDate = mockDate('2024-01-02T03:04:00Z');
     const restoreHttps = mockHttpsOnce(200, [{ name: 'Other', tag_name: '0.1.0' }]);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvp-'));
@@ -137,30 +139,63 @@ test('queries releases but no match, falls back to csproj', async () => {
     fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>2.3.4-alpha</Version></PropertyGroup></Project>');
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'Missing', INPUT_PROJECT_FILE: csproj, INPUT_INFIX_VALUE: 'rc' });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=2.3.4-rc-202401020304/);
+    assert.match(r.outputContent, /version_number=2.3.5-rc-202401020304/);
     restoreHttps();
     restoreDate();
 });
 
-test('reads version from csproj when keyword omitted', async () => {
+test('reads version from csproj when keyword omitted and bumps patch', async () => {
     const restoreDate = mockDate('2023-12-31T23:59:00Z');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvc-'));
     const csproj = path.join(dir, 'Lib.csproj');
     fs.writeFileSync(csproj, '<Project><PropertyGroup><VersionPrefix>3.4.5.6</VersionPrefix></PropertyGroup></Project>');
     const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_INFIX_VALUE: '' });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=3.4.5-202312312359/);
+    assert.match(r.outputContent, /version_number=3.4.6-202312312359/);
     restoreDate();
 });
 
-test('uses default 1.0.0 when no version tags in csproj', async () => {
+test('uses default 0.0.1 when no version tags in csproj and bumps to 0.0.2', async () => {
     const restoreDate = mockDate('2025-02-03T04:05:00Z');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvd-'));
     const csproj = path.join(dir, 'NoVer.csproj');
     fs.writeFileSync(csproj, '<Project><PropertyGroup></PropertyGroup></Project>');
     const r = await runWith({ INPUT_PROJECT_FILE: csproj });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=0.0.1-202502030405/);
+    assert.match(r.outputContent, /version_number=0.0.2-202502030405/);
+    restoreDate();
+});
+
+test('supports increment-type=major', async () => {
+    const restoreDate = mockDate('2024-07-08T09:10:00Z');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvmj-'));
+    const csproj = path.join(dir, 'App.csproj');
+    fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>');
+    const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_INCREMENT_TYPE: 'major' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=2.0.0-202407080910/);
+    restoreDate();
+});
+
+test('supports increment-type=minor', async () => {
+    const restoreDate = mockDate('2024-07-08T09:10:00Z');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvmn-'));
+    const csproj = path.join(dir, 'App.csproj');
+    fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>');
+    const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_INCREMENT_TYPE: 'minor' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=1.3.0-202407080910/);
+    restoreDate();
+});
+
+test('unknown increment-type uses base version (no bump)', async () => {
+    const restoreDate = mockDate('2024-07-08T09:10:00Z');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvunk-'));
+    const csproj = path.join(dir, 'App.csproj');
+    fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>');
+    const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_INCREMENT_TYPE: 'weird' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=1.2.3-202407080910/);
     restoreDate();
 });
 
@@ -195,7 +230,8 @@ test('404 from releases API treated as no match, fall back to csproj', async () 
     fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>9.8.7</Version></PropertyGroup></Project>');
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'kw', INPUT_PROJECT_FILE: csproj });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /version_number=9.8.7-202406070809/);
+    // default patch bump from 9.8.7 -> 9.8.8
+    assert.match(r.outputContent, /version_number=9.8.8-202406070809/);
     restoreHttps();
     restoreDate();
 });
