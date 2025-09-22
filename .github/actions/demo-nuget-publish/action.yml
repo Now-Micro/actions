@@ -47,7 +47,7 @@ runs:
         dotnet-version: "8.0.x"
         github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
-        publish-source: '.artifacts/nuget-local'
+        publish-source: ".artifacts/nuget-local"
 
     - name: List local publish folder
       shell: bash
