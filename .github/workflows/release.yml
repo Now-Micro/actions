@@ -1,4 +1,4 @@
-name: Release main
+name: Release
 
 on:
   workflow_dispatch:
@@ -65,8 +65,8 @@ jobs:
           if: ${{ fromJson(inputs['skip-tests']) }}
           run: echo "skip-tests input=true; skipping Node tests"
 
-  run-demo-workflows:
-    name: Run demo workflows
+  run-workflow-tests:
+    name: Run workflow tests    
     runs-on: ubuntu-latest
     steps:
         - name: Checkout repository
@@ -82,7 +82,7 @@ jobs:
 
   publish:
     name: Publish release
-    needs: [run-node-tests, run-demo-workflows]
+    needs: [run-node-tests, run-workflow-tests]
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release_out.outputs.release_id }}
