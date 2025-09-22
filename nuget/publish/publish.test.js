@@ -55,13 +55,13 @@ test('local publish copies to folder (relative)', () => {
     assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.nupkg')));
 });
 
-test('local publish reads from PACKAGE_DIRECTORY override', () => {
+test('local publish reads from INPUT_PACKAGE_DIRECTORY override', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     const pkgDir = path.join(tmp, 'custom_pkgs');
     fs.mkdirSync(pkgDir, { recursive: true });
     fs.writeFileSync(path.join(pkgDir, 'A.1.0.0.nupkg'), 'x');
     const destRel = '.artifacts/local2';
-    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: destRel, PACKAGE_DIRECTORY: pkgDir }, () => run());
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: destRel, INPUT_PACKAGE_DIRECTORY: pkgDir }, () => run());
     assert.strictEqual(r.exitCode, 0);
     const dest = path.join(tmp, destRel);
     assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
