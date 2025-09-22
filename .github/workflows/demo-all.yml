@@ -3,84 +3,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  demo-code-standards-fail:
+  run-demos:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Run demo for code-standards
-        uses: ./.github/actions/demo-code-standards
-        with:
-          directory: './demo/coding-standards-fail'
-  
-  demo-code-standards-fail-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Run demo for code standards
-        uses: ./.github/actions/demo-code-standards
-        with:
-          directory: './demo/coding-standards-fail'
-          roslyn-version: '4.9.2'
-  
-  demo-code-standards-success:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Run demo for code-standards
-        uses: ./.github/actions/demo-code-standards
-        with:
-          directory: './demo/coding-standards-success'
-
-  demo-dotnet:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run demo for dotnet actions
-        uses: ./.github/actions/demo-dotnet-actions
-        
-  demo-generate-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run demo for generate-version
-        uses: ./.github/actions/demo-generate-version
-        with:
-          infix: 'demo'
-
-  demo-get-changed-files:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run demo for get-changed-files
-        uses: ./.github/actions/demo-get-changed-files
-
-  demo-get-project-and-solution-files:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run demo for get-project-and-solution-files-from-directory
-        uses: ./.github/actions/demo-get-project-and-solution-files-from-directory
-
-  demo-get-unique-root-directories:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Run demo for get-unique-root-directories
-        uses: ./.github/actions/demo-get-unique-root-directories
+      - name: Run all demo composites
+        uses: ./.github/actions/run-demo-workflows
 

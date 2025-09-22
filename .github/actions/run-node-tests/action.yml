@@ -1,0 +1,23 @@
+name: Run Node Tests (composite)
+description: Runs the repository's Node.js test suite with coverage and spec reporter
+
+inputs: {}
+
+runs:
+  using: composite
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: ./setup-node
+
+    - name: Run action tests with coverage
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Running Node tests with coverage"
+        node --version
+        npx --yes c8 -r text -r lcov node --test --test-reporter=spec

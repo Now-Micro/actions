@@ -72,7 +72,7 @@ runs:
         expected: '^\d+\.\d+\.\d+-[A-Za-z0-9]+-\d{12}$'
         actual: ${{ steps.rel_initial.outputs['version-number'] }}
 
-    - name: Assert base version is 1.0.0 (releases - initial version)
+    - name: Assert base version is 1.0.1 (releases - initial version)
       uses: ./testing/assert
       with:
         test-name: "base version 1.0.1 for initial version keyword (patch bump)"
@@ -134,9 +134,6 @@ runs:
         fi
         if [ -n "${{ steps.csproj_major.outputs['version-number'] }}" ]; then
           echo "Csproj (major bump): ${{ steps.csproj_major.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
-        fi
-        if [ -n "${{ steps.rel.outputs['version-number'] }}" ]; then
-          echo "Release keyword output: ${{ steps.rel.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
         fi
         if [ -n "${{ steps.rel_initial.outputs['version-number'] }}" ]; then
           echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
