@@ -8,7 +8,7 @@ inputs:
   additional-pack-args:
     description: "Additional arguments to pass to dotnet pack."
     required: false
-    default: "--output nupkgs"
+    default: ""
   debug-mode:
     description: "Enable debug mode for additional logging."
     required: false
@@ -35,6 +35,10 @@ inputs:
   nuget-usernames:
     description: "Usernames for source authentication (comma-separated)"
     required: false
+  package-directory:
+    description: "Directory to publish .nupkg files. Defaults to 'nupkgs' in the workspace root."
+    required: false
+    default: "nupkgs"
   project-file:
     description: "Path to the project file. If not specified, The `directory` input must be specified otherwise an error will be thrown."
     required: false
@@ -92,7 +96,7 @@ runs:
       id: build
       uses: Now-Micro/actions/dotnet/build@v1
       with:
-        additional-pack-args: ${{ inputs.additional-pack-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }} --output ${{ inputs.package-directory }}
         dotnet-version: ${{ inputs.dotnet-version }}
         file-to-build: ${{ steps.resolve.outputs.path }}
         mode: "pack"
@@ -110,5 +114,6 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/publish.js"
       env:
+        INPUT_PACKAGE_DIRECTORY: ${{ inputs.package-directory }}
         INPUT_PUBLISH_SOURCE: ${{ inputs.publish-source }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
