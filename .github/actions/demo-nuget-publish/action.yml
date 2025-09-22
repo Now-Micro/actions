@@ -28,6 +28,27 @@ runs:
         echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-nuget-publish-summary.txt" >> $GITHUB_ENV
         : > $GITHUB_WORKSPACE/demo-nuget-publish-summary.txt
 
+    - name: Run nuget/publish with missing inputs (expected fail)
+      id: nuget_publish_missing
+      continue-on-error: true
+      uses: ./nuget/publish
+      with:
+        additional-build-args: ${{ inputs.additional-build-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }}
+        directory: ""
+        dotnet-version: "8.0.x"
+        github-token: ${{ inputs.github-token }}
+        project-file: ""
+
+    - name: Assert missing inputs caused failure
+      uses: ./testing/assert
+      with:
+        expected: failure
+        mode: exact
+        actual: ${{ steps.nuget_publish_missing.outcome }}
+        test-name: "missing inputs -> failure"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
     - name: Run nuget/publish (expected to fail push)
       id: nuget_publish
       continue-on-error: true
@@ -39,6 +60,15 @@ runs:
         dotnet-version: "8.0.x"
         github-token: ${{ inputs.github-token }}
         project-regex: 'Api\.csproj$'
+
+    - name: Assert remote publish without token failed
+      uses: ./testing/assert
+      with:
+        expected: failure
+        mode: exact
+        actual: ${{ steps.nuget_publish.outcome }}
+        test-name: "remote publish without token -> failure"
+        summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert nupkg exists
       uses: ./testing/assert
@@ -74,6 +104,28 @@ runs:
         mode: present
         actual: ${{ (hashFiles('.artifacts/nuget-local/*.nupkg') != '') && 'present' || '' }}
         test-name: "local publish succeeded"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Run nuget/publish using project-file (success to local folder)
+
+      id: nuget_publish_pf
+      uses: ./nuget/publish
+      with:
+        additional-build-args: ${{ inputs.additional-build-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }}
+        directory: ""
+        project-file: demo/dotnet/src/Api/Api.csproj
+        dotnet-version: "8.0.x"
+        github-token: ${{ inputs.github-token }}
+        publish-source: ".artifacts/nuget-local-pf"
+
+    - name: Assert locally published nupkg exists (project-file)
+      uses: ./testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/nuget-local-pf/*.nupkg') != '') && 'present' || '' }}
+        test-name: "local publish with project-file succeeded"
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Summary

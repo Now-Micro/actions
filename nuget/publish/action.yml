@@ -8,14 +8,14 @@ inputs:
   additional-pack-args:
     description: "Additional arguments to pass to dotnet pack."
     required: false
-    default: ""
+    default: "--output nupkgs"
   debug-mode:
     description: "Enable debug mode for additional logging."
     required: false
     default: "false"
   directory:
-    description: "The directory to search for a .csproj file."
-    required: true
+    description: "The directory to search for a .csproj file.  If not specified, the `project-file` input must be specified, otherwise an error will be thrown."
+    required: false
   dotnet-version:
     description: "The version of .NET to use."
     required: false
@@ -35,6 +35,10 @@ inputs:
   nuget-usernames:
     description: "Usernames for source authentication (comma-separated)"
     required: false
+  project-file:
+    description: "Path to the project file. If not specified, The `directory` input must be specified otherwise an error will be thrown."
+    required: false
+    default: ""
   project-regex:
     description: "Regular expression to identify project file desired."
     required: false
@@ -51,9 +55,22 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        PF="${{ inputs.project-file }}"
+        DIR="${{ inputs.directory }}"
+        if [ -z "${PF}" ] && [ -z "${DIR}" ]; then
+          echo "Error: Either 'project-file' or 'directory' must be provided." >&2
+          exit 1
+        fi
+        if [ -n "${PF}" ] && [ -n "${DIR}" ]; then
+          echo "Info: Both 'project-file' and 'directory' provided; 'project-file' will be used."
+        fi
     - name: Get Project File
       id: extract-project
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
+      if: ${{ inputs.project-file == '' }}
       with:
         directory: ${{ inputs.directory }}
         debug-mode: ${{ inputs.debug-mode }}
@@ -61,13 +78,23 @@ runs:
         find-solution: false
         project-regex: ${{ inputs.project-regex }}
 
+    - name: Resolve Project Path
+      id: resolve
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.project-file }}" ]; then
+          echo "path=${{ inputs.project-file }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "path=${{ steps.extract-project.outputs.project-found }}" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Build Project (pack)
       id: build
       uses: Now-Micro/actions/dotnet/build@v1
       with:
         additional-pack-args: ${{ inputs.additional-pack-args }}
         dotnet-version: ${{ inputs.dotnet-version }}
-        file-to-build: ${{ steps.extract-project.outputs.project-found }}
+        file-to-build: ${{ steps.resolve.outputs.path }}
         mode: "pack"
         nuget-names: ${{ inputs.nuget-names }}
         nuget-passwords: ${{ inputs.nuget-passwords }}
@@ -77,7 +104,7 @@ runs:
     - name: Test
       if: ${{ inputs.run-tests == 'true' }}
       shell: bash
-      run: dotnet test --no-restore "${{ steps.extract-project.outputs.project-found }}"
+      run: dotnet test --no-restore "${{ steps.resolve.outputs.path }}"
 
     - name: Publish NuGet Package
       shell: bash
