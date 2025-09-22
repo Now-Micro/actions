@@ -51,10 +51,10 @@ inputs:
     description: "Publish destination. Leave empty for GitHub Packages; provide a folder path for local demo."
     required: false
     default: ""
-  run-tests:
-    description: "Whether to run tests as part of the build process."
+  test-project-file:
+    description: "Path to the test project file.  If not specified, tests will not be run."
     required: false
-    default: "false"
+    default: ""
 
 runs:
   using: "composite"
@@ -106,9 +106,9 @@ runs:
         nuget-usernames: ${{ inputs.nuget-usernames }}
 
     - name: Test
-      if: ${{ inputs.run-tests == 'true' }}
+      if: ${{ inputs.test-project-file != '' }}
       shell: bash
-      run: dotnet test --no-restore "${{ steps.resolve.outputs.path }}"
+      run: dotnet test --no-restore ${{ inputs.test-project-file }}
 
     - name: Publish NuGet Package
       shell: bash

@@ -29,7 +29,7 @@ This composite orchestrates:
 - project-file (optional): Full path to a `.csproj`. Mutually exclusive with `directory`.
 - project-regex (optional): Used with `directory` to select a project.
 - publish-source (optional): Target location; omit to default to GitHub Packages.
-- run-tests (optional): Run `dotnet test` for the resolved project.
+- test-project-file (optional): Full path to a `.csproj` for running tests. 
 
 ## Outputs
 - None.
