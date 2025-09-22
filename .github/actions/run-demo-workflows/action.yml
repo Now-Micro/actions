@@ -33,6 +33,11 @@ runs:
       with:
         infix: "demo"
 
+    - name: Demo - nuget publish
+      uses: ./.github/actions/demo-nuget-publish
+      with:
+        directory: "demo/dotnet/src/Api"
+
     - name: Demo - get-changed-files
       uses: ./.github/actions/demo-get-changed-files
 

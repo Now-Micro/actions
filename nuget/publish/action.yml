@@ -1,6 +1,14 @@
 name: "Nuget Deploy"
 description: "Deploys a NuGet package to a NuGet feed."
 inputs:
+  additional-build-args:
+    description: "Additional arguments to pass to dotnet build."
+    required: false
+    default: ""
+  additional-pack-args:
+    description: "Additional arguments to pass to dotnet pack."
+    required: false
+    default: ""
   debug-mode:
     description: "Enable debug mode for additional logging."
     required: false
@@ -15,7 +23,7 @@ inputs:
   github-token:
     description: "GitHub token for deploying nuget packages."
     required: true
-  nuget-names: 
+  nuget-names:
     description: "Names of the NuGet source (comma-separated)"
     required: false
   nuget-passwords:
@@ -23,7 +31,7 @@ inputs:
     required: false
   nuget-urls:
     description: "URLs of the NuGet feed (comma-separated)"
-    required: false 
+    required: false
   nuget-usernames:
     description: "Usernames for source authentication (comma-separated)"
     required: false
@@ -31,14 +39,14 @@ inputs:
     description: "Regular expression to identify project file desired."
     required: false
     default: ""
+  publish-source:
+    description: "Publish destination. Leave empty for GitHub Packages; provide a folder path for local demo."
+    required: false
+    default: ""
   run-tests:
     description: "Whether to run tests as part of the build process."
     required: false
     default: "false"
-  version-suffix:
-    description: "Version suffix to append to the package version."
-    required: true
-    default: ""
 
 runs:
   using: "composite"
@@ -53,14 +61,15 @@ runs:
         find-solution: false
         project-regex: ${{ inputs.project-regex }}
 
-    - name: Build Project
+    - name: Build Project (pack)
       id: build
       # todo: change to this when done
       # uses: Now-Micro/actions/dotnet/build@v1
-      uses: ./dotnet/build@v1
+      uses: ./dotnet/build
       with:
-        additional-build-args: '--property WarningLevel=0 /p:VersionSuffix=${{ inputs.version-suffix }}'
-        additional-pack-args: '--output nupkgs /p:VersionSuffix=${{ inputs.version-suffix }}'
+        mode: "pack"
+        additional-build-args: ${{ inputs.additional-build-args }}
+        additional-pack-args: ${{ inputs.additional-pack-args }}
         dotnet-version: ${{ inputs.dotnet-version }}
         file-to-build: ${{ steps.extract-project.outputs.project-found }}
         nuget-names: ${{ inputs.nuget-names }}
@@ -71,12 +80,11 @@ runs:
     - name: Test
       if: ${{ inputs.run-tests == 'true' }}
       shell: bash
-      run: dotnet test --no-restore /p:VersionSuffix=${{ env.VERSION_SUFFIX }} "${{ steps.extract-project.outputs.project-found }}"
+      run: dotnet test --no-restore "${{ steps.extract-project.outputs.project-found }}"
 
     - name: Publish NuGet Package
       shell: bash
-      run: |
-        PACKAGE_DIR=${{ matrix.directory }}/nupkgs
-        dotnet nuget push "$PACKAGE_DIR/*.nupkg" --api-key ${{ inputs.github-token }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+      run: node "$GITHUB_ACTION_PATH/publish.js"
       env:
-        NUGET_AUTH_TOKEN: ${{ inputs.github-token }}
+        INPUT_PUBLISH_SOURCE: ${{ inputs.publish-source }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
