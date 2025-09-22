@@ -78,7 +78,7 @@ runs:
         test-name: "base version 1.0.1 for initial version keyword (patch bump)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: regex
-        expected: '^1\\.0\\.1-'
+        expected: '^1\.0\.1-'
         actual: ${{ steps.rel_initial.outputs['version-number'] }}
 
     - name: Run generate-version (csproj - minor bump)
@@ -95,7 +95,7 @@ runs:
         test-name: "minor bump from 2.3.4 -> 2.4.0"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: regex
-        expected: '^2\\.4\\.0-'
+        expected: '^2\.4\.0-'
         actual: ${{ steps.csproj_minor.outputs['version-number'] }}
 
     - name: Run generate-version (csproj - major bump)
@@ -112,7 +112,7 @@ runs:
         test-name: "major bump from 2.3.4 -> 3.0.0"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: regex
-        expected: '^3\\.0\\.0-'
+        expected: '^3\.0\.0-'
         actual: ${{ steps.csproj_major.outputs['version-number'] }}
 
     - name: Summarize
