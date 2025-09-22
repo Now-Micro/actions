@@ -138,6 +138,3 @@ runs:
         if [ -n "${{ steps.rel_initial.outputs['version-number'] }}" ]; then
           echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
         fi
-        if [ -n "${{ steps.rel_initial.outputs['version-number'] }}" ]; then
-          echo "Initial version keyword output: ${{ steps.rel_initial.outputs['version-number'] }}" >> "$GITHUB_STEP_SUMMARY"
-        fi
