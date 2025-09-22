@@ -8,6 +8,7 @@ function error(msg) { process.stderr.write(`${msg}\n`); }
 function maskToken(t) { if (!t) return ''; return `${t.slice(0, 3)}…${t.slice(-3)}`; }
 
 function run() {
+    const t0 = Date.now();
     try {
         const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
         const actionPath = process.env.GITHUB_ACTION_PATH || __dirname;
