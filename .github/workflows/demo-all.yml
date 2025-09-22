@@ -13,4 +13,6 @@ jobs:
           
       - name: Run all demo composites
         uses: ./.github/actions/run-demo-workflows
+        with:
+          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 
