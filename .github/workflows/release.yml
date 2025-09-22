@@ -45,8 +45,23 @@ permissions:
   contents: write
 
 jobs:
+  run-node-tests:
+    name: Run Node tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Node tests
+        uses: ./.github/actions/run-node-tests
+
+  run-demo-workflows:
+    name: Run demo workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run demo composites
+        uses: ./.github/actions/run-demo-workflows
+
   publish:
     name: Publish release
+    needs: [run-node-tests, run-demo-workflows]
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release_out.outputs.release_id }}
@@ -136,7 +151,7 @@ jobs:
           INPUT_NAME: ${{ inputs.name }}
           INPUT_BODY: ${{ inputs.body }}
           INPUT_TARGET: ${{ inputs.target }}
-          INPUT_DRAFT: ${{ inputs.draft }}t
+          INPUT_DRAFT: ${{ inputs.draft }}
           INPUT_PRERELEASE: ${{ inputs.prerelease }}
           INPUT_GENERATE_NOTES: ${{ inputs.generate-release-notes }}
         with:
