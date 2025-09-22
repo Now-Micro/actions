@@ -1,0 +1,43 @@
+name: Run Demo Workflows (composite)
+description: Executes all demo composite actions used by demo-all workflow
+
+inputs: {}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Demo - code standards (fail)
+      uses: ./.github/actions/demo-code-standards
+      with:
+        directory: "./demo/coding-standards-fail"
+
+    - name: Demo - code standards (fail, roslyn version)
+      uses: ./.github/actions/demo-code-standards
+      with:
+        directory: "./demo/coding-standards-fail"
+        roslyn-version: "4.9.2"
+
+    - name: Demo - code standards (success)
+      uses: ./.github/actions/demo-code-standards
+      with:
+        directory: "./demo/coding-standards-success"
+
+    - name: Demo - dotnet actions
+      uses: ./.github/actions/demo-dotnet-actions
+
+    - name: Demo - generate-version
+      uses: ./.github/actions/demo-generate-version
+      with:
+        infix: "demo"
+
+    - name: Demo - get-changed-files
+      uses: ./.github/actions/demo-get-changed-files
+
+    - name: Demo - get-project-and-solution-files-from-directory
+      uses: ./.github/actions/demo-get-project-and-solution-files-from-directory
+
+    - name: Demo - get-unique-root-directories
+      uses: ./.github/actions/demo-get-unique-root-directories

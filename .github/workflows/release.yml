@@ -1,0 +1,229 @@
+name: Release main
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name to release (identifier)'
+        required: true
+        type: string
+      name:
+        description: 'Release name (defaults to tag)'
+        required: false
+        type: string
+      body:
+        description: 'Release notes body (optional; ignored if generate-release-notes=true)'
+        required: false
+        type: string
+      target:
+        description: 'Target commitish (branch or SHA). Ignored if tag already exists.'
+        required: false
+        type: string
+        default: main
+      draft:
+        description: 'Create as draft'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        type: boolean
+        default: false
+      generate-release-notes:
+        description: 'Auto-generate release notes'
+        required: false
+        type: boolean
+        default: true
+      should-delete-current:
+        description: 'Should delete current release if one already exists for this tag?'
+        required: false
+        type: boolean
+        default: false
+      skip-tests:
+        description: 'Skip running tests (not recommended)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-node-tests:
+    name: Run Node tests
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Run Node tests
+          if: ${{ !fromJson(inputs['skip-tests']) }}
+          uses: ./.github/actions/run-node-tests
+        - name: Skipping Node tests
+          if: ${{ fromJson(inputs['skip-tests']) }}
+          run: echo "skip-tests input=true; skipping Node tests"
+
+  run-demo-workflows:
+    name: Run demo workflows
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Run demo composites
+          if: ${{ !fromJson(inputs['skip-tests']) }}
+          uses: ./.github/actions/run-demo-workflows
+        - name: Skipping demo workflows
+          if: ${{ fromJson(inputs['skip-tests']) }}
+          run: echo "skip-tests input=true; skipping demo workflows"
+
+  publish:
+    name: Publish release
+    needs: [run-node-tests, run-demo-workflows]
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release_out.outputs.release_id }}
+      html_url: ${{ steps.release_out.outputs.html_url }}
+      upload_url: ${{ steps.release_out.outputs.upload_url }}
+
+    steps:
+      - name: Check for existing release by tag
+        id: get
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = `${{ inputs.tag }}`;
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              core.setOutput('exists', 'true');
+              core.setOutput('id', String(data.id));
+              core.setOutput('html_url', data.html_url || '');
+              core.setOutput('upload_url', data.upload_url || '');
+            } catch (e) {
+              if (e.status === 404) {
+                core.info(`No existing release for tag ${tag}`);
+                core.setOutput('exists', 'false');
+              } else {
+                throw e;
+              }
+            }
+
+      - name: Delete existing release (if requested)
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release_id = Number(`${{ steps.get.outputs.id }}`);
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id,
+            });
+            core.info(`Deleted existing release id ${release_id}`);
+
+      - name: Delete tag for existing release (if requested)
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        uses: actions/github-script@v7
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = process.env.TAG_NAME;
+            if (!tag) { core.info('No tag provided to delete'); return; }
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+              core.info(`Deleted ref refs/tags/${tag}`);
+            } catch (e) {
+              if (e.status === 404 || e.status === 422 || e.status === 403) {
+                core.info(`Could not delete ref refs/tags/${tag} (may not exist or is protected): ${e.message}`);
+              } else {
+                throw e;
+              }
+            }
+
+      - name: Use existing release (no delete requested)
+        id: create_or_reuse
+        if: ${{ steps.get.outputs.exists == 'true' && !inputs.should-delete-current }}
+        run: |
+          echo "release_id=${{ steps.get.outputs.id }}" >> $GITHUB_OUTPUT
+          echo "html_url=${{ steps.get.outputs.html_url }}" >> $GITHUB_OUTPUT
+          echo "upload_url=${{ steps.get.outputs.upload_url }}" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        id: create
+        if: ${{ steps.get.outputs.exists != 'true' || inputs.should-delete-current }}
+        uses: actions/github-script@v7
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_NAME: ${{ inputs.name }}
+          INPUT_BODY: ${{ inputs.body }}
+          INPUT_TARGET: ${{ inputs.target }}
+          INPUT_DRAFT: ${{ inputs.draft }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          INPUT_GENERATE_NOTES: ${{ inputs.generate-release-notes }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = process.env.INPUT_TAG;
+            const name = (process.env.INPUT_NAME && process.env.INPUT_NAME.trim()) || tag;
+            const body = (process.env.INPUT_BODY && process.env.INPUT_BODY.length ? process.env.INPUT_BODY : undefined);
+            const target = (process.env.INPUT_TARGET && process.env.INPUT_TARGET.trim()) || undefined;
+            const draft = /^true$/i.test(process.env.INPUT_DRAFT || '');
+            const prerelease = /^true$/i.test(process.env.INPUT_PRERELEASE || '');
+            const generate_release_notes = /^true$/i.test(process.env.INPUT_GENERATE_NOTES || '');
+
+            const params = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name,
+              draft,
+              prerelease,
+              generate_release_notes,
+            };
+            if (body && !generate_release_notes) params.body = body;
+            if (target) params.target_commitish = target;
+
+            const { data } = await github.rest.repos.createRelease(params);
+            core.setOutput('release_id', String(data.id));
+            core.setOutput('html_url', data.html_url || '');
+            core.setOutput('upload_url', data.upload_url || '');
+
+      - name: Consolidate outputs
+        id: release_out
+        shell: bash
+        env:
+          CREATE_RELEASE_ID: ${{ steps.create.outputs.release_id }}
+          CREATE_HTML_URL: ${{ steps.create.outputs.html_url }}
+          CREATE_UPLOAD_URL: ${{ steps.create.outputs.upload_url }}
+          REUSE_RELEASE_ID: ${{ steps.create_or_reuse.outputs.release_id }}
+          REUSE_HTML_URL: ${{ steps.create_or_reuse.outputs.html_url }}
+          REUSE_UPLOAD_URL: ${{ steps.create_or_reuse.outputs.upload_url }}
+        run: |
+          release_id="${CREATE_RELEASE_ID:-$REUSE_RELEASE_ID}"
+          html_url="${CREATE_HTML_URL:-$REUSE_HTML_URL}"
+          upload_url="${CREATE_UPLOAD_URL:-$REUSE_UPLOAD_URL}"
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+          echo "html_url=$html_url" >> "$GITHUB_OUTPUT"
+          echo "upload_url=$upload_url" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Release tag: ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Deleted existing: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}" >> $GITHUB_STEP_SUMMARY
+          echo "Release URL: ${{ steps.release_out.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY

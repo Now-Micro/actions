@@ -5,20 +5,10 @@ jobs:
   run-tests:
     runs-on: ubuntu-22.04
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          # Fetch full history so that before and after commits exist locally
           fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: ./setup-node
-
-      - name: Run action tests with coverage
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Running Node tests in with coverage"
-          node --version
-          # Generates text and lcov coverage reports
-          npx --yes c8 -r text -r lcov node --test
+          
+      - name: Run Node tests
+        uses: ./.github/actions/run-node-tests

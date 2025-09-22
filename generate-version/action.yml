@@ -1,0 +1,41 @@
+name: "Generate Semver Version"
+description: "Generates a semver version number.  It will check the releases for the repo is the `release-keyword` is given.  Otherwise, it will reply on the version in the given .csproj file for the current version.  The default behavior is to increment the patch version."
+author: "Trafera"
+
+inputs:
+  increment-type:
+    description: 'Type of version increment (major, minor, patch). If not provided, the version used will be one patch version greater than the version found.  If none of the above are given, the version found will be used.'
+    required: false
+    default: "patch"
+  infix-value:
+    description: 'Infix value insert between the version number and the date timestamp (e.g., "beta", "alpha", "rc")'
+    required: false
+    default: ""
+  project-file:
+    description: "Path to the .csproj file for the project being released"
+    required: true
+  release-keyword:
+    description: "Keyword used to look for release version"
+    required: false
+    default: ""
+
+outputs:
+  version-number:
+    description: "Generated version number"
+    value: ${{ steps.calc_version.outputs.version_number }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Calculate version
+      id: calc_version
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/generate-version.js"
+      env:
+        INPUT_INCREMENT_TYPE: ${{ inputs.increment-type }}
+        INPUT_INFIX_VALUE: ${{ inputs.infix-value }}
+        INPUT_PROJECT_FILE: ${{ inputs.project-file }}
+        INPUT_RELEASE_KEYWORD: ${{ inputs['release-keyword'] }}

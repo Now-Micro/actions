@@ -1,0 +1,17 @@
+name: Demo - Generate Version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  demo-generate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run demo for generate-version
+        uses: ./.github/actions/demo-generate-version
+        with:
+          infix: 'demo'
+
