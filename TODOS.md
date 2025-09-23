@@ -3,4 +3,4 @@
   - CodeBits
   - Dice5
 
-  - add a new action called get-match which takes a string and a regex and outputs the matches as an array (the parentheses mark the matches)
+  - add a new composite action called get-match (also add a demo workflow and node tests) which takes a string and a regex and outputs the matches as an array (the parentheses mark the matches). Make sure to use js for the actual logic.
