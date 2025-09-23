@@ -199,6 +199,28 @@ test('unknown increment-type uses base version (no bump)', async () => {
     restoreDate();
 });
 
+test('skips timestamp when add-timestamp=false (with infix)', async () => {
+    const restoreDate = mockDate('2024-07-08T09:10:00Z');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvts-'));
+    const csproj = path.join(dir, 'App.csproj');
+    fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>');
+    const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_INFIX_VALUE: 'beta', INPUT_ADD_TIMESTAMP: 'false' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=1.2.4-beta\n/);
+    restoreDate();
+});
+
+test('skips timestamp when add-timestamp=false (no infix)', async () => {
+    const restoreDate = mockDate('2024-07-08T09:10:00Z');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gvts2-'));
+    const csproj = path.join(dir, 'App.csproj');
+    fs.writeFileSync(csproj, '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>');
+    const r = await runWith({ INPUT_PROJECT_FILE: csproj, INPUT_ADD_TIMESTAMP: false });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version_number=1.2.4\n/);
+    restoreDate();
+});
+
 test('errors on invalid semver in project file', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gve-'));
     const csproj = path.join(dir, 'Bad.csproj');
