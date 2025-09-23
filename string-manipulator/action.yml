@@ -1,5 +1,5 @@
-name: "Get Match"
-description: "Extracts matches from a string using a regular expression capturing group (group 1). Outputs CSV by default, or JSON when requested."
+name: "String Manipulator"
+description: "Allows for various string manipulations using regex."
 author: "Trafera"
 inputs:
   debug-mode:
@@ -35,7 +35,7 @@ runs:
     - name: Get matches
       id: get
       shell: bash
-      run: node "$GITHUB_ACTION_PATH/get-match.js"
+      run: node "$GITHUB_ACTION_PATH/string-manipulator.js"
       env:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         INPUT_STRING: ${{ inputs.string }}
