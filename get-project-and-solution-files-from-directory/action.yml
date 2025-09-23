@@ -28,6 +28,10 @@ inputs:
     description: "Regular expression to identify solution file desired.  If empty, will return the first .sln file found."
     required: false
     default: ""
+  ignored-directories:
+    description: "Comma-separated list of directory names to ignore when considering matches (e.g., /bin,/obj,/node_modules).  If a .csproj or .sln file path matches any of these values, it will be ignored."
+    required: false
+    default: "/bin,/obj,/node_modules"
 
 outputs:
   project-found:
@@ -58,6 +62,7 @@ runs:
         INPUT_DIRECTORY: ${{ inputs.directory }}
         INPUT_FIND_PROJECT: ${{ inputs.find-project }}
         INPUT_FIND_SOLUTION: ${{ inputs.find-solution }}
+        INPUT_IGNORED_DIRECTORIES: ${{ inputs.ignored-directories }}
         INPUT_MAX_DEPTH: ${{ inputs.max-depth }}
         INPUT_PROJECT_REGEX: ${{ inputs.project-regex }}
         INPUT_SOLUTION_REGEX: ${{ inputs.solution-regex }}
