@@ -33,7 +33,22 @@ function walk(dir, maxDepth, findSolution, findProject, currentDepth = 0) {
 }
 
 // New BFS search to prioritize shallower matches
-function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex) {
+function parseIgnored(input) {
+  if (!input) return [];
+  return String(input)
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => s.replace(/^\/+|\/+$/g, ''));
+}
+
+function pathHasIgnoredSegment(fullPath, ignored) {
+  if (!ignored || ignored.length === 0) return false;
+  const parts = fullPath.split(path.sep).filter(Boolean);
+  return parts.some(p => ignored.includes(p));
+}
+
+function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex, ignoredDirs) {
   const queue = [{ dir: startDir, depth: 0 }];
   while (queue.length && !(solutionFound && projectFound)) {
     const { dir, depth } = queue.shift();
@@ -52,6 +67,7 @@ function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameReg
       dlog(`(BFS) Examining entry: ${entry.name}`);
       if (!entry.isFile()) continue;
       const full = path.join(dir, entry.name);
+      if (pathHasIgnoredSegment(full, ignoredDirs)) { dlog(`(BFS) Skipping ignored file path: ${full}`); continue; }
       if (findSolution && !solutionFound && entry.name.endsWith('.sln')) {
         const okSln = solutionNameRegex ? solutionNameRegex.test(entry.name) : true;
         if (okSln) {
@@ -71,6 +87,7 @@ function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameReg
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const next = path.join(dir, entry.name);
+        if (pathHasIgnoredSegment(next, ignoredDirs)) { dlog(`(BFS) Skipping ignored dir: ${next}`); continue; }
         dlog(`(BFS) Enqueuing directory: ${next}`);
         queue.push({ dir: next, depth: depth + 1 });
       }
@@ -92,6 +109,8 @@ function run() {
     const githubOutput = process.env.GITHUB_OUTPUT;
     const projectRegex = process.env.INPUT_PROJECT_REGEX || '';
     const solutionRegex = process.env.INPUT_SOLUTION_REGEX || '';
+    const ignoredDirsCSV = process.env.INPUT_IGNORED_DIRECTORIES || '';
+    const ignoredDirs = parseIgnored(ignoredDirsCSV);
 
     console.log(`Input directory: ${inputDir}`);
     console.log(`Max depth: ${maxDepth}`);
@@ -99,6 +118,7 @@ function run() {
     console.log(`Find project: ${findProject}`);
     if (projectRegex) console.log(`Project regex: ${displayRegex(projectRegex)}`);
     if (solutionRegex) console.log(`Solution regex: ${displayRegex(solutionRegex)}`);
+    if (ignoredDirs.length) console.log(`Ignored directories: ${ignoredDirs.join(',')}`);
     dlog('Debug mode enabled');
 
     if (!inputDir) { console.error('Input directory is required.'); process.exit(1); }
@@ -124,7 +144,7 @@ function run() {
           ? '.csproj'
           : 'no file types';
     console.log(`Searching for ${types} in ${inputDir} (max depth: ${maxDepth})...`);
-    searchBFS(inputDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex);
+    searchBFS(inputDir, maxDepth, findSolution, findProject, projectNameRegex, solutionNameRegex, ignoredDirs);
 
     if (findProject) {
       console.log(`Project found: ${projectFound || 'None'}`);
@@ -156,4 +176,4 @@ if (require.main === module) {
   run();
 }
 
-module.exports = { run, walk, searchBFS };
+module.exports = { run, walk, searchBFS, parseIgnored, pathHasIgnoredSegment };

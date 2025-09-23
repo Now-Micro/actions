@@ -34,7 +34,7 @@ function runWithEnv(env) {
   const prev = { ...process.env };
   Object.keys(process.env).filter(k => k.startsWith('INPUT_')).forEach(k => delete process.env[k]);
   const provided = env || {};
-  Object.entries(provided).forEach(([k,v]) => process.env[k] = v);
+  Object.entries(provided).forEach(([k, v]) => process.env[k] = v);
   const hadGithubOutputKey = Object.prototype.hasOwnProperty.call(provided, 'GITHUB_OUTPUT');
   if (hadGithubOutputKey) {
     if (provided.GITHUB_OUTPUT === '__UNSET__' || provided.GITHUB_OUTPUT === '') {
@@ -70,7 +70,7 @@ function runWithEnv(env) {
     process.stderr.write = origErr;
     process.exit = origExit;
     Object.keys(process.env).forEach(k => { if (!(k in prev)) delete process.env[k]; });
-    Object.entries(prev).forEach(([k,v]) => process.env[k] = v);
+    Object.entries(prev).forEach(([k, v]) => process.env[k] = v);
   }
   const outPath = hadGithubOutputKey ? process.env.GITHUB_OUTPUT : outputFile;
   let outputContent = '';
@@ -233,7 +233,7 @@ test('BFS continues after unreadable subdirectory', () => {
   fs.writeFileSync(path.join(ok, 'Z.csproj'), '<Project></Project>');
   const orig = fs.readdirSync;
   let threw = false;
-  fs.readdirSync = function(p, opts) { if (p === blocked) { threw = true; throw new Error('EACCES'); } return orig(p, opts); };
+  fs.readdirSync = function (p, opts) { if (p === blocked) { threw = true; throw new Error('EACCES'); } return orig(p, opts); };
   const { logs, exitCode } = runWithEnv({
     INPUT_DIRECTORY: dir,
     INPUT_MAX_DEPTH: '2',
@@ -388,4 +388,107 @@ test('invalid solution-regex exits 1', () => {
   });
   assert.strictEqual(exitCode, 1);
   assert.match(logs.err + logs.out, /Invalid solution regex/);
+});
+
+test('ignored-directories skips bin/obj for project selection', () => {
+  const dir = makeTempDir();
+  // Create ignored directories and a valid one
+  const bin = path.join(dir, 'bin');
+  const obj = path.join(dir, 'obj');
+  const src = path.join(dir, 'src');
+  fs.mkdirSync(bin);
+  fs.mkdirSync(obj);
+  fs.mkdirSync(src);
+  fs.writeFileSync(path.join(bin, 'Ignored.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(obj, 'AlsoIgnored.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(src, 'Chosen.csproj'), '<Project></Project>');
+
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '2',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_IGNORED_DIRECTORIES: 'bin,obj',
+    INPUT_DEBUG_MODE: 'true'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /project-found=.*Chosen\.csproj/);
+  // ensure we didn't write a match from ignored paths
+  assert.doesNotMatch(outputContent, /Ignored\.csproj|AlsoIgnored\.csproj/);
+  assert.match(logs.out, /Ignored directories: bin,obj/);
+});
+
+test('ignored-directories causes None when all matches are ignored', () => {
+  const dir = makeTempDir();
+  const testsDir = path.join(dir, 'tests');
+  const demoDir = path.join(dir, 'demo');
+  fs.mkdirSync(testsDir);
+  fs.mkdirSync(demoDir);
+  fs.writeFileSync(path.join(testsDir, 'Only.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(demoDir, 'Only.sln'), 'sln');
+
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '2',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_IGNORED_DIRECTORIES: 'tests,demo'
+  });
+  assert.strictEqual(exitCode, 0);
+  // No outputs because matches were ignored
+  assert.strictEqual(outputContent.trim(), '');
+  assert.match(logs.out, /Project found: None/);
+  assert.match(logs.out, /Solution found: None/);
+});
+
+test('default ignored-directories (/bin,/obj,/node_modules) skip matches and pick non-ignored project', () => {
+  const dir = makeTempDir();
+  // Create ignored directories with decoy projects
+  const bin = path.join(dir, 'bin');
+  const obj = path.join(dir, 'obj');
+  const nm = path.join(dir, 'node_modules');
+  const src = path.join(dir, 'src');
+  fs.mkdirSync(bin);
+  fs.mkdirSync(obj);
+  fs.mkdirSync(nm);
+  fs.mkdirSync(src);
+  fs.writeFileSync(path.join(bin, 'Bin.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(obj, 'Obj.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(nm, 'NM.csproj'), '<Project></Project>');
+  fs.writeFileSync(path.join(src, 'Real.csproj'), '<Project></Project>');
+
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '2',
+    INPUT_FIND_SOLUTION: 'false',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_IGNORED_DIRECTORIES: '/bin,/obj,/node_modules',
+    INPUT_DEBUG_MODE: 'true'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.match(outputContent, /project-found=.*Real\.csproj/);
+  assert.doesNotMatch(outputContent, /Bin\.csproj|Obj\.csproj|NM\.csproj/);
+  assert.match(logs.out, /Ignored directories: bin,obj,node_modules/);
+});
+
+test('default ignored-directories lead to None when only ignored paths contain matches', () => {
+  const dir = makeTempDir();
+  const nm = path.join(dir, 'node_modules');
+  const bin = path.join(dir, 'bin');
+  fs.mkdirSync(nm);
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(nm, 'Only.sln'), 'sln');
+  fs.writeFileSync(path.join(bin, 'Only.csproj'), '<Project></Project>');
+
+  const { exitCode, outputContent, logs } = runWithEnv({
+    INPUT_DIRECTORY: dir,
+    INPUT_MAX_DEPTH: '2',
+    INPUT_FIND_SOLUTION: 'true',
+    INPUT_FIND_PROJECT: 'true',
+    INPUT_IGNORED_DIRECTORIES: '/bin,/obj,/node_modules'
+  });
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(outputContent.trim(), '');
+  assert.match(logs.out, /Project found: None/);
+  assert.match(logs.out, /Solution found: None/);
 });
