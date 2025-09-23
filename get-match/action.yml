@@ -1,0 +1,44 @@
+name: "Get Match"
+description: "Extracts matches from a string using a regular expression capturing group (group 1). Outputs CSV by default, or JSON when requested."
+author: "Trafera"
+inputs:
+  debug-mode:
+    description: "Enable debug mode for additional logging."
+    required: false
+    default: "false"
+  string:
+    description: "The input string to search."
+    required: true
+  regex:
+    description: "Regular expression pattern. Must include a capturing group (group 1) to extract."
+    required: true
+  regex-flags:
+    description: "Optional regex flags (e.g., i, m). The action ensures global (g) matching to find all captures."
+    required: false
+    default: ""
+  output-is-json:
+    description: "When true, outputs matches as a JSON array string; otherwise outputs a comma-separated string."
+    required: false
+    default: "false"
+
+outputs:
+  matches:
+    description: "Array of captured matches (group 1)."
+    value: ${{ steps.get.outputs.matches }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Get matches
+      id: get
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/get-match.js"
+      env:
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_STRING: ${{ inputs.string }}
+        INPUT_REGEX: ${{ inputs.regex }}
+        INPUT_REGEX_FLAGS: ${{ inputs['regex-flags'] }}
+        INPUT_OUTPUT_IS_JSON: ${{ inputs.output-is-json }}
