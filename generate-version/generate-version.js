@@ -116,8 +116,9 @@ async function run() {
     const projectFile = process.env.INPUT_PROJECT_FILE;
     const infix = (process.env.INPUT_INFIX_VALUE || '').trim();
     const releaseKeyword = (process.env.INPUT_RELEASE_KEYWORD || '').trim();
+    const addTimestamp = String(process.env.INPUT_ADD_TIMESTAMP ?? 'true').toLowerCase() !== 'false';
     const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
-    console.log(`🔍 Inputs: projectFile=${projectFile || '(none)'} infix=${infix || '(none)'} releaseKeyword=${releaseKeyword || '(none)'} `);
+    console.log(`🔍 Inputs: projectFile=${projectFile || '(none)'} infix=${infix || '(none)'} releaseKeyword=${releaseKeyword || '(none)'} addTimestamp=${addTimestamp}`);
 
     if (!projectFile && !releaseKeyword) {
         exitWith('INPUT_PROJECT_FILE is required when release-keyword is not provided');
@@ -167,13 +168,13 @@ async function run() {
         console.log(`ℹ️ Using base version without increment: ${baseVersion}`);
     }
 
-    // Build final version: versionNumber-infix-timestamp
+    // Build final version: versionNumber[-infix][-timestamp]
     const ts = new Date();
     const pad = n => String(n).padStart(2, '0');
     const timestamp = `${ts.getUTCFullYear()}${pad(ts.getUTCMonth() + 1)}${pad(ts.getUTCDate())}${pad(ts.getUTCHours())}${pad(ts.getUTCMinutes())}`;
     const parts = [effectiveVersion];
     if (infix) parts.push(infix);
-    parts.push(timestamp);
+    if (addTimestamp) parts.push(timestamp);
     const version = parts.join('-');
 
     // Output
