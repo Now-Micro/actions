@@ -10,6 +10,10 @@ inputs:
   path:
     description: "Path of the composite being run (for reference)"
     required: true
+  line-breaks:
+    description: "Number of blank lines to print before and after the title"
+    required: false
+    default: "3"
 
 runs:
   using: composite
@@ -17,9 +21,28 @@ runs:
     - name: Print title
       shell: bash
       run: |
-        echo ""
-        echo "========================================"
+        # Determine how many blank lines to print before/after the title (default 3)
+        count="${{ inputs.line-breaks }}"
+        # Fallback to 3 if not a non-negative integer
+        if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=3; fi
+
+        # Before-title blank lines
+        i=0
+        while [ "$i" -lt "$count" ]; do
+          echo ""
+          i=$((i+1))
+        done
+
+        echo "========================================================================================================================"
         echo "${{ inputs.title }}"
+
+
         echo "Demo: ${{ inputs.path }}"
-        echo "========================================"
-        echo ""
+        echo "========================================================================================================================"
+
+        # After-title blank lines
+        i=0
+        while [ "$i" -lt "$count" ]; do
+          echo ""
+          i=$((i+1))
+        done
