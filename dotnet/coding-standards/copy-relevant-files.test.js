@@ -102,6 +102,27 @@ test('run: errors when source missing', () => {
   assert.strictEqual(code, 1);
 });
 
+test('run: errors when source directory env not provided', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'copy-'));
+  const code = withExitCapture(() => withEnv({ INPUT_UNIQUE_ROOT_DIRECTORIES: '["' + root.replace(/\\/g, '/') + '"]', INPUT_DIRECTORY: root }, () => run()));
+  assert.strictEqual(code, 1);
+});
+
+test('run: errors when analyzers name not provided', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'copy-'));
+  const source = path.join(tmp, 'src');
+  fs.mkdirSync(source, { recursive: true });
+  // create required .editorconfig to get past first missing source check
+  fs.writeFileSync(path.join(source, '.editorconfig'), 'root=true\n');
+  const root = path.join(tmp, 'root');
+  const code = withExitCapture(() => withEnv({
+    INPUT_UNIQUE_ROOT_DIRECTORIES: '["' + root.replace(/\\/g, '/') + '"]',
+    INPUT_DIRECTORY: root,
+    INPUT_SOURCE_DIR: source
+  }, () => run()));
+  assert.strictEqual(code, 1);
+});
+
 test('run: errors when .editorconfig missing in source', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'copy-'));
   const source = path.join(tmp, 'src');

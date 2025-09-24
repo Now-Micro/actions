@@ -29,7 +29,7 @@ function execAssertion(env) {
     console.error = origErr;
     // reset env
     Object.keys(process.env).forEach(k => { if (!(k in originalEnv)) delete process.env[k]; });
-    Object.entries(originalEnv).forEach(([k,v]) => process.env[k] = v);
+    Object.entries(originalEnv).forEach(([k, v]) => process.env[k] = v);
   }
 
   const summaryFile = env.INPUT_SUMMARY_FILE;
@@ -44,7 +44,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { }
 });
 
 function baseEnv(overrides) {
@@ -105,6 +105,14 @@ test('absent mode fails for non-empty actual', () => {
   assert.strictEqual(exitCode, 1);
 });
 
+// absent mode allows missing INPUT_ACTUAL entirely
+test('absent mode passes when actual is missing (optional)', () => {
+  const env = baseEnv({ INPUT_MODE: 'absent', INPUT_EXPECTED: 'IGNORED' });
+  delete env.INPUT_ACTUAL;
+  const { exitCode } = execAssertion(env);
+  assert.strictEqual(exitCode, 0);
+});
+
 // regex simple (no delimiters)
 test('regex mode matches plain pattern', () => {
   const { exitCode } = execAssertion(baseEnv({ INPUT_MODE: 'regex', INPUT_EXPECTED: '^foo.*bar$', INPUT_ACTUAL: 'foo123bar' }));
@@ -122,6 +130,12 @@ test('regex mode invalid pattern fails', () => {
   const { exitCode, logs } = execAssertion(baseEnv({ INPUT_MODE: 'regex', INPUT_EXPECTED: '/[unterminated', INPUT_ACTUAL: 'anything' }));
   assert.strictEqual(exitCode, 1);
   assert.ok(logs.some(l => /Invalid regex/.test(l)));
+});
+
+// regex mismatch should fail (pass=false branch)
+test('regex mode mismatch fails when pattern does not match', () => {
+  const { exitCode } = execAssertion(baseEnv({ INPUT_MODE: 'regex', INPUT_EXPECTED: '^foo$', INPUT_ACTUAL: 'bar' }));
+  assert.strictEqual(exitCode, 1);
 });
 
 // unknown mode
@@ -162,5 +176,16 @@ test('exit-on-fail stops after failure and exits 1', () => {
   assert.strictEqual(exitCode, 1);
   assert.match(summary, /FAIL: FailFast/);
   assert.doesNotMatch(summary, /PASS: FailFast/);
+});
+
+// ensure summary directory is created if missing
+test('creates summary directory when it does not exist', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'assert-sum-'));
+  const nested = path.join(dir, 'deep', 'more', 'summary.txt');
+  const env = baseEnv({ INPUT_EXPECTED: 'x', INPUT_ACTUAL: 'x', INPUT_SUMMARY_FILE: nested, INPUT_TEST_NAME: 'NestedPass' });
+  const { exitCode, summary } = execAssertion(env);
+  assert.strictEqual(exitCode, 0);
+  assert.ok(fs.existsSync(nested));
+  assert.match(summary, /PASS: NestedPass/);
 });
 

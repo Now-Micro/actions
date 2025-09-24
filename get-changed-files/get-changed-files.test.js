@@ -316,3 +316,45 @@ test('run fails clearly on unresolved head ref', () => {
   assert.strictEqual(exitCode, 1);
   assert.ok(logs.some(l => /Could not resolve head ref 'nonexistent-branch' to a commit SHA\./.test(l)));
 });
+
+// New: run with no refs diffs working tree and outputs empty when no changes
+// removed: a flaky variant of running with no refs; base=head empty diff already covered above
+
+// ensureCommitExists returns false when sha is empty
+test('ensureCommitExists returns false for empty sha', () => {
+  assert.strictEqual(ensureCommitExists('', ''), false);
+});
+
+// New: unresolved head SHA path (explicit SHA-like input)
+test('run fails clearly on unresolved head SHA', () => {
+  writeFile('a.txt', 'a');
+  const baseSha = commit('base');
+  const unknownSha = 'abcdef1'; // looks like a short SHA but not present
+  const { exitCode, logs } = captureRun({ INPUT_BASE_REF: baseSha, INPUT_HEAD_REF: unknownSha });
+  assert.strictEqual(exitCode, 1);
+  assert.ok(logs.some(l => new RegExp(`Head SHA ${unknownSha} not found and could not be fetched\\.`).test(l)));
+});
+
+// New: extractSha fetches remote tag via broader --tags fetch
+test('extractSha fetches remote tag after fetching --tags', () => {
+  // Setup bare remote with a tag only (no local tag present)
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'remote-tag-'));
+  const bare = path.join(tmpBase, 'remote.git');
+  execSync(`git init --bare -q "${bare}"`);
+  const remoteWork = fs.mkdtempSync(path.join(os.tmpdir(), 'remote-tag-work-'));
+  execSync(`git clone -q "${bare}" "${remoteWork}"`);
+  execSync('git config user.email "ci@example.com"', { cwd: remoteWork });
+  execSync('git config user.name "CI Bot"', { cwd: remoteWork });
+  fs.writeFileSync(path.join(remoteWork, 't.txt'), 't');
+  execSync('git add t.txt', { cwd: remoteWork });
+  execSync('git commit -q -m "t"', { cwd: remoteWork });
+  const remoteSha = execSync('git rev-parse HEAD', { cwd: remoteWork, encoding: 'utf8' }).trim();
+  execSync('git tag v2', { cwd: remoteWork });
+  execSync('git push -q --tags origin', { cwd: remoteWork });
+
+  // Link local repo to remote without fetching tags yet
+  execSync(`git remote add origin "${bare.replace(/\\/g, '/')}"`);
+
+  const resolved = extractSha('v2', '');
+  assert.strictEqual(resolved, remoteSha);
+});
