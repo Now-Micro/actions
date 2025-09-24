@@ -20,4 +20,8 @@ runs:
         set -euo pipefail
         echo "Running Node tests with coverage"
         node --version
-        npx --yes c8 -r text -r lcov node --test --test-reporter=spec
+        npx --yes c8 \
+          --check-coverage --per-file \
+          --branches 80 --functions 80 --lines 80 --statements 80 \
+          -r text -r lcov \
+          node --test --test-reporter=spec

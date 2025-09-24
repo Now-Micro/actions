@@ -45,9 +45,6 @@ runs:
         directory: "demo/dotnet/src/Api"
         github-token: ${{ inputs.github-token }}
 
-    - name: Demo - get-match
-      uses: ./.github/actions/demo-get-match
-
     - name: Demo - get-changed-files
       uses: ./.github/actions/demo-get-changed-files
 
