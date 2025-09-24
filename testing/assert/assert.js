@@ -24,15 +24,14 @@ function parseRegex(spec) {
 }
 
 function run() {
-    const expected = getEnv('INPUT_EXPECTED', true);
     const summaryFile = getEnv('INPUT_SUMMARY_FILE' || "", true);
     const testName = getEnv('INPUT_TEST_NAME', true);
     const mode = getEnv('INPUT_MODE', false, 'exact').toLowerCase() || 'exact';
     const exitOnFail = getEnv('INPUT_EXIT_ON_FAIL', false, 'false').toLowerCase() === 'true';
-    // Actual: do not require the env var; allow empty string so exact mode can assert "" and 'absent' can skip.
-    let actual = getEnv('INPUT_ACTUAL', false, '');
+    const expected = getEnv('INPUT_EXPECTED', false, '');
+    const actual = getEnv('INPUT_ACTUAL', false, '');
 
-    console.log(`[ASSERT] ${testName} :: mode=${mode} expected='${expected}' actual='${actual}'`);
+    console.log(`\n\n[ASSERT] ${testName} :: mode=${mode} expected='${expected}' actual='${actual}'`);
 
     let pass = false;
     switch (mode) {
