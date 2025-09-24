@@ -154,6 +154,13 @@ test('missing expected env causes exit 1', () => {
   assert.ok(logs.some(l => /Missing required env var: INPUT_EXPECTED/.test(l)));
 });
 
+// expected may be empty string but must be defined
+test('expected can be empty string (defined) and exact mode compares against empty', () => {
+  const { exitCode, summary } = execAssertion(baseEnv({ INPUT_EXPECTED: '', INPUT_ACTUAL: '', INPUT_MODE: 'exact' }));
+  assert.strictEqual(exitCode, 0);
+  assert.match(summary, /PASS: Test Name/);
+});
+
 // summary aggregation (multiple passes append)
 test('summary file aggregates multiple results', () => {
   const env1 = baseEnv({ INPUT_EXPECTED: 'a', INPUT_ACTUAL: 'a', INPUT_TEST_NAME: 'T1' });
