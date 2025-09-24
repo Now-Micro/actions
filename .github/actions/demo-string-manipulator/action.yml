@@ -27,7 +27,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "one two three"
-        regex: '(\\w+)'
+        regex: '/(\w+)/'
         regex-flags: "g"
     - name: Assert SM1
       uses: ./testing/assert
