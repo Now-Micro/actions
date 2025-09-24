@@ -27,7 +27,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "one two three"
-        regex: '/(\w+)/'
+        regex: '(\w+)'  
         regex-flags: "g"
     - name: Assert SM1
       uses: ./testing/assert
@@ -482,7 +482,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "CSI/src"
-        regex: '(.*)\/src'
+        regex: '(.*)/src'
         match-output-is-json: "true"
     - name: Assert SM28
       uses: ./testing/assert
