@@ -5,9 +5,18 @@ on:
       - main
 
 jobs:
-  node-tests:
-    name: Node tests
-    runs-on: ubuntu-22.04
+  checks:
+    name: Checks (${{ matrix.job }})
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - job: node-tests
+            runs_on: ubuntu-22.04
+          - job: demo-workflows
+            runs_on: ubuntu-22.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,18 +24,11 @@ jobs:
           fetch-depth: 0
 
       - name: Run Node tests
+        if: ${{ matrix.job == 'node-tests' }}
         uses: ./.github/actions/run-node-tests
 
-  demo-workflows:
-    name: Demo workflows
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Run all demo composites
+        if: ${{ matrix.job == 'demo-workflows' }}
         uses: ./.github/actions/run-demo-workflows
         with:
           github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
