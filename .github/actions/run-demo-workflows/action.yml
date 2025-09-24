@@ -56,3 +56,6 @@ runs:
 
     - name: Demo - get-unique-root-directories
       uses: ./.github/actions/demo-get-unique-root-directories
+
+    - name: Demo - string-manipulator
+      uses: ./.github/actions/demo-string-manipulator
