@@ -11,7 +11,7 @@ inputs:
     description: "Path of the composite being run (for reference)"
     required: true
   line-breaks:
-    description: "Number of blank lines to print before and after the title"
+    description: "Number of blank lines to print before the title"
     required: false
     default: "3"
 
@@ -39,10 +39,4 @@ runs:
 
         echo "Demo: ${{ inputs.path }}"
         echo "========================================================================================================================"
-
-        # After-title blank lines
-        i=0
-        while [ "$i" -lt "$count" ]; do
-          echo " "
-          i=$((i+1))
-        done
+        echo " "
