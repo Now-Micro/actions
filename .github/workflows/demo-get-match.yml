@@ -1,8 +1,6 @@
 name: Demo - get-match
 on:
-  workflow_dispatch: {}
-  push:
-    branches: [ feat/add-get-match ]
+  workflow_dispatch:
 
 jobs:
   demo:
