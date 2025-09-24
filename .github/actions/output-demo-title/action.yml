@@ -13,7 +13,7 @@ inputs:
   line-breaks:
     description: "Number of blank lines to print before the title"
     required: false
-    default: "3"
+    default: "1"
 
 runs:
   using: composite
@@ -23,8 +23,8 @@ runs:
       run: |
         # Determine how many blank lines to print before/after the title (default 3)
         count="${{ inputs.line-breaks }}"
-        # Fallback to 3 if not a non-negative integer
-        if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=3; fi
+        # Fallback to 1 if not a non-negative integer
+        if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=1; fi
 
         # Before-title blank lines
         i=0
@@ -33,10 +33,10 @@ runs:
           i=$((i+1))
         done
 
-        echo "========================================================================================================================"
+        echo "=========================================================================================================================================================="
         echo "${{ inputs.title }}"
 
 
         echo "Demo: ${{ inputs.path }}"
-        echo "========================================================================================================================"
+        echo "=========================================================================================================================================================="
         echo " "
