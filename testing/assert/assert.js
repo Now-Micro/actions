@@ -29,8 +29,8 @@ function run() {
     const testName = getEnv('INPUT_TEST_NAME', true);
     const mode = getEnv('INPUT_MODE', false, 'exact').toLowerCase() || 'exact';
     const exitOnFail = getEnv('INPUT_EXIT_ON_FAIL', false, 'false').toLowerCase() === 'true';
-    // Actual: required only for modes other than 'absent'. Allow empty string so exact mode can assert "".
-    let actual = getEnv('INPUT_ACTUAL', mode !== 'absent', '');
+    // Actual: do not require the env var; allow empty string so exact mode can assert "" and 'absent' can skip.
+    let actual = getEnv('INPUT_ACTUAL', false, '');
 
     console.log(`[ASSERT] ${testName} :: mode=${mode} expected='${expected}' actual='${actual}'`);
 
