@@ -22,6 +22,13 @@ test('sanitize strips brackets and trims', () => {
   assert.strictEqual(sanitize('y'), 'y');
   assert.strictEqual(sanitize('["y/z"]'), 'y/z');
   assert.strictEqual(sanitize('["x/y/z"]'), 'x/y/z');
+  assert.strictEqual(sanitize("'quoted'"), 'quoted');
+  assert.strictEqual(sanitize('"double-quoted"'), 'double-quoted');
+});
+
+test('sanitize handles null and undefined', () => {
+  assert.strictEqual(sanitize(null), '');
+  assert.strictEqual(sanitize(undefined), '');
 });
 
 test('normalizeToPosix converts backslashes', () => {
@@ -39,6 +46,18 @@ test('computeRelative cases from spec', () => {
   assert.strictEqual(computeRelative(root, '["./demo/coding-standards/src/Coding.Standards.csproj"]'), expOne);
   assert.strictEqual(computeRelative(root, '["./demo/coding-standards/src/subdir/Coding.Standards.csproj"]'), expTwo);
   assert.strictEqual(computeRelative(root, '["./demo/coding-standards/tests/subdir2/Coding.Standards.Tests.csproj"]'), expTwo);
+});
+
+test('computeRelative returns empty when in same directory', () => {
+  const root = './demo/coding-standards/Coding.Standards.sln';
+  const subSameDir = './demo/coding-standards/App.csproj';
+  assert.strictEqual(computeRelative(root, subSameDir), '');
+});
+
+test('computeRelative returns empty when root is deeper than sub directory', () => {
+  const deeperRoot = './demo/coding-standards/src/Coding.Standards.csproj';
+  const higherSub = './demo/coding-standards/Coding.Standards.sln';
+  assert.strictEqual(computeRelative(deeperRoot, higherSub), '');
 });
 
 test('computeRelative throws on comma', () => {
@@ -72,6 +91,36 @@ test('run exits 1 on errors', () => {
   assert.match(r.err, /comma/);
 });
 
+test('run does not write output file when GITHUB_OUTPUT missing', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-'));
+  const out = path.join(tmp, 'out.txt');
+  const { out: stdout } = withEnv({
+    INPUT_ROOT_FILE: './demo/coding-standards/Coding.Standards.sln',
+    INPUT_SUBDIRECTORY_FILE: './demo/coding-standards/src/Coding.Standards.csproj'
+  }, () => run());
+  // stdout still has the relative path
+  const sepRe = new RegExp(`\\.\\.${path.sep.replace('\\', '\\\\')}`);
+  assert.match(stdout, sepRe);
+  // and no output file was created
+  assert.strictEqual(fs.existsSync(out), false);
+});
+
+test('run swallows GITHUB_OUTPUT append errors (directory path)', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-'));
+  const outDir = path.join(tmp, 'outdir');
+  fs.mkdirSync(outDir, { recursive: true });
+  const { out: stdout } = withEnv({
+    INPUT_ROOT_FILE: './demo/coding-standards/Coding.Standards.sln',
+    INPUT_SUBDIRECTORY_FILE: './demo/coding-standards/src/Coding.Standards.csproj',
+    GITHUB_OUTPUT: outDir // appendFileSync will throw; catch branch should swallow
+  }, () => run());
+  const sepRe = new RegExp(`\.\.${path.sep.replace('\\', '\\\\')}`);
+  assert.match(stdout, sepRe);
+  // Ensure still no file was written inside the directory by name (append ignored)
+  // We only assert that run did not crash and directory still exists
+  assert.strictEqual(fs.existsSync(outDir), true);
+});
+
 test('computeRelative cases from spec (platform-aware)', () => {
   const root = './demo/coding-standards/Coding.Standards.sln';
   const one = computeRelative(root, '.\\demo\\coding-standards\\src\\Coding.Standards.csproj');
@@ -81,9 +130,14 @@ test('computeRelative cases from spec (platform-aware)', () => {
   const sep = path.sep;
   // one level has trailing sep; two and three are two levels up with trailing sep
   assert.strictEqual(one, ['..', ''].join(sep)); // '../' or '..\'
-  assert.strictEqual(two, ['..','..',''].join(sep)); // '../..' + sep or '..\..'
+  assert.strictEqual(two, ['..', '..', ''].join(sep)); // '../..' + sep or '..\..'
   assert.strictEqual(three, two);
   assert.strictEqual(threeBracket, three);
+});
+
+test('computeRelative throws when inputs missing', () => {
+  assert.throws(() => computeRelative('', './demo/file.csproj'), /required/);
+  assert.throws(() => computeRelative('./demo/file.sln', ''), /required/);
 });
 
 // Ensure run uses platform separator

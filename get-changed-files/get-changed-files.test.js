@@ -301,3 +301,18 @@ test('extractSha accepts valid complex ref names', () => {
   const resolved = extractSha('release/1.0.0', '');
   assert.strictEqual(resolved, relSha);
 });
+
+test('ensureCommitExists returns false when no origin and unknown sha', () => {
+  // no remote added
+  const ok = ensureCommitExists('deadbee', '');
+  assert.strictEqual(ok, false);
+});
+
+test('run fails clearly on unresolved head ref', () => {
+  // make repo valid with one commit
+  writeFile('z.txt', 'z');
+  commit('z');
+  const { exitCode, logs } = captureRun({ INPUT_BASE_REF: '', INPUT_HEAD_REF: 'nonexistent-branch' });
+  assert.strictEqual(exitCode, 1);
+  assert.ok(logs.some(l => /Could not resolve head ref 'nonexistent-branch' to a commit SHA\./.test(l)));
+});
