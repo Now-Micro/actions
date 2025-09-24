@@ -10,6 +10,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Title - String Manipulator Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: String Manipulator Demo
+        path: ./.github/actions/demo-string-manipulator
     - name: Setup summary file
       shell: bash
       run: |

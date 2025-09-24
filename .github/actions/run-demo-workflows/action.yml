@@ -37,6 +37,9 @@ runs:
       with:
         infix: "demo"
 
+    - name: Demo - get-changed-files
+      uses: ./.github/actions/demo-get-changed-files
+
     - name: Demo - nuget publish
       uses: ./.github/actions/demo-nuget-publish
       with:
@@ -44,9 +47,6 @@ runs:
         additional-pack-args: /p:VersionSuffix=1.0.0 /p:PackageVersion=1.0.0
         directory: "demo/dotnet/src/Api"
         github-token: ${{ inputs.github-token }}
-
-    - name: Demo - get-changed-files
-      uses: ./.github/actions/demo-get-changed-files
 
     - name: Demo - get-project-and-solution-files-from-directory
       uses: ./.github/actions/demo-get-project-and-solution-files-from-directory

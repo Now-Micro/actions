@@ -5,6 +5,11 @@ author: Trafera
 runs:
   using: composite
   steps:
+    - name: Title - Get Changed Files Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Get Changed Files Demo
+        path: ./.github/actions/demo-get-changed-files
     - name: Prepare summary and temp repo
       id: pre
       shell: bash

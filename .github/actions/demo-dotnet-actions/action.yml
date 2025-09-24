@@ -3,47 +3,52 @@ description: This workflow demonstrates the use of various dotnet actions for bu
 
 inputs:
   run-build-step:
-    description: 'Run the build step (true/false)'
+    description: "Run the build step (true/false)"
     required: false
-    default: 'true'
+    default: "true"
   run-lint-step:
-    description: 'Run the lint step (true/false)'
+    description: "Run the lint step (true/false)"
     required: false
-    default: 'true'
+    default: "true"
   run-test-step:
-    description: 'Run the test step (true/false)'
+    description: "Run the test step (true/false)"
     required: false
-    default: 'true'
+    default: "true"
 
 runs:
   using: composite
   steps:
+    - name: Title - Dotnet Actions Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Dotnet Actions Demo
+        path: ./.github/actions/demo-dotnet-actions
     - name: Build Solution
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
-      with:   
-          file-to-build: demo/dotnet/demo.sln
-          build-configuration: 'Release'
-          dotnet-version: '8.0.x'
-          node-version: '18.x'
+      with:
+        file-to-build: demo/dotnet/demo.sln
+        build-configuration: "Release"
+        dotnet-version: "8.0.x"
+        node-version: "18.x"
 
     - name: Build Project
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
-      with:   
-          file-to-build: demo/dotnet/src/Api/Api.csproj
-          build-configuration: 'Release'
-          dotnet-version: '8.0.x'
-          node-version: '18.x'
+      with:
+        file-to-build: demo/dotnet/src/Api/Api.csproj
+        build-configuration: "Release"
+        dotnet-version: "8.0.x"
+        node-version: "18.x"
 
     - name: Run tests
       if: ${{ inputs.run-test-step == 'true' }}
       uses: ./dotnet/test
       with:
-          directory: demo/dotnet
-          dotnet-version: '8.0.x'
-          project-regex: '.*Tests\.csproj\s*$'
-      
+        directory: demo/dotnet
+        dotnet-version: "8.0.x"
+        project-regex: '.*Tests\.csproj\s*$'
+
     - name: Lint
       if: ${{ inputs.run-lint-step == 'true' }}
       uses: ./dotnet/lint
