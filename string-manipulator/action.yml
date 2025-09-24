@@ -11,7 +11,7 @@ inputs:
     required: false
     default: "false"
   regex:
-    description: "Optional regex pattern for matching (must include a capturing group for group 1 when provided). Matching runs only when this is set."
+    description: "Optional regex pattern for matching (must include a capturing group for group 1 when provided). Matching runs only when this is set.  You must omit the regex delimiters (e.g., /pattern/)."
     required: false
     default: ""
   regex-flags:
