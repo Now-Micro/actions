@@ -29,7 +29,7 @@ runs:
         # Before-title blank lines
         i=0
         while [ "$i" -lt "$count" ]; do
-          echo "1"
+          echo " "
           i=$((i+1))
         done
 
@@ -43,6 +43,6 @@ runs:
         # After-title blank lines
         i=0
         while [ "$i" -lt "$count" ]; do
-          echo "2"
+          echo " "
           i=$((i+1))
         done
