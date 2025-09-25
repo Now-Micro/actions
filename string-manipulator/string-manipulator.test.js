@@ -443,3 +443,4 @@ test('can handle escaped /fd', () => {
     const content = fs.readFileSync(out, 'utf8');
     assert.match(content, /replaced=CSI\/liain/);
 });  
+  
