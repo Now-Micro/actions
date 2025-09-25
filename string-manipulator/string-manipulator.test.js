@@ -367,8 +367,64 @@ test('real use case - 2', () => {
     const out = mkout();
     const r = withEnv({
         GITHUB_OUTPUT: out,
+        INPUT_STRING: 'CSI/src',
+        INPUT_REGEX: '(.*)/src',
+        INPUT_OUTPUT_IS_JSON: 'true'
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    // First-group: major versions
+    assert.match(content, /matches=\["CSI"\]/);
+    // All groups for two matches
+    assert.match(content, /matches_all_groups=\[\["CSI"\]\]/);
+});
+
+test('real use case - 3', () => {
+    const out = mkout();
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: 'CSI/src',
+        INPUT_REGEX: '(.*)\\/src',
+        INPUT_OUTPUT_IS_JSON: 'true'
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    // First-group: major versions
+    assert.match(content, /matches=\["CSI"\]/);
+    // All groups for two matches
+    assert.match(content, /matches_all_groups=\[\["CSI"\]\]/);
+});
+
+test('can handle unescaped /', () => {
+    const out = mkout();
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: 'CSI/src-main',
+        INPUT_REPLACEMENT: JSON.stringify([["/src-MAIN", "/lib", "i"]])
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    assert.match(content, /replaced=CSI\/lib/);
+});
+
+test('can handle /.../', () => {
+    const out = mkout();
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
         INPUT_STRING: 'CSI/src-main',
         INPUT_REPLACEMENT: JSON.stringify([["/\/src-MAIN/", "/lib", "i"]])
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    assert.match(content, /replaced=CSI\/lib/);
+});
+
+test('can handle escaped /', () => {
+    const out = mkout();
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: 'CSI/src-main',
+        INPUT_REPLACEMENT: JSON.stringify([["\/src-MAIN", "/lib", "i"]])
     }, () => run());
     assert.strictEqual(r.exitCode, 0);
     const content = fs.readFileSync(out, 'utf8');

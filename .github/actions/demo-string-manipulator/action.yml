@@ -60,7 +60,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "abc"
-        regex: '(\\d+)'
+        regex: '(\d+)'
     - name: Assert SM3
       uses: ./testing/assert
       with:
@@ -155,7 +155,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "x y z"
-        regex: '(\\w+)'
+        regex: '(\w+)'
         match-output-is-json: "false"
     - name: Assert SM9
       uses: ./testing/assert
@@ -172,7 +172,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "x y z"
-        regex: '(\\w+)'
+        regex: '(\w+)'
         match-output-is-json: "true"
     - name: Assert SM10
       uses: ./testing/assert
@@ -205,7 +205,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "a1 a2 a3"
-        regex: 'a(\\d)'
+        regex: 'a(\d)'
         replacement: '[["a","b","g"]]'
     - name: Assert SM12
       uses: ./testing/assert
@@ -222,7 +222,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "x=10;y=20;z=30"
-        regex: '([a-z])=(\\d+)'
+        regex: '([a-z])=(\d+)'
         match-output-is-json: "true"
     - name: Assert SM13
       uses: ./testing/assert
@@ -291,9 +291,9 @@ runs:
       with:
         debug-mode: "true"
         string: "x=1;y=2"
-        regex: '([a-z])=(\\d+)'
+        regex: '([a-z])=(\d+)'
         regex-flags: "i"
-        replacement: '[["([a-z])=(\\d+)", "$1:$2", "ig"]]'
+        replacement: '[["([a-z])=(\d+)", "$1:$2", "ig"]]'
         match-output-is-json: "true"
     - name: Assert SM17
       uses: ./testing/assert
@@ -311,7 +311,7 @@ runs:
       with:
         string: "Hello My name is Adam"
         regex: "(Hello)"
-        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
+        replacement: '[["\s", "-", "g"], ["adam", "tom", "i"]]'
     - name: Assert SM18
       uses: ./testing/assert
       with:
@@ -327,7 +327,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "Hello My name is Adam"
-        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
+        replacement: '[["\s", "-", "g"], ["adam", "tom", "i"]]'
     - name: Assert SM19
       uses: ./testing/assert
       with:
@@ -412,7 +412,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "a=10(BIG){foo}[7];b=20{bar};c=30[9];d=40"
-        regex: '([a-z])=(\\d+)(?:\\(([A-Z]+)\\))?(?:\\{([a-z]+)\\})?(?:\\\\?\n?\n?\n?)'
+        regex: '([a-z])=(\d+)(?:\(([A-Z]+)\))?(?:\{([a-z]+)\})?(?:\\?\n?\n?\n?)'
         match-output-is-json: "true"
     - name: Assert SM24
       uses: ./testing/assert
@@ -429,7 +429,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "a=10(BIG){foo}[7];b=20{bar};c=30[9];d=40"
-        regex: '([a-z])=(\\d+)(?:\\(([A-Z]+)\\))?(?:\\{([a-z]+)\\})?(?:\\[(\\d+)\\])?'
+        regex: '([a-z])=(\d+)(?:\(([A-Z]+)\))?(?:\{([a-z]+)\})?(?:\[(\d+)\])?'
         match-output-is-json: "true"
     - name: Assert SM25
       uses: ./testing/assert
@@ -446,7 +446,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "1.2.3-alpha+build/feature#frag@prod 10.20.30+meta@dev"
-        regex: '(\\d+)\\.(\\d+)\\.(\\d+)(?:-([0-9A-Za-z.-]+))?(?:\\+([0-9A-Za-z.-]+))?(?:\\/([\\w-]+))?(?:#([\\w-]+))?(?:@([\\w-]+))?'
+        regex: '(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?(?:\/([\w-]+))?(?:#([\w-]+))?(?:@([\w-]+))?'
         match-output-is-json: "true"
     - name: Assert SM26
       uses: ./testing/assert
@@ -457,13 +457,13 @@ runs:
         test-name: "SM26 semver all groups"
         summary-file: ${{ env.SUMMARY_FILE }}
 
-    # 27. real use case - 1
+    # 27. real use case - 1 (pattern variant: (.*)\/src)
     - name: SM27 - Real use case 1
       id: sm27
       uses: ./string-manipulator
       with:
         string: "CSI/src"
-        regex: "(.*)/src"
+        regex: '(.*)\/src'
         match-output-is-json: "true"
     - name: Assert SM27
       uses: ./testing/assert
@@ -474,26 +474,84 @@ runs:
         test-name: "SM27 real use case 1"
         summary-file: ${{ env.SUMMARY_FILE }}
 
-    # 28. real use case - 2
+    # 28. real use case - 2 (pattern variant: (.*)/src)
     - name: SM28 - Real use case 2
       id: sm28
       uses: ./string-manipulator
       with:
-        string: "CSI/src-main"
-        replacement: '[["/\\/src-MAIN/", "/lib", "i"]]'
+        string: "CSI/src"
+        regex: "(.*)/src"
+        match-output-is-json: "true"
     - name: Assert SM28
+      uses: ./testing/assert
+      with:
+        expected: '["CSI"]'
+        mode: exact
+        actual: ${{ steps.sm28.outputs.matches }}
+        test-name: "SM28 real use case 2"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 29. real use case - 3 (pattern variant: (.*)\\/src)
+    - name: SM29 - Real use case 3
+      id: sm29
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src"
+        regex: '(.*)\\/src'
+        match-output-is-json: "true"
+    - name: Assert SM29
+      uses: ./testing/assert
+      with:
+        expected: '["CSI"]'
+        mode: exact
+        actual: ${{ steps.sm29.outputs.matches }}
+        test-name: "SM29 real use case 3"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 30. can handle unescaped / in replacement pattern
+    - name: SM30 - Replacement unescaped slash
+      id: sm30
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["/src-MAIN", "/lib", "i"]]'
+    - name: Assert SM30
       uses: ./testing/assert
       with:
         expected: "CSI/lib"
         mode: exact
-        actual: ${{ steps.sm28.outputs.replaced }}
-        test-name: "SM28 real use case 2"
+        actual: ${{ steps.sm30.outputs.replaced }}
+        test-name: "SM30 replacement unescaped slash"
         summary-file: ${{ env.SUMMARY_FILE }}
 
-    - name: Summary
-      shell: bash
-      if: always()
-      run: |
-        echo "### Demo - string-manipulator" >> $GITHUB_STEP_SUMMARY
-        echo "All Tests:" >> $GITHUB_STEP_SUMMARY
-        cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+    # 31. can handle /.../ delimited replacement pattern
+    - name: SM31 - Replacement regex literal style
+      id: sm31
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["/\\/src-MAIN/", "/lib", "i"]]'
+    - name: Assert SM31
+      uses: ./testing/assert
+      with:
+        expected: "CSI/lib"
+        mode: exact
+        actual: ${{ steps.sm31.outputs.replaced }}
+        test-name: "SM31 replacement regex literal style"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 32. can handle escaped / in replacement pattern
+    - name: SM32 - Replacement escaped slash
+      id: sm32
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["\\/src-MAIN", "/lib", "i"]]'
+    - name: Assert SM32
+      uses: ./testing/assert
+      with:
+        expected: "CSI/lib"
+        mode: exact
+        actual: ${{ steps.sm32.outputs.replaced }}
+        test-name: "SM32 replacement escaped slash"
+        summary-file: ${{ env.SUMMARY_FILE }}
