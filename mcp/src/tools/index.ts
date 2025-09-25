@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ping } from "./ping.js";
 import { uppercase } from "./uppercase.js";
 import { analyze } from "./analyze.js";
+import { fail } from "./fail.js";
 
 type McpLikeServer = {
     tool: (...args: any[]) => any;
@@ -10,7 +11,7 @@ type McpLikeServer = {
 };
 
 export function registerTools(server: McpLikeServer) {
-    const tools: Tool[] = [ping, uppercase, analyze];
+    const tools: Tool[] = [ping, uppercase, analyze, fail];
     for (const t of tools) {
         const cb = async (maybeArgs: any, extra?: any) => {
             // Normalize to args regardless of server calling convention
@@ -31,6 +32,8 @@ export function registerTools(server: McpLikeServer) {
             } else if (t.name === 'analyze') {
                 common.inputSchema = { text: z.string() };
                 common.outputSchema = { length: z.number(), upper: z.string() };
+            } else if (t.name === 'fail') {
+                common.inputSchema = { reason: z.string().optional() };
             }
             server.registerTool(t.name, common, cb);
         } else {

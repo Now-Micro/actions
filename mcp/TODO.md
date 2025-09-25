@@ -1,0 +1,6 @@
+- how to test that the mcp server is actually working when run locally?
+- what is the best way to provide resources (ask Copilot)?
+    -- have the server find all action.yml files and read them and update the source code at build time?
+    -- another way?
+    -- prompt:
+        ---- I want the mcp server to provide details about the GitHub actions that are available for use in workflows.  The use case is that someone is creating a workflow in another repo and they don't know which actions are available.  How do I set up the mcp resources in the best possible way such that other AI instances can consume and make use of the actions in this repo when being asked to build GitHub workflows?

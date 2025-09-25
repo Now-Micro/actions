@@ -45,4 +45,9 @@ test('tools register and ping works', async () => {
         content: [{ type: 'text', text: 'len=3; upper=ABC' }],
         structuredContent: { length: 3, upper: 'ABC' }
     });
+
+    const fail = server.tools.find(t => t.name === 'fail');
+    assert.ok(fail, 'fail tool not found');
+    const fres = await fail.handler({ reason: 'bad input' });
+    assert.deepEqual(fres, { content: [{ type: 'text', text: 'error: bad input' }], isError: true });
 });
