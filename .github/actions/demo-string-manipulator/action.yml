@@ -145,7 +145,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm8.conclusion }}
+        actual: ${{ steps.sm8.outcome }}
         test-name: "SM8 missing capturing group fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
