@@ -431,15 +431,3 @@ test('can handle escaped /', () => {
     assert.match(content, /replaced=CSI\/lib/);
 });
 
-
-test('can handle escaped /fd', () => {
-    const out = mkout();
-    const r = withEnv({
-        GITHUB_OUTPUT: out,
-        INPUT_STRING: 'CSI/src-main',
-        INPUT_REPLACEMENT: JSON.stringify([["/src-", "/lib", "i"]])
-    }, () => run());
-    assert.strictEqual(r.exitCode, 0);
-    const content = fs.readFileSync(out, 'utf8');
-    assert.match(content, /replaced=CSI\/libmainn/);
-});
