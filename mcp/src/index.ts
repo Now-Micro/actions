@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerTools } from "./tools/index.js";
 import path from "path";
 import { buildActionsIndex, renderActionMarkdown } from "./resources/actions-indexer.js";
 import { setActionsIndex, getActionsIndex } from "./resources/actions-store.js";
@@ -11,8 +10,7 @@ async function main() {
         version: "0.1.0",
     });
 
-    // Register tools from src/tools
-    registerTools(server);
+    // No test tools; only register real actions-related tools below
 
     // Build actions index and expose as resources (best-effort: ignore errors)
     try {
