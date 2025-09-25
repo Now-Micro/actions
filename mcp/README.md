@@ -7,11 +7,17 @@ A minimal TypeScript MCP server for this repository. It follows the stdio transp
 ```
 /mcp
   ├─ src/
-  │   ├─ index.ts         # server bootstrap
-  │   ├─ types/           # minimal types and shims (MCP & Node)
+  │   ├─ index.ts                   # server bootstrap (registers tools & resources)
+  │   ├─ types/                     # minimal types and shims (MCP & Node)
+  │   ├─ resources/
+  │   │   ├─ actions-indexer.ts     # scans repo for composite actions (action.yml)
+  │   │   └─ actions-store.ts       # in-memory index store
   │   └─ tools/
-  │       ├─ index.ts     # tool registry
-  │       └─ ping.ts      # example tool
+  │       ├─ index.ts               # tool registry
+  │       ├─ ping.ts                # example tool
+  │       ├─ uppercase.ts           # example tool
+  │       ├─ analyze.ts             # example tool
+  │       └─ fail.ts                # example tool
   ├─ package.json
   ├─ tsconfig.json
   ├─ Dockerfile
@@ -48,6 +54,82 @@ cd mcp
 npm run dev:docker   # builds the image
 npm run dev:docker:up  # brings the service up
 ```
+
+## MCP resources for GitHub Actions
+
+On startup, the server scans this monorepo for composite actions (action.yml) and exposes a discovery-friendly set of MCP resources:
+
+- Catalog JSON (list):
+  - URI: nowmicro-actions://actions/index
+  - MIME: application/json
+- Per‑action JSON detail:
+  - URI: nowmicro-actions://actions/<slug>.json
+  - MIME: application/json
+- Per‑action Markdown detail (LLM-friendly):
+  - URI: nowmicro-actions://actions/<slug>.md
+  - MIME: text/markdown
+- Search (resource template; if supported by the client):
+  - URI template: nowmicro-actions://actions/search?q={query}
+  - Returns a filtered JSON catalog
+
+Notes
+- <slug> is derived from the action folder path (e.g., dotnet/build → dotnet-build).
+- The JSON detail includes a ready-to-paste uses string like Now-Micro/actions/dotnet/build@main and a minimal example snippet.
+
+## Catalog tools (query and snippet helpers)
+
+The server also provides small tools to make this catalog easier to use in chat UIs:
+
+- search-actions
+  - Args: { q?: string, query?: string }
+  - Returns: a JSON array (as text) of catalog items matching the query.
+
+- make-workflow-snippet
+  - Args: { id?: string, slug?: string, values?: object, includeOptional?: boolean }
+  - Behavior: Generates a YAML step for the selected action.
+    - Required inputs are always included, using provided values or <REQUIRED> placeholders.
+    - Optional inputs are included when includeOptional=true, or when a value is provided, or when the action defines a default.
+
+- reindex-actions
+  - Rebuilds the in-memory catalog (useful after adding/editing actions) and returns { ok: true, count }.
+
+- list-actions / get-action (fallbacks)
+  - Fallback helpers that return the catalog or a single action spec as JSON text (used when a client doesn’t support MCP resources).
+
+## Use with VS Code / Copilot / Claude
+
+MCP clients spawn the server process and speak stdio. To avoid corrupting the stdio stream, launch the server executable directly—do not wrap it with npm run or npx which print banners to stdout.
+
+Recommended settings (user or workspace):
+
+```jsonc
+{
+  "claude.mcpServers": {
+    "nowmicro-actions": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "${workspaceFolder}/mcp"
+    }
+  }
+}
+```
+
+Common pitfall: If you see errors like “Unexpected token '>' … is not valid JSON,” it means something (npm/npx banners) wrote to stdout. Switch to command: node and args: ["dist/index.js"].
+
+## MCP Inspector quick start
+
+1) Build once:
+```powershell
+cd mcp
+npm ci
+npm run build
+```
+2) In the Inspector, “Connect to Server” with:
+   - Command: node
+   - Args: ["dist/index.js"]
+   - Cwd: <repo>/mcp
+3) List resources → read nowmicro-actions://actions/index → call tools like search-actions or make-workflow-snippet.
 
 ## Extend with new tools
 - Add a file in `src/tools/your-tool.ts` exporting a Tool.
