@@ -129,6 +129,15 @@ async function main() {
             return { content: [{ type: 'text', text: JSON.stringify(filtered) }] };
         };
 
+        const describeCb = async (args: any) => {
+            const id = String(args?.id || args?.slug || '');
+            const idxNow = getActionsIndex();
+            const spec = id ? idxNow.byId[id] : undefined;
+            if (!spec) return { content: [{ type: 'text', text: 'not found' }], isError: true };
+            const md = renderActionMarkdown(spec);
+            return { content: [{ type: 'text', text: md, mimeType: 'text/markdown' }] };
+        };
+
         if (typeof anyServer.registerTool === 'function') {
             anyServer.registerTool('reindex-actions', { description: 'Rebuild the in-memory index of composite actions in this repository.' }, reindexCb);
             anyServer.registerTool('make-workflow-snippet', {
@@ -136,10 +145,12 @@ async function main() {
                 inputSchema: { id: { type: 'string' }, slug: { type: 'string' }, values: { type: 'object' }, includeOptional: { type: 'boolean' } }
             }, snippetCb);
             anyServer.registerTool('search-actions', { description: 'Search the actions catalog by query string.', inputSchema: { q: { type: 'string' }, query: { type: 'string' } } }, searchCb);
+            anyServer.registerTool('describe-action', { description: 'Return Markdown documentation for an action by id/slug.', inputSchema: { id: { type: 'string' }, slug: { type: 'string' } } }, describeCb);
         } else {
             anyServer.tool?.('reindex-actions', reindexCb);
             anyServer.tool?.('make-workflow-snippet', snippetCb);
             anyServer.tool?.('search-actions', searchCb);
+            anyServer.tool?.('describe-action', describeCb);
         }
     } catch (_) {
         // Do not crash the server if indexing fails

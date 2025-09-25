@@ -27,6 +27,7 @@ test('stdio harness: actions resources and tools end-to-end', async (t) => {
     assert.ok(tools.tools.find(t => t.name === 'search-actions'), 'search-actions tool missing');
     assert.ok(tools.tools.find(t => t.name === 'make-workflow-snippet'), 'make-workflow-snippet tool missing');
     assert.ok(tools.tools.find(t => t.name === 'reindex-actions'), 'reindex-actions tool missing');
+    assert.ok(tools.tools.find(t => t.name === 'describe-action'), 'describe-action tool missing');
 
     // Resource listing (if supported by server)
     try {
@@ -56,6 +57,10 @@ test('stdio harness: actions resources and tools end-to-end', async (t) => {
             const txt = snip.content?.[0]?.text || '';
             assert.ok(/^\- name: /.test(txt), 'snippet missing name line');
             assert.ok(/\n  uses: /.test(txt), 'snippet missing uses line');
+            const desc = await client.callTool({ name: 'describe-action', arguments: { id: candidate } });
+            const dtxt = desc.content?.[0]?.text || '';
+            assert.ok(/^#\s+/.test(dtxt), 'describe-action should return Markdown with a header');
+            assert.ok(/## Usage/.test(dtxt), 'describe-action should include Usage section');
         }
     } catch (_) { }
 

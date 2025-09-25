@@ -12,8 +12,7 @@ A minimal TypeScript MCP server for this repository. It follows the stdio transp
   │   ├─ resources/
   │   │   ├─ actions-indexer.ts     # scans repo for composite actions (action.yml)
   │   │   └─ actions-store.ts       # in-memory index store
-  │   └─ tools/
-  │       └─ index.ts               # tool registry (legacy test tools removed)
+  │   └─ tools/                      # (legacy test tools removed)
   ├─ package.json
   ├─ tsconfig.json
   ├─ Dockerfile
@@ -90,6 +89,10 @@ The server also provides small tools to make this catalog easier to use in chat 
   - Rebuilds the in-memory catalog (useful after adding/editing actions) and returns { ok: true, count }.
 
 - list-actions / get-action (fallbacks)
+  
+- describe-action
+  - Args: { id?: string, slug?: string }
+  - Returns: Markdown with usage, inputs/outputs, and path.
   - Fallback helpers that return the catalog or a single action spec as JSON text (used when a client doesn’t support MCP resources).
 
 ## Use with VS Code / Copilot / Claude
@@ -128,7 +131,7 @@ npm run build
 3) List resources → read nowmicro-actions://actions/index → call tools like search-actions or make-workflow-snippet.
 
 ## Extend with new tools
-- Add a file in `src/tools/your-tool.ts` exporting a Tool, then register it in `src/tools/index.ts`.
+- Add a file in `src/tools/your-tool.ts` exporting a Tool and wire it up in `src/index.ts`.
 - Prefer adding actions-centric utilities (e.g., more search filters, snippet variations) over generic demo tools.
 - Rebuild: `npm run build` (or re-run docker build).
 
