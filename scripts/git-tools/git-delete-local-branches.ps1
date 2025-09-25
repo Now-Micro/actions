@@ -48,16 +48,18 @@ param(
 function Write-Info($msg) { Write-Host "[git-prune] $msg" }
 function Write-Warn($msg) { Write-Warning "[git-prune] $msg" }
 function Exec($cmd, [switch]$NoTrim) {
-  # Ensure temp files are created in the same directory as this script
-  $scriptDir = $PSScriptRoot
-  if (-not $scriptDir) { $scriptDir = Split-Path -Parent $PSCommandPath }
-  $tmpOut = Join-Path $scriptDir 'temp_out.txt'
-  $tmpErr = Join-Path $scriptDir 'temp_err.txt'
+    # Ensure temp files are created in the same directory as this script
+    $scriptDir = $PSScriptRoot
+    if (-not $scriptDir) { $scriptDir = Split-Path -Parent $PSCommandPath }
+    $tmpOut = Join-Path $scriptDir 'temp_out.txt'
+    $tmpErr = Join-Path $scriptDir 'temp_err.txt'
 
-  $p = Start-Process -FilePath "powershell" -ArgumentList "-NoProfile", "-Command", $cmd -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
-  $out = Get-Content $tmpOut -Raw -ErrorAction SilentlyContinue
-  $err = Get-Content $tmpErr -Raw -ErrorAction SilentlyContinue
-  Remove-Item -ErrorAction SilentlyContinue $tmpOut, $tmpErr
+    $p = Start-Process -FilePath "powershell" -ArgumentList "-NoProfile", "-Command", $cmd -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
+    $out = Get-Content $tmpOut -Raw -ErrorAction SilentlyContinue
+    $err = Get-Content $tmpErr -Raw -ErrorAction SilentlyContinue
+    if ($null -eq $out) { $out = "" }
+    if ($null -eq $err) { $err = "" }
+    Remove-Item -ErrorAction SilentlyContinue $tmpOut, $tmpErr
     if ($LASTEXITCODE -ne 0 -and $p.ExitCode -ne 0) {
         throw "Command failed ($cmd): $err $out"
     }
@@ -79,6 +81,7 @@ $current = Exec "git rev-parse --abbrev-ref HEAD"
 # Check working tree clean unless forced
 if (-not $Force) {
     $status = Exec "git status --porcelain" -NoTrim
+    if ($null -eq $status) { $status = "" }
     if ($status.Trim().Length -gt 0) {
         Write-Warn "Working tree is not clean. Commit/stash or pass -Force to continue."
         exit 1
@@ -122,7 +125,7 @@ if ($toDelete.Count -eq 0) {
 }
 
 Write-Info "Current branch: $current"
-Write-Info "Protected: " + ($ignoreList -join ', ')
+Write-Info ("Protected: {0}" -f (($ignoreList | Where-Object { $_ -and $_.Trim() -ne '' }) -join ', '))
 Write-Info "Will delete (local):" 
 $toDelete | ForEach-Object { Write-Host "  - $_" }
 
@@ -134,13 +137,13 @@ if ($DryRun) {
 if ($PSCmdlet.ShouldProcess("local branches", "delete: " + ($toDelete -join ', '))) {
     foreach ($b in $toDelete) {
         try {
-            Exec "git branch -D -- $_"
-            Write-Info "Deleted $_"
+            Exec "git branch -D -- $b"
+            Write-Info "Deleted $b"
         }
         catch {
             # Use explicit error variable to avoid interpolation issues
             $errMsg = $_ | Out-String
-            Write-Warn ("Failed to delete {0}: {1}" -f $_, $errMsg.Trim())
+            Write-Warn ("Failed to delete {0}: {1}" -f $b, $errMsg.Trim())
         }
     }
 }
