@@ -32,4 +32,17 @@ test('tools register and ping works', async () => {
 
     const result = await ping.handler({ message: 'hello' });
     assert.deepEqual(result, { content: [{ type: 'text', text: 'pong: hello' }] });
+
+    const upper = server.tools.find(t => t.name === 'uppercase');
+    assert.ok(upper, 'uppercase tool not found');
+    const ures = await upper.handler({ message: 'Hello, World!' });
+    assert.deepEqual(ures, { content: [{ type: 'text', text: 'HELLO, WORLD!' }] });
+
+    const analyze = server.tools.find(t => t.name === 'analyze');
+    assert.ok(analyze, 'analyze tool not found');
+    const ares = await analyze.handler({ text: 'Abc' });
+    assert.deepEqual(ares, {
+        content: [{ type: 'text', text: 'len=3; upper=ABC' }],
+        structuredContent: { length: 3, upper: 'ABC' }
+    });
 });

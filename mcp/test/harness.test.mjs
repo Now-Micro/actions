@@ -24,8 +24,19 @@ test('stdio harness: ping tool end-to-end', async (t) => {
     const tools = await client.listTools({});
     assert.ok(Array.isArray(tools.tools) && tools.tools.length > 0, 'no tools returned');
     assert.ok(tools.tools.find(t => t.name === 'ping'), 'ping tool missing');
+    assert.ok(tools.tools.find(t => t.name === 'uppercase'), 'uppercase tool missing');
+    assert.ok(tools.tools.find(t => t.name === 'analyze'), 'analyze tool missing');
 
     // Call ping tool
     const res = await client.callTool({ name: 'ping', arguments: { message: 'from-harness' } });
     assert.deepEqual(res, { content: [{ type: 'text', text: 'pong: from-harness' }] });
+
+    const res2 = await client.callTool({ name: 'uppercase', arguments: { message: 'Hello, World!' } });
+    assert.deepEqual(res2, { content: [{ type: 'text', text: 'HELLO, WORLD!' }] });
+
+    const res3 = await client.callTool({ name: 'analyze', arguments: { text: 'Abc' } });
+    assert.deepEqual(res3, {
+        content: [{ type: 'text', text: 'len=3; upper=ABC' }],
+        structuredContent: { length: 3, upper: 'ABC' }
+    });
 });

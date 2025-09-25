@@ -1,6 +1,8 @@
 import type { Tool } from "../types/tool.js";
 import { z } from "zod";
 import { ping } from "./ping.js";
+import { uppercase } from "./uppercase.js";
+import { analyze } from "./analyze.js";
 
 type McpLikeServer = {
     tool: (...args: any[]) => any;
@@ -8,11 +10,11 @@ type McpLikeServer = {
 };
 
 export function registerTools(server: McpLikeServer) {
-    const tools: Tool[] = [ping];
+    const tools: Tool[] = [ping, uppercase, analyze];
     for (const t of tools) {
         const cb = async (maybeArgs: any, extra?: any) => {
             // Normalize to args regardless of server calling convention
-            if (maybeArgs && typeof maybeArgs === 'object' && 'message' in maybeArgs) {
+            if (maybeArgs && typeof maybeArgs === 'object' && Object.keys(maybeArgs).length > 0) {
                 return t.handler(maybeArgs);
             }
             const ex = extra ?? {};
@@ -20,9 +22,17 @@ export function registerTools(server: McpLikeServer) {
             return t.handler(fromRequest ?? {});
         };
         if (typeof server.registerTool === 'function') {
-            // Provide raw shape; SDK wraps with z.object internally
-            const inputSchema = { message: z.string() };
-            server.registerTool(t.name, { description: t.description, inputSchema }, cb);
+            // Provide raw shapes; SDK wraps with z.object internally
+            const common = { description: t.description } as any;
+            if (t.name === 'ping') {
+                common.inputSchema = { message: z.string() };
+            } else if (t.name === 'uppercase') {
+                common.inputSchema = { message: z.string() };
+            } else if (t.name === 'analyze') {
+                common.inputSchema = { text: z.string() };
+                common.outputSchema = { length: z.number(), upper: z.string() };
+            }
+            server.registerTool(t.name, common, cb);
         } else {
             server.tool(t.name, cb);
         }

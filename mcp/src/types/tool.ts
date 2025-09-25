@@ -5,7 +5,7 @@ export type Tool = {
     name: string;
     description?: string;
     inputSchema?: any;
-    handler: (args: any) => Promise<{ content: TextContent[] }>;
+    handler: (args: any) => Promise<{ content: TextContent[]; structuredContent?: any; isError?: boolean }>;
 };
 
 export type ToolRegistrar = {
