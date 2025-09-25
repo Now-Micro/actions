@@ -293,7 +293,7 @@ runs:
         string: "x=1;y=2"
         regex: '([a-z])=(\d+)'
         regex-flags: "i"
-        replacement: '[["([a-z])=(\d+)", "$1:$2", "ig"]]'
+        replacement: '[["([a-z])=(\\d+)", "$1:$2", "ig"]]'
         match-output-is-json: "true"
     - name: Assert SM17
       uses: ./testing/assert
@@ -311,7 +311,7 @@ runs:
       with:
         string: "Hello My name is Adam"
         regex: "(Hello)"
-        replacement: '[["\s", "-", "g"], ["adam", "tom", "i"]]'
+        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
     - name: Assert SM18
       uses: ./testing/assert
       with:
@@ -327,7 +327,7 @@ runs:
       uses: ./string-manipulator
       with:
         string: "Hello My name is Adam"
-        replacement: '[["\s", "-", "g"], ["adam", "tom", "i"]]'
+        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
     - name: Assert SM19
       uses: ./testing/assert
       with:
