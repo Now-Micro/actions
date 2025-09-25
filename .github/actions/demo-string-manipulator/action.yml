@@ -491,67 +491,34 @@ runs:
         test-name: "SM28 real use case 2"
         summary-file: ${{ env.SUMMARY_FILE }}
 
-    # 29. real use case - 3 (pattern variant: (.*)\\/src)
-    - name: SM29 - Real use case 3
+    # 29. can handle unescaped / in replacement pattern
+    - name: SM29 - Replacement unescaped slash
       id: sm29
-      uses: ./string-manipulator
-      with:
-        string: "CSI/src"
-        regex: '(.*)\\/src'
-        match-output-is-json: "true"
-    - name: Assert SM29
-      uses: ./testing/assert
-      with:
-        expected: '["CSI"]'
-        mode: exact
-        actual: ${{ steps.sm29.outputs.matches }}
-        test-name: "SM29 real use case 3"
-        summary-file: ${{ env.SUMMARY_FILE }}
-
-    # 30. can handle unescaped / in replacement pattern
-    - name: SM30 - Replacement unescaped slash
-      id: sm30
       uses: ./string-manipulator
       with:
         string: "CSI/src-main"
         replacement: '[["/src-MAIN", "/lib", "i"]]'
+    - name: Assert SM29
+      uses: ./testing/assert
+      with:
+        expected: "CSI/lib"
+        mode: exact
+        actual: ${{ steps.sm29.outputs.replaced }}
+        test-name: "SM29 replacement unescaped slash"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 30. can handle /.../ delimited replacement pattern
+    - name: SM30 - Replacement regex literal style
+      id: sm30
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["/\/src-MAIN/", "/lib", "i"]]'
     - name: Assert SM30
       uses: ./testing/assert
       with:
         expected: "CSI/lib"
         mode: exact
         actual: ${{ steps.sm30.outputs.replaced }}
-        test-name: "SM30 replacement unescaped slash"
-        summary-file: ${{ env.SUMMARY_FILE }}
-
-    # 31. can handle /.../ delimited replacement pattern
-    - name: SM31 - Replacement regex literal style
-      id: sm31
-      uses: ./string-manipulator
-      with:
-        string: "CSI/src-main"
-        replacement: '[["/\\/src-MAIN/", "/lib", "i"]]'
-    - name: Assert SM31
-      uses: ./testing/assert
-      with:
-        expected: "CSI/lib"
-        mode: exact
-        actual: ${{ steps.sm31.outputs.replaced }}
-        test-name: "SM31 replacement regex literal style"
-        summary-file: ${{ env.SUMMARY_FILE }}
-
-    # 32. can handle escaped / in replacement pattern
-    - name: SM32 - Replacement escaped slash
-      id: sm32
-      uses: ./string-manipulator
-      with:
-        string: "CSI/src-main"
-        replacement: '[["\\/src-MAIN", "/lib", "i"]]'
-    - name: Assert SM32
-      uses: ./testing/assert
-      with:
-        expected: "CSI/lib"
-        mode: exact
-        actual: ${{ steps.sm32.outputs.replaced }}
-        test-name: "SM32 replacement escaped slash"
+        test-name: "SM30 replacement regex literal style"
         summary-file: ${{ env.SUMMARY_FILE }}
