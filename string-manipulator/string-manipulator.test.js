@@ -429,5 +429,5 @@ test('can handle escaped /', () => {
     assert.strictEqual(r.exitCode, 0);
     const content = fs.readFileSync(out, 'utf8');
     assert.match(content, /replaced=CSI\/lib/);
-});
+});  
 
