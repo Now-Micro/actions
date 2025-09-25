@@ -1,5 +1,9 @@
+# Git tools script temp files
+/scripts/git-tools/temp_*.txt
 coverage/
 **/bin/**/*
 **/obj/**/*
+temp_err.txt
+temp_out.txt
 
 demo/coding-standards/.editorconfig
