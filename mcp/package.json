@@ -9,6 +9,7 @@
         "start": "node dist/index.js",
         "dev": "tsx src/index.ts",
         "dev:docker": "docker-compose build",
+        "dev:docker:up": "docker-compose up",
         "test": "npm run build && node --test"
     },
     "dependencies": {

@@ -41,6 +41,14 @@ docker compose build
 docker compose up
 ```
 
+Or using npm scripts:
+
+```powershell
+cd mcp
+npm run dev:docker   # builds the image
+npm run dev:docker:up  # brings the service up
+```
+
 ## Extend with new tools
 - Add a file in `src/tools/your-tool.ts` exporting a Tool.
 - Register it in `src/tools/index.ts`.
