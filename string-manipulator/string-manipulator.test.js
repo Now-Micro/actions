@@ -442,4 +442,4 @@ test('can handle escaped /fd', () => {
     assert.strictEqual(r.exitCode, 0);
     const content = fs.readFileSync(out, 'utf8');
     assert.match(content, /replaced=CSI\/liain/);
-});
+});  
