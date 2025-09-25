@@ -1,5 +1,9 @@
 # Git tools script temp files
 /scripts/git-tools/temp_*.txt
+
+# MCP build artifacts
+/mcp/node_modules/
+/mcp/dist/
 coverage/
 **/bin/**/*
 **/obj/**/*
