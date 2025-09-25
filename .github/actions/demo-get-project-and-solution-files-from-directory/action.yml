@@ -1,10 +1,15 @@
-name: 'Demo - Get Project And Solution Files (Composite Action)'
-description: 'Extracts project and solution files from a specified directory'
-author: 'Trafera'
+name: "Demo - Get Project And Solution Files (Composite Action)"
+description: "Extracts project and solution files from a specified directory"
+author: "Trafera"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
+    - name: Title - Get Project and Solution Files Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Get Project and Solution Files Demo
+        path: ./.github/actions/demo-get-project-and-solution-files-from-directory
     - name: Setup summary file
       shell: bash
       run: |
@@ -21,7 +26,7 @@ runs:
       id: root_solution
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
         max-depth: 1
 
@@ -33,7 +38,7 @@ runs:
         mode: present
         test-name: Test 1 - Solution Found
         summary-file: ${{ env.SUMMARY_FILE }}
-    
+
     - name: Assert 1 - Project found is Test.csproj
       uses: ./testing/assert
       with:
@@ -47,10 +52,10 @@ runs:
       id: project_shallow
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
-        find-solution: 'false'
-        find-project: 'true'
+        find-solution: "false"
+        find-project: "true"
         max-depth: 1 # reduced from 2 so Test.csproj (depth 2) is not discovered
 
     - name: Assert 2 - Solution Found is RootSolution.sln
@@ -61,7 +66,6 @@ runs:
         mode: present
         test-name: Test 2 - Solution Found
         summary-file: ${{ env.SUMMARY_FILE }}
-
 
     - name: Assert 2 - No project found at Depth of 2
       uses: ./testing/assert
@@ -76,10 +80,10 @@ runs:
       id: project_appa
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory/SolutionA/src/A
-        find-solution: 'true'
-        find-project: 'true'
+        find-solution: "true"
+        find-project: "true"
         max-depth: 3
 
     - name: Assert 3 - No Project Found at Depth 3
@@ -104,10 +108,10 @@ runs:
       id: solutionb
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory/SolutionB
-        find-solution: 'true'
-        find-project: 'true'
+        find-solution: "true"
+        find-project: "true"
         max-depth: 4
 
     - name: Assert 4 - SolutionB solution and Service.csproj detected (solution)
@@ -132,10 +136,10 @@ runs:
       id: coding_standards
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/coding-standards-fail
-        find-solution: 'true'
-        find-project: 'true'
+        find-solution: "true"
+        find-project: "true"
         max-depth: 8
 
     - name: Assert 5 - Demo.Linting.sln detected
@@ -160,10 +164,10 @@ runs:
       id: solution_regex_solutionb
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
-        find-solution: 'true'
-        find-project: 'false'
+        find-solution: "true"
+        find-project: "false"
         max-depth: 8
         solution-regex: '^SolutionB\.sln$'
 
@@ -189,10 +193,10 @@ runs:
       id: project_regex_service
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
-        find-solution: 'false'
-        find-project: 'true'
+        find-solution: "false"
+        find-project: "true"
         max-depth: 8
         project-regex: 'Service.*Tests\.csproj$'
 
@@ -218,10 +222,10 @@ runs:
       id: solution_regex_none
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
-        find-solution: 'true'
-        find-project: 'false'
+        find-solution: "true"
+        find-project: "false"
         max-depth: 2
         solution-regex: '^DoesNotExist\.sln$'
 
@@ -238,10 +242,10 @@ runs:
       id: project_regex_none
       uses: ./get-project-and-solution-files-from-directory
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: demo/get-project-and-solution-files-from-directory
-        find-solution: 'false'
-        find-project: 'true'
+        find-solution: "false"
+        find-project: "true"
         max-depth: 2
         project-regex: '^DoesNotExist\.csproj$'
 
@@ -262,5 +266,3 @@ runs:
         echo "### Demo get-project-and-solution-files-from-directory" >> $GITHUB_STEP_SUMMARY
         echo "All Tests (PASS indicates assertion success):" >> $GITHUB_STEP_SUMMARY
         cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
-
-

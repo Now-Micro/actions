@@ -144,12 +144,12 @@ test('multiple duplicates across three unique roots', () => {
 test('testing regex - matches src/test/tests variants', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    'ProjectA/src/Program.cs','ProjectA/src/Utils/Helper.cs',
-    'ProjectB/test/ProjectB.csproj','ProjectB/tests/Another.cs',
-    'ProjectC/tests/Solution.sln','ProjectC/test/Other.cs',
-    'My-App/src/Util.cs','My.App/tests/Suite.sln',
-    'ProjectD/lib/Program.cs','ProjectE/src/README.md','/ProjectF/src/Program.cs','ProjectG/tests/Program.txt',
-    'ProjectH/src/Dir','ProjectI/tests/Program.csx'
+    'ProjectA/src/Program.cs', 'ProjectA/src/Utils/Helper.cs',
+    'ProjectB/test/ProjectB.csproj', 'ProjectB/tests/Another.cs',
+    'ProjectC/tests/Solution.sln', 'ProjectC/test/Other.cs',
+    'My-App/src/Util.cs', 'My.App/tests/Suite.sln',
+    'ProjectD/lib/Program.cs', 'ProjectE/src/README.md', '/ProjectF/src/Program.cs', 'ProjectG/tests/Program.txt',
+    'ProjectH/src/Dir', 'ProjectI/tests/Program.csx'
   ].join(',');
   logHeader('testing regex - matches src/test/tests variants', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
@@ -163,7 +163,7 @@ test('testing regex - matches src/test/tests variants', () => {
 test('testing regex: no matches returns empty array', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    'Alpha/lib/File.cs','Beta/source/Program.cs','Gamma/src/Readme.md','/Delta/src/Program.cs','Epsilon/tests/Notes.txt','Zeta/src/Folder'
+    'Alpha/lib/File.cs', 'Beta/source/Program.cs', 'Gamma/src/Readme.md', '/Delta/src/Program.cs', 'Epsilon/tests/Notes.txt', 'Zeta/src/Folder'
   ].join(',');
   logHeader('testing regex: no matches returns empty array', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
@@ -177,8 +177,8 @@ test('testing regex: no matches returns empty array', () => {
 test('Linting pattern: extracts valid roots', () => {
   const pattern = LINTING_REGEX;
   const paths = [
-    'Alpha/src/File.cs','Beta/tests/Test.cs','Alpha/docs/Readme.md','Gamma/one/two/three.txt','Bad.Root/src/File.cs','.hidden/src/File.cs','delta/',
-    'epsilon','foo.bar/','my-app/src/index.cs','my_app/src/index.cs','Zeta/Another.cs','Alpha/more/Deeper.cs','  Beta/space.cs'
+    'Alpha/src/File.cs', 'Beta/tests/Test.cs', 'Alpha/docs/Readme.md', 'Gamma/one/two/three.txt', 'Bad.Root/src/File.cs', '.hidden/src/File.cs', 'delta/',
+    'epsilon', 'foo.bar/', 'my-app/src/index.cs', 'my_app/src/index.cs', 'Zeta/Another.cs', 'Alpha/more/Deeper.cs', '  Beta/space.cs'
   ].join(',');
   logHeader('Linting pattern: extracts valid roots', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
@@ -191,7 +191,7 @@ test('Linting pattern: extracts valid roots', () => {
 // linting duplicates
 test('Linting pattern: duplicates only logged once per root', () => {
   const pattern = LINTING_REGEX;
-  const paths = ['Proj/one.cs','Proj/two.cs','Proj/three.cs','Other/file.cs','Other/file2.cs'].join(',');
+  const paths = ['Proj/one.cs', 'Proj/two.cs', 'Proj/three.cs', 'Other/file.cs', 'Other/file2.cs'].join(',');
   logHeader('Linting pattern: duplicates only logged once per root', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -203,7 +203,7 @@ test('Linting pattern: duplicates only logged once per root', () => {
 // linting no matches
 test('Linting pattern: no matches', () => {
   const pattern = LINTING_REGEX;
-  const paths = ['.hidden','with.dot','.hidden/file','bad.root/file','onlyfile','/leading/slash/file'].join(',');
+  const paths = ['.hidden', 'with.dot', '.hidden/file', 'bad.root/file', 'onlyfile', '/leading/slash/file'].join(',');
   logHeader('Linting pattern: no matches', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -215,7 +215,7 @@ test('Linting pattern: no matches', () => {
 // complex regex de-duplicate root
 test('complex regex: de-duplicates single root', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['ProjMix/src/Main.cs','ProjMix/tests/Unit/Spec.cs','ProjMix/test/ProjMix.csproj','ProjMix/src/Nested/More/App.sln'].join(',');
+  const paths = ['ProjMix/src/Main.cs', 'ProjMix/tests/Unit/Spec.cs', 'ProjMix/test/ProjMix.csproj', 'ProjMix/src/Nested/More/App.sln'].join(',');
   logHeader('complex regex: de-duplicates single root', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -225,7 +225,7 @@ test('complex regex: de-duplicates single root', () => {
 // complex regex mixed
 test('complex regex: mixed unrelated valid and invalid roots', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['A/src/A.cs','B/tests/BSpec.cs','C/test/C.csproj','D/src/D.sln','E/lib/E.cs','F/tests/readme.md','G/src/file.CS','Hsrc/Not/Really.cs','I/tes/Almost.cs','J/src/deep/file.cs'].join(',');
+  const paths = ['A/src/A.cs', 'B/tests/BSpec.cs', 'C/test/C.csproj', 'D/src/D.sln', 'E/lib/E.cs', 'F/tests/readme.md', 'G/src/file.CS', 'Hsrc/Not/Really.cs', 'I/tes/Almost.cs', 'J/src/deep/file.cs'].join(',');
   logHeader('complex regex: mixed unrelated valid and invalid roots', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -235,7 +235,7 @@ test('complex regex: mixed unrelated valid and invalid roots', () => {
 // complex regex backslashes
 test('complex regex: backslash path separators do not match', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['WinProj\\src\\Program.cs','RealProj/src/Program.cs'].join(',');
+  const paths = ['WinProj\\src\\Program.cs', 'RealProj/src/Program.cs'].join(',');
   logHeader('complex regex: backslash path separators do not match', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -246,7 +246,7 @@ test('complex regex: backslash path separators do not match', () => {
 test('complex regex: whitespace handling', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+    '  Solution1/src/Api/Program.cs', '   Solution1/src/Api/Program.cs', '     Solution1/src/Api/Controllers/Home.cs', '     Solution1/src/Lib/Lib.cs', '   Solution1/src/Lib/Lib.cs', '       Solution1/src/Util/Helper.cs', '     Solution1/src/Util/Helper.cs', ' Solution1/src/Util/Another.cs', '     Solution2/tests/Util/Another.cs', '   Solution3/tests/Test.cs', ' SkipSolution1/example/tests/README.md', '  SkipSolution2/src/Api/README.md', '     SkipSolution3/README.md'
   ].join(',');
   logHeader('complex regex: whitespace handling', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
@@ -257,7 +257,7 @@ test('complex regex: whitespace handling', () => {
 // extra characters test
 test('testing extra characters', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['[".github/workflows/checks.yml"','["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
+  const paths = ['[".github/workflows/checks.yml"', '["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
   logHeader('testing extra characters', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths });
   assert.strictEqual(r.exitCode, 0);
@@ -267,7 +267,7 @@ test('testing extra characters', () => {
 
 test('testing out is not json 1', () => {
   const pattern = TESTING_REGEX;
-  const paths = ['[".github/workflows/checks.yml"','["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
+  const paths = ['[".github/workflows/checks.yml"', '["ChannelOnline/tests/Trafera.ChannelOnline.Tests/GlobalUsings.cs"]'].join(',');
   logHeader('testing extra characters', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
   assert.strictEqual(r.exitCode, 0);
@@ -277,7 +277,7 @@ test('testing out is not json 1', () => {
 test('testing out is not json 2', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+    '  Solution1/src/Api/Program.cs', '   Solution1/src/Api/Program.cs', '     Solution1/src/Api/Controllers/Home.cs', '     Solution1/src/Lib/Lib.cs', '   Solution1/src/Lib/Lib.cs', '       Solution1/src/Util/Helper.cs', '     Solution1/src/Util/Helper.cs', ' Solution1/src/Util/Another.cs', '     Solution2/tests/Util/Another.cs', '   Solution3/tests/Test.cs', ' SkipSolution1/example/tests/README.md', '  SkipSolution2/src/Api/README.md', '     SkipSolution3/README.md'
   ].join(',');
   logHeader('complex regex: whitespace handling', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
@@ -288,7 +288,7 @@ test('testing out is not json 2', () => {
 test('testing out is not json 2', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+    '  Solution1/src/Api/Program.cs', '   Solution1/src/Api/Program.cs', '     Solution1/src/Api/Controllers/Home.cs', '     Solution1/src/Lib/Lib.cs', '   Solution1/src/Lib/Lib.cs', '       Solution1/src/Util/Helper.cs', '     Solution1/src/Util/Helper.cs', ' Solution1/src/Util/Another.cs', '     Solution2/tests/Util/Another.cs', '   Solution3/tests/Test.cs', ' SkipSolution1/example/tests/README.md', '  SkipSolution2/src/Api/README.md', '     SkipSolution3/README.md'
   ].join(',');
   logHeader('complex regex: whitespace handling', pattern, paths);
   const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
@@ -299,10 +299,22 @@ test('testing out is not json 2', () => {
 test('inputs can handle booleans too', () => {
   const pattern = TESTING_REGEX;
   const paths = [
-    '  Solution1/src/Api/Program.cs','   Solution1/src/Api/Program.cs','     Solution1/src/Api/Controllers/Home.cs','     Solution1/src/Lib/Lib.cs','   Solution1/src/Lib/Lib.cs','       Solution1/src/Util/Helper.cs','     Solution1/src/Util/Helper.cs',' Solution1/src/Util/Another.cs','     Solution2/tests/Util/Another.cs','   Solution3/tests/Test.cs',' SkipSolution1/example/tests/README.md','  SkipSolution2/src/Api/README.md','     SkipSolution3/README.md'
+    '  Solution1/src/Api/Program.cs', '   Solution1/src/Api/Program.cs', '     Solution1/src/Api/Controllers/Home.cs', '     Solution1/src/Lib/Lib.cs', '   Solution1/src/Lib/Lib.cs', '       Solution1/src/Util/Helper.cs', '     Solution1/src/Util/Helper.cs', ' Solution1/src/Util/Another.cs', '     Solution2/tests/Util/Another.cs', '   Solution3/tests/Test.cs', ' SkipSolution1/example/tests/README.md', '  SkipSolution2/src/Api/README.md', '     SkipSolution3/README.md'
   ].join(',');
   logHeader('complex regex: whitespace handling', pattern, paths);
-  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: false});
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: false });
   assert.strictEqual(r.exitCode, 0);
   assert.match(r.outputContent, /unique_root_directories=Solution1,Solution2,Solution3/);
+});
+
+// debug mode disabled path
+test('debug mode disabled does not print debug lines', () => {
+  const pattern = LINTING_REGEX;
+  const paths = 'Alpha/src/File.cs,Beta/tests/Test.cs';
+  const r = runWith({ INPUT_PATTERN: pattern, INPUT_PATHS: paths, INPUT_DEBUG_MODE: 'false' });
+  assert.strictEqual(r.exitCode, 0);
+  // Should not contain debug header lines
+  assert.ok(!/Debug mode is ON/.test(r.out));
+  // Still outputs the unique directories
+  assert.match(r.outputContent, /unique_root_directories=\["Alpha","Beta"\]/);
 });

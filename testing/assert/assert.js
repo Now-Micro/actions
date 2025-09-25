@@ -14,6 +14,17 @@ function getEnv(name, required = false, defaultValue = '') {
     return v;
 }
 
+// Required but may be empty string: only error if env var is undefined (not present),
+// allow '' (empty) as a valid provided value.
+function getEnvRequiredDefined(name, defaultValue = '') {
+    if (!(name in process.env)) {
+        console.error(`Missing required env var: ${name}`);
+        process.exit(1);
+    }
+    const v = process.env[name];
+    return v === undefined ? defaultValue : v; // preserve empty string
+}
+
 function parseRegex(spec) {
     // Allow forms: pattern, /pattern/, /pattern/flags
     const m = spec.match(/^\/(.*)\/([gimsuy]*)$/);
@@ -24,19 +35,15 @@ function parseRegex(spec) {
 }
 
 function run() {
-    const expected = getEnv('INPUT_EXPECTED', true);
     const summaryFile = getEnv('INPUT_SUMMARY_FILE' || "", true);
     const testName = getEnv('INPUT_TEST_NAME', true);
     const mode = getEnv('INPUT_MODE', false, 'exact').toLowerCase() || 'exact';
     const exitOnFail = getEnv('INPUT_EXIT_ON_FAIL', false, 'false').toLowerCase() === 'true';
-    // Actual is optional for 'absent' mode (may be intentionally empty)
-    let actual = getEnv('INPUT_ACTUAL', mode !== 'absent');
-    if (mode !== 'absent' && (actual === undefined || actual === '')) {
-        console.error('Missing required env var: INPUT_ACTUAL');
-        process.exit(1);
-    }
+    // expected must be defined (env var present) but may be the empty string
+    const expected = getEnvRequiredDefined('INPUT_EXPECTED', '');
+    const actual = getEnv('INPUT_ACTUAL', false, '');
 
-    console.log(`[ASSERT] ${testName} :: mode=${mode} expected='${expected}' actual='${actual}'`);
+    console.log(`\n\n[ASSERT] ${testName} :: mode=${mode} expected='${expected}' actual='${actual}'`);
 
     let pass = false;
     switch (mode) {

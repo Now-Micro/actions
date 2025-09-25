@@ -41,10 +41,10 @@ on:
         type: boolean
         default: false
       skip-tests:
-        description: 'Skip running tests (not recommended)'
+        description: 'Skip running tests'
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write

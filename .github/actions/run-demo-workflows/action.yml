@@ -1,11 +1,11 @@
 name: Run Demo Workflows (composite)
 description: Executes all demo composite actions used by demo-all workflow
 
-inputs: 
-  github-token: 
-    description: 'GitHub token with permissions to publish to GitHub Packages (NuGet).'
+inputs:
+  github-token:
+    description: "GitHub token with permissions to publish to GitHub Packages (NuGet)."
     required: false
-    default: ''
+    default: ""
 
 runs:
   using: composite
@@ -37,6 +37,9 @@ runs:
       with:
         infix: "demo"
 
+    - name: Demo - get-changed-files
+      uses: ./.github/actions/demo-get-changed-files
+
     - name: Demo - nuget publish
       uses: ./.github/actions/demo-nuget-publish
       with:
@@ -45,11 +48,11 @@ runs:
         directory: "demo/dotnet/src/Api"
         github-token: ${{ inputs.github-token }}
 
-    - name: Demo - get-changed-files
-      uses: ./.github/actions/demo-get-changed-files
-
     - name: Demo - get-project-and-solution-files-from-directory
       uses: ./.github/actions/demo-get-project-and-solution-files-from-directory
 
     - name: Demo - get-unique-root-directories
       uses: ./.github/actions/demo-get-unique-root-directories
+
+    - name: Demo - string-manipulator
+      uses: ./.github/actions/demo-string-manipulator

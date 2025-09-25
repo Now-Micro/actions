@@ -1,10 +1,15 @@
-name: 'Demo - Unique Root Directories'
-description: 'Extracts unique root directories based on file paths and patterns'
-author: 'Trafera'
+name: "Demo - Unique Root Directories"
+description: "Extracts unique root directories based on file paths and patterns"
+author: "Trafera"
 
 runs:
-  using: 'composite'
-  steps: 
+  using: "composite"
+  steps:
+    - name: Title - Unique Root Directories Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Unique Root Directories Demo
+        path: ./.github/actions/demo-get-unique-root-directories
     - name: Prepare summary file path
       shell: bash
       id: pre
@@ -13,13 +18,13 @@ runs:
       id: t1
       uses: ./get-unique-root-directories
       with:
-        pattern: '^(src/[^/]+)/'
-        paths: 'src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Util.cs'
-        debug-mode: 'true'
+        pattern: "^(src/[^/]+)/"
+        paths: "src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Util.cs"
+        debug-mode: "true"
     - name: assert t1 output
       uses: ./testing/assert
       with:
-        test-name: 'extracts unique roots array'
+        test-name: "extracts unique roots array"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/Api","src/Lib"]'
@@ -28,16 +33,16 @@ runs:
       id: t2
       uses: ./get-unique-root-directories
       with:
-        pattern: '^(foo)/'
-        paths: 'src/Api/Program.cs'
-        debug-mode: 'true'
+        pattern: "^(foo)/"
+        paths: "src/Api/Program.cs"
+        debug-mode: "true"
     - name: assert t2 output
       uses: ./testing/assert
       with:
-        test-name: 'no matches empty'
+        test-name: "no matches empty"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '[]'
+        expected: "[]"
         actual: ${{ steps.t2.outputs.unique_root_directories }}
     - name: invalid regex exits 1
       shell: bash
@@ -54,10 +59,10 @@ runs:
     - name: assert invalid regex failed
       uses: ./testing/assert
       with:
-        test-name: 'invalid regex exits 1'
+        test-name: "invalid regex exits 1"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '1'
+        expected: "1"
         actual: ${{ steps.t3.outputs.code || '1' }}
     - name: missing pattern exits 1
       shell: bash
@@ -73,22 +78,22 @@ runs:
     - name: assert missing pattern failure
       uses: ./testing/assert
       with:
-        test-name: 'missing pattern exits 1'
+        test-name: "missing pattern exits 1"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '1'
+        expected: "1"
         actual: ${{ steps.t4.outputs.code || '1' }}
     - name: duplicates only logged once
       id: t5
       uses: ./get-unique-root-directories
       with:
-        pattern: '^(src/Api)/'
-        paths: 'src/Api/One.cs,src/Api/Two.cs'
-        debug-mode: 'true'
+        pattern: "^(src/Api)/"
+        paths: "src/Api/One.cs,src/Api/Two.cs"
+        debug-mode: "true"
     - name: assert duplicates output
       uses: ./testing/assert
       with:
-        test-name: 'duplicates single root'
+        test-name: "duplicates single root"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/Api"]'
@@ -97,13 +102,13 @@ runs:
       id: t6
       uses: ./get-unique-root-directories
       with:
-        pattern: '^(src/[^/]+)/'
-        paths: 'src/Api/Program.cs,src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Lib.cs,src/Lib/Lib.cs,src/Util/Helper.cs,src/Util/Helper.cs,src/Util/Another.cs'
-        debug-mode: 'true'
+        pattern: "^(src/[^/]+)/"
+        paths: "src/Api/Program.cs,src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Lib.cs,src/Lib/Lib.cs,src/Util/Helper.cs,src/Util/Helper.cs,src/Util/Another.cs"
+        debug-mode: "true"
     - name: assert three roots
       uses: ./testing/assert
       with:
-        test-name: 'three unique roots'
+        test-name: "three unique roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/Api","src/Lib","src/Util"]'
@@ -113,12 +118,12 @@ runs:
       uses: ./get-unique-root-directories
       with:
         pattern: '^([^/]+)/(src|tests?)/.*\.(cs|csproj|sln)$'
-        paths: 'ProjectA/src/Program.cs,ProjectA/src/Utils/Helper.cs,ProjectB/test/ProjectB.csproj,ProjectB/tests/Another.cs,ProjectC/tests/Solution.sln,ProjectC/test/Other.cs,My-App/src/Util.cs,My.App/tests/Suite.sln,ProjectD/lib/Program.cs,ProjectE/src/README.md,/ProjectF/src/Program.cs,ProjectG/tests/Program.txt,ProjectH/src/Dir,ProjectI/tests/Program.csx'
-        debug-mode: 'true'
+        paths: "ProjectA/src/Program.cs,ProjectA/src/Utils/Helper.cs,ProjectB/test/ProjectB.csproj,ProjectB/tests/Another.cs,ProjectC/tests/Solution.sln,ProjectC/test/Other.cs,My-App/src/Util.cs,My.App/tests/Suite.sln,ProjectD/lib/Program.cs,ProjectE/src/README.md,/ProjectF/src/Program.cs,ProjectG/tests/Program.txt,ProjectH/src/Dir,ProjectI/tests/Program.csx"
+        debug-mode: "true"
     - name: assert complex pattern roots
       uses: ./testing/assert
       with:
-        test-name: 'complex pattern roots'
+        test-name: "complex pattern roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["ProjectA","ProjectB","ProjectC","My-App","My.App"]'
@@ -128,27 +133,27 @@ runs:
       uses: ./get-unique-root-directories
       with:
         pattern: '^([^/]+)/(src|tests?)/.*\.(cs|csproj|sln)$'
-        paths: 'Alpha/lib/File.cs,Beta/source/Program.cs,Gamma/src/Readme.md,/Delta/src/Program.cs,Epsilon/tests/Notes.txt,Zeta/src/Folder'
-        debug-mode: 'true'
+        paths: "Alpha/lib/File.cs,Beta/source/Program.cs,Gamma/src/Readme.md,/Delta/src/Program.cs,Epsilon/tests/Notes.txt,Zeta/src/Folder"
+        debug-mode: "true"
     - name: assert complex no matches
       uses: ./testing/assert
       with:
-        test-name: 'complex pattern no matches'
+        test-name: "complex pattern no matches"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '[]'
+        expected: "[]"
         actual: ${{ steps.t8.outputs.unique_root_directories }}
     - name: caret pattern extracts roots
       id: t9
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: 'Alpha/src/File.cs,Beta/tests/Test.cs,Alpha/docs/Readme.md,Gamma/one/two/three.txt,Bad.Root/src/File.cs,.hidden/src/File.cs,delta/,epsilon,foo.bar/,my-app/src/index.cs,my_app/src/index.cs,Zeta/Another.cs,Alpha/more/Deeper.cs,  Beta/space.cs'
-        debug-mode: 'true'
+        pattern: "^([^/.]+)/"
+        paths: "Alpha/src/File.cs,Beta/tests/Test.cs,Alpha/docs/Readme.md,Gamma/one/two/three.txt,Bad.Root/src/File.cs,.hidden/src/File.cs,delta/,epsilon,foo.bar/,my-app/src/index.cs,my_app/src/index.cs,Zeta/Another.cs,Alpha/more/Deeper.cs,  Beta/space.cs"
+        debug-mode: "true"
     - name: assert caret pattern roots
       uses: ./testing/assert
       with:
-        test-name: 'caret simple pattern roots'
+        test-name: "caret simple pattern roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["Alpha","Beta","Gamma","delta","my-app","my_app","Zeta"]'
@@ -157,13 +162,13 @@ runs:
       id: t10
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: 'Proj/one.cs,Proj/two.cs,Proj/three.cs,Other/file.cs,Other/file2.cs'
-        debug-mode: 'true'
+        pattern: "^([^/.]+)/"
+        paths: "Proj/one.cs,Proj/two.cs,Proj/three.cs,Other/file.cs,Other/file2.cs"
+        debug-mode: "true"
     - name: assert caret pattern duplicates
       uses: ./testing/assert
       with:
-        test-name: 'caret duplicates'
+        test-name: "caret duplicates"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["Proj","Other"]'
@@ -172,28 +177,28 @@ runs:
       id: t11
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: '.hidden,with.dot,.hidden/file,bad.root/file,onlyfile,/leading/slash/file'
-        debug-mode: 'true'
+        pattern: "^([^/.]+)/"
+        paths: ".hidden,with.dot,.hidden/file,bad.root/file,onlyfile,/leading/slash/file"
+        debug-mode: "true"
     - name: assert caret pattern no matches
       uses: ./testing/assert
       with:
-        test-name: 'caret no matches'
+        test-name: "caret no matches"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '[]'
+        expected: "[]"
         actual: ${{ steps.t11.outputs.unique_root_directories }}
     - name: Testing pattern in Codebits
       id: t12
       uses: ./get-unique-root-directories
       with:
         pattern: '^([^\/]+)\/(src|tests?)\/.*\.(cs|csproj|sln)$'
-        paths: 'Solution1/src/Api/Program.cs,Solution1/src/Api/Program.cs,Solution1/src/Api/Controllers/Home.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Another.cs,Solution2/tests/Util/Another.cs,Solution3/tests/Test.cs,SkipSolution1/example/tests/README.md,SkipSolution2/src/Api/README.md,SkipSolution3/README.md'
-        debug-mode: 'true'
+        paths: "Solution1/src/Api/Program.cs,Solution1/src/Api/Program.cs,Solution1/src/Api/Controllers/Home.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Another.cs,Solution2/tests/Util/Another.cs,Solution3/tests/Test.cs,SkipSolution1/example/tests/README.md,SkipSolution2/src/Api/README.md,SkipSolution3/README.md"
+        debug-mode: "true"
     - name: assert Solution 1,2,3 roots
       uses: ./testing/assert
       with:
-        test-name: 'Testing Regex 1,2,3 roots'
+        test-name: "Testing Regex 1,2,3 roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["Solution1","Solution2","Solution3"]'
@@ -202,13 +207,13 @@ runs:
       id: t13
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: 'Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md'
-        debug-mode: 'true'
+        pattern: "^([^/.]+)/"
+        paths: "Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md"
+        debug-mode: "true"
     - name: assert linting Solution 1,2,3 roots
       uses: ./testing/assert
       with:
-        test-name: 'Linting Regex 1,2,3 roots'
+        test-name: "Linting Regex 1,2,3 roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["Solution1","Solution2","Solution3","Solution4","Solution5","Solution6"]'
@@ -217,33 +222,33 @@ runs:
       id: t14
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: 'Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md'
-        output-is-json: 'false'
-        debug-mode: 'true'
+        pattern: "^([^/.]+)/"
+        paths: "Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md"
+        output-is-json: "false"
+        debug-mode: "true"
     - name: assert linting non-JSON output (string false)
       uses: ./testing/assert
       with:
-        test-name: 'Linting non-JSON (string false)'
+        test-name: "Linting non-JSON (string false)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: 'Solution1,Solution2,Solution3,Solution4,Solution5,Solution6'
+        expected: "Solution1,Solution2,Solution3,Solution4,Solution5,Solution6"
         actual: ${{ steps.t14.outputs.unique_root_directories }}
     - name: Linting pattern non-JSON output (boolean false)
       id: t15
       uses: ./get-unique-root-directories
       with:
-        pattern: '^([^/.]+)/'
-        paths: 'Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md'
+        pattern: "^([^/.]+)/"
+        paths: "Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md"
         output-is-json: false
-        debug-mode: 'true'
+        debug-mode: "true"
     - name: assert linting non-JSON output (boolean false)
       uses: ./testing/assert
       with:
-        test-name: 'Linting non-JSON (boolean false)'
+        test-name: "Linting non-JSON (boolean false)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: 'Solution1,Solution2,Solution3,Solution4,Solution5,Solution6'
+        expected: "Solution1,Solution2,Solution3,Solution4,Solution5,Solution6"
         actual: ${{ steps.t15.outputs.unique_root_directories }}
     - name: Summarize
       shell: bash

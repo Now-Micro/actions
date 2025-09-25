@@ -67,6 +67,16 @@ test('local publish reads from INPUT_PACKAGE_DIRECTORY override', () => {
     assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
 });
 
+test('local publish copies to absolute path', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    const absDest = path.join(tmp, 'abs', 'out');
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: absDest }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    assert.ok(fs.existsSync(path.join(absDest, 'A.1.0.0.nupkg')));
+    assert.ok(fs.existsSync(path.join(absDest, 'B.2.0.0.nupkg')));
+});
+
 test('default target requires owner when publish-source empty', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     mkpkg(tmp);
@@ -89,4 +99,26 @@ test('remote publish requires token', () => {
     const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: 'https://example.com/index.json' }, () => run());
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /INPUT_GITHUB_TOKEN is required/);
+});
+
+test('remote publish success path logs and masks token', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    // Stub spawnSync BEFORE requiring the module so destructured reference uses the stub
+    const cp = require('child_process');
+    const orig = cp.spawnSync;
+    cp.spawnSync = () => ({ status: 0 });
+    delete require.cache[require.resolve('./publish')];
+    const { run: runStubbed } = require('./publish');
+    const r = withEnv({
+        GITHUB_WORKSPACE: tmp,
+        INPUT_PUBLISH_SOURCE: 'https://example.com/index.json',
+        INPUT_GITHUB_TOKEN: 'tok_abc123xyz'
+    }, () => runStubbed());
+    cp.spawnSync = orig;
+    delete require.cache[require.resolve('./publish')];
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Remote publish using dotnet/);
+    assert.match(r.out, /api-key: tok…xyz/);
+    assert.match(r.out, /Push completed successfully/);
 });

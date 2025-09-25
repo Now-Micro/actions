@@ -1,0 +1,524 @@
+name: Demo - String Manipulator
+description: Demo for string-manipulator composite action with assertions mirroring unit tests
+
+inputs:
+  debug-mode:
+    description: "Enable debug mode."
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Title - String Manipulator Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: String Manipulator Demo
+        path: ./.github/actions/demo-string-manipulator
+    - name: Setup summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-string-manipulator-summary.txt" >> $GITHUB_ENV
+        : > $GITHUB_WORKSPACE/demo-string-manipulator-summary.txt
+
+    # 1. extracts words using group1 (default CSV)
+    - name: SM1 - Extract words
+      id: sm1
+      uses: ./string-manipulator
+      with:
+        string: "one two three"
+        regex: '(\w+)'
+        regex-flags: "g"
+    - name: Assert SM1
+      uses: ./testing/assert
+      with:
+        expected: "one,two,three"
+        mode: exact
+        actual: ${{ steps.sm1.outputs.matches }}
+        test-name: "SM1 extracts words (CSV)"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 2. numbers from text (default CSV)
+    - name: SM2 - Numbers from text
+      id: sm2
+      uses: ./string-manipulator
+      with:
+        string: "A1 b22 C333"
+        regex: "([0-9]+)"
+    - name: Assert SM2
+      uses: ./testing/assert
+      with:
+        expected: "1,22,333"
+        mode: exact
+        actual: ${{ steps.sm2.outputs.matches }}
+        test-name: "SM2 numbers (CSV)"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 3. no matches writes empty CSV
+    - name: SM3 - No matches
+      id: sm3
+      uses: ./string-manipulator
+      with:
+        string: "abc"
+        regex: '(\d+)'
+    - name: Assert SM3
+      uses: ./testing/assert
+      with:
+        expected: ""
+        mode: exact
+        actual: ${{ steps.sm3.outputs.matches }}
+        test-name: "SM3 no matches (empty CSV)"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 4. invalid regex exits 1
+    - name: SM4 - Invalid regex
+      id: sm4
+      continue-on-error: true
+      uses: ./string-manipulator
+      with:
+        string: "abc"
+        regex: "([unclosed"
+    - name: Assert SM4
+      uses: ./testing/assert
+      with:
+        expected: "failure"
+        mode: exact
+        actual: ${{ steps.sm4.outcome }}
+        test-name: "SM4 invalid regex fails"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 5. missing INPUT_STRING with regex exits 1
+    - name: SM5 - Missing string with regex
+      id: sm5
+      continue-on-error: true
+      uses: ./string-manipulator
+      with:
+        regex: "(x)"
+    - name: Assert SM5
+      uses: ./testing/assert
+      with:
+        expected: "failure"
+        mode: exact
+        actual: ${{ steps.sm5.outcome }}
+        test-name: "SM5 missing string (regex) fails"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 6. missing INPUT_STRING with replacement exits 1
+    - name: SM6 - Missing string with replacement
+      id: sm6
+      continue-on-error: true
+      uses: ./string-manipulator
+      with:
+        replacement: '[ ["x", "y", "g"] ]'
+    - name: Assert SM6
+      uses: ./testing/assert
+      with:
+        expected: "failure"
+        mode: exact
+        actual: ${{ steps.sm6.outcome }}
+        test-name: "SM6 missing string (replacement) fails"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 7. no inputs provided -> exit 0, no outputs written
+    - name: SM7 - No inputs (no-op)
+      id: sm7
+      uses: ./string-manipulator
+    - name: Assert SM7
+      uses: ./testing/assert
+      with:
+        expected: ""
+        mode: absent
+        actual: ${{ steps.sm7.outputs.matches }}
+        test-name: "SM7 no-op produces no outputs"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 8. missing capturing group exits 1
+    - name: SM8 - Missing capturing group
+      id: sm8
+      continue-on-error: true
+      uses: ./string-manipulator
+      with:
+        string: "abc"
+        regex: "abc"
+    - name: Assert SM8
+      uses: ./testing/assert
+      with:
+        expected: "failure"
+        mode: exact
+        actual: ${{ steps.sm8.outcome }}
+        test-name: "SM8 missing capturing group fails"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 9. output-is-json=false outputs CSV
+    - name: SM9 - CSV output
+      id: sm9
+      uses: ./string-manipulator
+      with:
+        string: "x y z"
+        regex: '(\w+)'
+        match-output-is-json: "false"
+    - name: Assert SM9
+      uses: ./testing/assert
+      with:
+        expected: "x,y,z"
+        mode: exact
+        actual: ${{ steps.sm9.outputs.matches }}
+        test-name: "SM9 CSV matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 10. output-is-json=true outputs JSON
+    - name: SM10 - JSON output
+      id: sm10
+      uses: ./string-manipulator
+      with:
+        string: "x y z"
+        regex: '(\w+)'
+        match-output-is-json: "true"
+    - name: Assert SM10
+      uses: ./testing/assert
+      with:
+        expected: '["x","y","z"]'
+        mode: exact
+        actual: ${{ steps.sm10.outputs.matches }}
+        test-name: "SM10 JSON matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 11. replacement-only mode writes replaced output
+    - name: SM11 - Replacement only
+      id: sm11
+      uses: ./string-manipulator
+      with:
+        string: "Hello John Doe"
+        replacement: '[["John","Jane","g"],["Doe","Doe-Sr","g"]]'
+    - name: Assert SM11
+      uses: ./testing/assert
+      with:
+        expected: "Hello Jane Doe-Sr"
+        mode: exact
+        actual: ${{ steps.sm11.outputs.replaced }}
+        test-name: "SM11 replacement-only replaced"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 12. both modes: writes matches and replaced (assert replaced)
+    - name: SM12 - Both modes
+      id: sm12
+      uses: ./string-manipulator
+      with:
+        string: "a1 a2 a3"
+        regex: 'a(\d)'
+        replacement: '[["a","b","g"]]'
+    - name: Assert SM12
+      uses: ./testing/assert
+      with:
+        expected: "b1 b2 b3"
+        mode: exact
+        actual: ${{ steps.sm12.outputs.replaced }}
+        test-name: "SM12 both modes replaced"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 13. captures multiple groups (assert matches_all_groups)
+    - name: SM13 - All groups basic
+      id: sm13
+      uses: ./string-manipulator
+      with:
+        string: "x=10;y=20;z=30"
+        regex: '([a-z])=(\d+)'
+        match-output-is-json: "true"
+    - name: Assert SM13
+      uses: ./testing/assert
+      with:
+        expected: '[["x","10"],["y","20"],["z","30"]]'
+        mode: exact
+        actual: ${{ steps.sm13.outputs.matches_all_groups }}
+        test-name: "SM13 all groups basic"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 14. 4 groups (some empty)
+    - name: SM14 - 4 groups
+      id: sm14
+      uses: ./string-manipulator
+      with:
+        string: "A"
+        regex: "(A)(A)?(A)?(A)?"
+        match-output-is-json: "true"
+    - name: Assert SM14
+      uses: ./testing/assert
+      with:
+        expected: '[["A","","",""]]'
+        mode: exact
+        actual: ${{ steps.sm14.outputs.matches_all_groups }}
+        test-name: "SM14 all groups 4"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 15. 5 groups (some empty)
+    - name: SM15 - 5 groups
+      id: sm15
+      uses: ./string-manipulator
+      with:
+        string: "A"
+        regex: "(A)(A)?(A)?(A)?(A)?"
+        match-output-is-json: "true"
+    - name: Assert SM15
+      uses: ./testing/assert
+      with:
+        expected: '[["A","","","",""]]'
+        mode: exact
+        actual: ${{ steps.sm15.outputs.matches_all_groups }}
+        test-name: "SM15 all groups 5"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 16. 8 groups (some empty)
+    - name: SM16 - 8 groups
+      id: sm16
+      uses: ./string-manipulator
+      with:
+        string: "A"
+        regex: "(A)(A)?(A)?(A)?(A)?(A)?(A)?(A)?"
+        match-output-is-json: "true"
+    - name: Assert SM16
+      uses: ./testing/assert
+      with:
+        expected: '[["A","","","","","","",""]]'
+        mode: exact
+        actual: ${{ steps.sm16.outputs.matches_all_groups }}
+        test-name: "SM16 all groups 8"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 17. debug mode logs and replacement preview appear (assert replaced)
+    - name: SM17 - Debug mode scenario
+      id: sm17
+      uses: ./string-manipulator
+      with:
+        debug-mode: "true"
+        string: "x=1;y=2"
+        regex: '([a-z])=(\d+)'
+        regex-flags: "i"
+        replacement: '[["([a-z])=(\\d+)", "$1:$2", "ig"]]'
+        match-output-is-json: "true"
+    - name: Assert SM17
+      uses: ./testing/assert
+      with:
+        expected: "x:1;y:2"
+        mode: exact
+        actual: ${{ steps.sm17.outputs.replaced }}
+        test-name: "SM17 debug scenario replaced"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 18. array-of-tuples replacement example
+    - name: SM18 - Array-of-tuples example
+      id: sm18
+      uses: ./string-manipulator
+      with:
+        string: "Hello My name is Adam"
+        regex: "(Hello)"
+        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
+    - name: Assert SM18
+      uses: ./testing/assert
+      with:
+        expected: "Hello-My-name-is-tom"
+        mode: exact
+        actual: ${{ steps.sm18.outputs.replaced }}
+        test-name: "SM18 tuples example replaced"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 19. applyReplacements standalone success (assert replaced)
+    - name: SM19 - applyReplacements proxy
+      id: sm19
+      uses: ./string-manipulator
+      with:
+        string: "Hello My name is Adam"
+        replacement: '[["\\s", "-", "g"], ["adam", "tom", "i"]]'
+    - name: Assert SM19
+      uses: ./testing/assert
+      with:
+        expected: "Hello-My-name-is-tom"
+        mode: exact
+        actual: ${{ steps.sm19.outputs.replaced }}
+        test-name: "SM19 applyReplacements replaced"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 20. invalid replacement JSON exits 1
+    - name: SM20 - Invalid replacement JSON
+      id: sm20
+      continue-on-error: true
+      uses: ./string-manipulator
+      with:
+        string: "x"
+        regex: "(x)"
+        replacement: '["not-a-tuple"]'
+    - name: Assert SM20
+      uses: ./testing/assert
+      with:
+        expected: "failure"
+        mode: exact
+        actual: ${{ steps.sm20.outcome }}
+        test-name: "SM20 invalid replacement JSON fails"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 21. no matches writes empty matches_all_groups
+    - name: SM21 - Empty matches_all_groups
+      id: sm21
+      uses: ./string-manipulator
+      with:
+        string: "bbb"
+        regex: "(a)"
+        match-output-is-json: "true"
+    - name: Assert SM21
+      uses: ./testing/assert
+      with:
+        expected: "[]"
+        mode: exact
+        actual: ${{ steps.sm21.outputs.matches_all_groups }}
+        test-name: "SM21 empty matches_all_groups"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 22. empty replacement does not write replaced output
+    - name: SM22 - Empty replacement input
+      id: sm22
+      uses: ./string-manipulator
+      with:
+        string: "abc"
+        regex: "(a)"
+        replacement: ""
+    - name: Assert SM22
+      uses: ./testing/assert
+      with:
+        expected: ""
+        mode: absent
+        actual: ${{ steps.sm22.outputs.replaced }}
+        test-name: "SM22 no replaced output when empty replacement"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 23. complex 4-group date pattern with mixed optional match
+    - name: SM23 - Date pattern 4 groups
+      id: sm23
+      uses: ./string-manipulator
+      with:
+        string: "2025-09-24-UTC;2024-01-02"
+        regex: "([0-9]{4})-([0-9]{2})-([0-9]{2})(?:-([A-Za-z]+))?"
+        match-output-is-json: "true"
+    - name: Assert SM23
+      uses: ./testing/assert
+      with:
+        expected: '[["2025","09","24","UTC"],["2024","01","02",""]]'
+        mode: exact
+        actual: ${{ steps.sm23.outputs.matches_all_groups }}
+        test-name: "SM23 date pattern all groups"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 24. complex 5-group key=val with decorated optionals (uncertain) -> assert success
+    - name: SM24 - Decorated optionals (uncertain)
+      id: sm24
+      uses: ./string-manipulator
+      with:
+        string: "a=10(BIG){foo}[7];b=20{bar};c=30[9];d=40"
+        regex: '([a-z])=(\d+)(?:\(([A-Z]+)\))?(?:\{([a-z]+)\})?(?:\\?\n?\n?\n?)'
+        match-output-is-json: "true"
+    - name: Assert SM24
+      uses: ./testing/assert
+      with:
+        expected: "success"
+        mode: exact
+        actual: ${{ steps.sm24.outcome }}
+        test-name: "SM24 uncertain regex ran successfully"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 25. complex 5-group key=val with decorated optionals (corrected)
+    - name: SM25 - Decorated optionals (corrected)
+      id: sm25
+      uses: ./string-manipulator
+      with:
+        string: "a=10(BIG){foo}[7];b=20{bar};c=30[9];d=40"
+        regex: '([a-z])=(\d+)(?:\(([A-Z]+)\))?(?:\{([a-z]+)\})?(?:\[(\d+)\])?'
+        match-output-is-json: "true"
+    - name: Assert SM25
+      uses: ./testing/assert
+      with:
+        expected: '[["a","10","BIG","foo","7"],["b","20","","bar",""],["c","30","","","9"],["d","40","","",""]]'
+        mode: exact
+        actual: ${{ steps.sm25.outputs.matches_all_groups }}
+        test-name: "SM25 decorated optionals all groups"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 26. complex 8-group semver with extras across two matches
+    - name: SM26 - Semver with extras
+      id: sm26
+      uses: ./string-manipulator
+      with:
+        string: "1.2.3-alpha+build/feature#frag@prod 10.20.30+meta@dev"
+        regex: '(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?(?:\/([\w-]+))?(?:#([\w-]+))?(?:@([\w-]+))?'
+        match-output-is-json: "true"
+    - name: Assert SM26
+      uses: ./testing/assert
+      with:
+        expected: '[["1","2","3","alpha","build","feature","frag","prod"],["10","20","30","","meta","","","dev"]]'
+        mode: exact
+        actual: ${{ steps.sm26.outputs.matches_all_groups }}
+        test-name: "SM26 semver all groups"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 27. real use case - 1 (pattern variant: (.*)\/src)
+    - name: SM27 - Real use case 1
+      id: sm27
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src"
+        regex: '(.*)\/src'
+        match-output-is-json: "true"
+    - name: Assert SM27
+      uses: ./testing/assert
+      with:
+        expected: '["CSI"]'
+        mode: exact
+        actual: ${{ steps.sm27.outputs.matches }}
+        test-name: "SM27 real use case 1"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 28. real use case - 2 (pattern variant: (.*)/src)
+    - name: SM28 - Real use case 2
+      id: sm28
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src"
+        regex: "(.*)/src"
+        match-output-is-json: "true"
+    - name: Assert SM28
+      uses: ./testing/assert
+      with:
+        expected: '["CSI"]'
+        mode: exact
+        actual: ${{ steps.sm28.outputs.matches }}
+        test-name: "SM28 real use case 2"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 29. can handle unescaped / in replacement pattern
+    - name: SM29 - Replacement unescaped slash
+      id: sm29
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["/src-MAIN", "/lib", "i"]]'
+    - name: Assert SM29
+      uses: ./testing/assert
+      with:
+        expected: "CSI/lib"
+        mode: exact
+        actual: ${{ steps.sm29.outputs.replaced }}
+        test-name: "SM29 replacement unescaped slash"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    # 30. can handle /.../ delimited replacement pattern
+    - name: SM30 - Replacement regex literal style
+      id: sm30
+      uses: ./string-manipulator
+      with:
+        string: "CSI/src-main"
+        replacement: '[["/\/src-MAIN/", "/lib", "i"]]'
+    - name: Assert SM30
+      uses: ./testing/assert
+      with:
+        expected: "CSI/lib"
+        mode: exact
+        actual: ${{ steps.sm30.outputs.replaced }}
+        test-name: "SM30 replacement regex literal style"
+        summary-file: ${{ env.SUMMARY_FILE }}

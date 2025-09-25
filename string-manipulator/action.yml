@@ -1,0 +1,57 @@
+name: "String Manipulator"
+description: "Allows for various string manipulations using regex."
+author: "Trafera"
+inputs:
+  debug-mode:
+    description: "Enable debug mode for additional logging."
+    required: false
+    default: "false"
+  match-output-is-json:
+    description: "When true, writes matches as a JSON array string; otherwise writes a comma-separated string."
+    required: false
+    default: "false"
+  regex:
+    description: "Optional regex pattern for matching (must include a capturing group for group 1 when provided). Matching runs only when this is set.  You must omit the regex delimiters (e.g., /pattern/)."
+    required: false
+    default: ""
+  regex-flags:
+    description: "Optional regex flags used for matching (e.g., i, m). The action ensures global (g) matching to find all captures when matching runs."
+    required: false
+    default: ""
+  replacement:
+    description: "Optional JSON array of tuples for sequential replacements: [[pattern, replacement, flags?], ...]. Patterns are JS regex; flags optional and 'g' is enforced. When provided, replacement runs. Example: [[\"\\s\",\"-\",\"g\"],[\"adam\",\"tom\",\"i\"]]."
+    required: false
+    default: ""
+  string:
+    description: "Optional input string to process (used for matching and/or replacement)."
+    required: false
+    default: ""
+
+outputs:
+  matches:
+    description: "Array of captured matches (group 1)."
+    value: ${{ steps.get.outputs.matches }}
+  replaced:
+    description: "Resulting string after performing replacement when do-replace is true."
+    value: ${{ steps.get.outputs.replaced }}
+  matches_all_groups:
+    description: "JSON array of arrays containing all captured groups per match (e.g., [[g1,g2,...],[g1,g2,...]])."
+    value: ${{ steps.get.outputs.matches_all_groups }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Get matches
+      id: get
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/string-manipulator.js"
+      env:
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_STRING: ${{ inputs.string }}
+        INPUT_REGEX: ${{ inputs.regex }}
+        INPUT_REGEX_FLAGS: ${{ inputs.regex-flags }}
+        INPUT_OUTPUT_IS_JSON: ${{ inputs.match-output-is-json }}
+        INPUT_REPLACEMENT: ${{ inputs.replacement }}

@@ -1,0 +1,42 @@
+name: Output Demo Title
+description: Prints a standardized banner for demo sections
+
+author: Trafera
+
+inputs:
+  title:
+    description: "Human-readable section title"
+    required: true
+  path:
+    description: "Path of the composite being run (for reference)"
+    required: true
+  line-breaks:
+    description: "Number of blank lines to print before the title"
+    required: false
+    default: "1"
+
+runs:
+  using: composite
+  steps:
+    - name: Print title
+      shell: bash
+      run: |
+        # Determine how many blank lines to print before/after the title (default 3)
+        count="${{ inputs.line-breaks }}"
+        # Fallback to 1 if not a non-negative integer
+        if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=1; fi
+
+        # Before-title blank lines
+        i=0
+        while [ "$i" -lt "$count" ]; do
+          echo " "
+          i=$((i+1))
+        done
+
+        echo "=========================================================================================================================================================================================="
+        echo "${{ inputs.title }}"
+
+
+        echo "Demo: ${{ inputs.path }}"
+        echo "=========================================================================================================================================================================================="
+        echo " "

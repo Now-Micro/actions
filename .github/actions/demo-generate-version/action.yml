@@ -12,6 +12,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Title - Generate Version Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Generate Version Demo
+        path: ./.github/actions/demo-generate-version
     - name: Prepare summary and temp project
       id: pre
       shell: bash

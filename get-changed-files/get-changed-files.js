@@ -116,11 +116,31 @@ function extractSha(ref, prNumber) {
             try {
                 execSync('git fetch --tags --quiet origin', { stdio: 'ignore' });
             } catch { }
+            // Some environments (or remotes with only tags and no heads) may not bring tag refs
+            // into the local tag namespace via a generic fetch. As a final attempt, explicitly
+            // fetch the single tag by name.
+            try {
+                execSync(`git fetch origin tag ${safeRef}`, { stdio: 'ignore' });
+            } catch { }
         }
-        // Try the provided name first, then origin/<name>
+        // Try the provided name, then explicit tag ref, then origin/<name> (for branches)
         sha = tryRevList();
         if (!sha) sha = tryRevListRef(`origin/${safeRef}`);
+        if (!sha) sha = tryRevListRef(`refs/tags/${safeRef}`);
         if (sha) return sha;
+
+        // As a last resort, resolve tag directly from remote without fetching
+        try {
+            const out = execSync(`git ls-remote --tags origin ${safeRef}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+            // Expect lines like: "<sha>\trefs/tags/<name>" (possibly with ^{} for annotated tags)
+            const line = out.split(/\r?\n/).find(l => l.includes(`refs/tags/${safeRef}`));
+            if (line) {
+                const m = line.match(/^([0-9a-f]{7,40})\s+/i);
+                if (m && m[1] && getIsSha(m[1])) {
+                    return m[1];
+                }
+            }
+        } catch { }
     }
 
     return '';

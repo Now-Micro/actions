@@ -3,19 +3,24 @@ description: This workflow demonstrates how to enforce code standards in a .NET 
 
 inputs:
   directory:
-    description: 'Directory to run coding standards checks in.  This should be the root directory of your .NET solution.'
+    description: "Directory to run coding standards checks in.  This should be the root directory of your .NET solution."
     required: true
   roslyn-version:
-    description: 'Optional override for Microsoft.CodeAnalysis.CSharp package version used by the analyzers'
+    description: "Optional override for Microsoft.CodeAnalysis.CSharp package version used by the analyzers"
     required: false
-    default: ''
+    default: ""
 
 runs:
   using: composite
   steps:
+    - name: Title - Code Standards Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Code Standards Demo
+        path: ./.github/actions/demo-code-standards
     - name: Build with Code Standards
       uses: ./dotnet/coding-standards
       with:
-        debug-mode: 'true'
+        debug-mode: "true"
         directory: ${{ inputs.directory }}
         roslyn-version: ${{ inputs.roslyn-version }}

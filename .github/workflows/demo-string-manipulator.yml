@@ -1,0 +1,13 @@
+name: Demo - String Manipulator
+on:
+  workflow_dispatch: {}
+
+jobs:
+  demo-string-manipulator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Run demo for string-manipulator
+        uses: ./.github/actions/demo-string-manipulator
