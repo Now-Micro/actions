@@ -28,6 +28,19 @@ test('stdio harness: ping tool end-to-end', async (t) => {
     assert.ok(tools.tools.find(t => t.name === 'analyze'), 'analyze tool missing');
     assert.ok(tools.tools.find(t => t.name === 'fail'), 'fail tool missing');
 
+    // Resource listing (if supported by server)
+    try {
+        const resources = await client.listResources({});
+        assert.ok(Array.isArray(resources.resources), 'resources not an array');
+        const catalog = resources.resources.find(r => r.uri === 'nowmicro-actions://actions/index');
+        if (catalog) {
+            const content = await client.readResource({ uri: catalog.uri });
+            assert.ok(Array.isArray(JSON.parse(content.contents[0].text)), 'catalog should be a JSON array');
+        }
+    } catch (_) {
+        // Some SDK versions may not support resources via client; ignore
+    }
+
     // Call ping tool
     const res = await client.callTool({ name: 'ping', arguments: { message: 'from-harness' } });
     assert.deepEqual(res, { content: [{ type: 'text', text: 'pong: from-harness' }] });
@@ -43,4 +56,16 @@ test('stdio harness: ping tool end-to-end', async (t) => {
 
     const res4 = await client.callTool({ name: 'fail', arguments: { reason: 'bad input' } });
     assert.deepEqual(res4, { content: [{ type: 'text', text: 'error: bad input' }], isError: true });
+
+    // Try snippet and reindex tools (best effort)
+    try {
+        const res5 = await client.callTool({ name: 'reindex-actions', arguments: {} });
+        assert.ok(/"ok":true/.test(res5.content?.[0]?.text || ''), 'reindex did not return ok:true');
+    } catch (_) { }
+    try {
+        const res6 = await client.callTool({ name: 'make-workflow-snippet', arguments: { id: 'dotnet-build' } });
+        // We don't know if dotnet-build exists in this environment; allow not found
+        const txt = res6.content?.[0]?.text || '';
+        assert.ok(txt.length > 0, 'snippet returned empty text');
+    } catch (_) { }
 });

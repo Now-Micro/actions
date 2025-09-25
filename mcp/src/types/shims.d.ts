@@ -17,4 +17,11 @@ declare module "@modelcontextprotocol/sdk/server/stdio.js" {
 // Minimal NodeJS global shim (only what's needed here)
 declare const process: {
     exit(code?: number): never;
+    cwd(): string;
+    env: Record<string, string | undefined>;
 };
+
+declare module 'yaml' {
+    const mod: any;
+    export default mod;
+}

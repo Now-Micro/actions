@@ -1,0 +1,3 @@
+-need to change the structure of the repo
+    -- move all non-action related stuff to a separate folder (e.g. _content)
+        --- update the README.md to reflect the new structure

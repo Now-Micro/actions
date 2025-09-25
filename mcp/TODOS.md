@@ -1,3 +1,4 @@
+- remove the test tools and update the tests to check for the actual tools
 - how to test that the mcp server is actually working when run locally?
 - what is the best way to provide resources (ask Copilot)?
     -- have the server find all action.yml files and read them and update the source code at build time?
