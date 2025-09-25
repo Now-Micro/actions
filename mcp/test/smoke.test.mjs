@@ -6,7 +6,18 @@ import { registerTools } from '../dist/tools/index.js';
 
 class FakeServer {
     constructor() { this.tools = []; }
-    tool(t) { this.tools.push(t); }
+    // Fallback signature used by our registerTools when registerTool is absent
+    tool(name, cb) {
+        if (typeof name === 'string' && typeof cb === 'function') {
+            this.tools.push({ name, handler: (args) => cb(args) });
+        } else if (name && typeof name === 'object') {
+            this.tools.push(name);
+        }
+    }
+    // Preferred path used by registerTools
+    registerTool(name, _config, cb) {
+        this.tools.push({ name, handler: (args) => cb(args) });
+    }
 }
 
 // Smoke test: tools register and ping echoes input
