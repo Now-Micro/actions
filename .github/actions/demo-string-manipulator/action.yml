@@ -83,7 +83,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm4.conclusion }}
+        actual: ${{ steps.sm4.outcome }}
         test-name: "SM4 invalid regex fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
@@ -99,7 +99,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm5.conclusion }}
+        actual: ${{ steps.sm5.outcome }}
         test-name: "SM5 missing string (regex) fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
@@ -115,7 +115,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm6.conclusion }}
+        actual: ${{ steps.sm6.outcome }}
         test-name: "SM6 missing string (replacement) fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
@@ -164,7 +164,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm9.conclusion }}
+        actual: ${{ steps.sm9.outcome }}
         test-name: "SM9 missing GITHUB_OUTPUT fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
@@ -370,7 +370,7 @@ runs:
       with:
         expected: "failure"
         mode: exact
-        actual: ${{ steps.sm21.conclusion }}
+        actual: ${{ steps.sm21.outcome }}
         test-name: "SM21 invalid replacement JSON fails"
         summary-file: ${{ env.SUMMARY_FILE }}
 
@@ -438,7 +438,7 @@ runs:
       with:
         expected: "success"
         mode: exact
-        actual: ${{ steps.sm25.conclusion }}
+        actual: ${{ steps.sm25.outcome }}
         test-name: "SM25 uncertain regex ran successfully"
         summary-file: ${{ env.SUMMARY_FILE }}
 
