@@ -3,3 +3,4 @@ coverage/
 **/obj/**/*
 
 demo/coding-standards/.editorconfig
+**/node_modules/**/*
