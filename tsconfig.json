@@ -3,7 +3,7 @@
         "target": "ES2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "outDir": "dist",
+        "outDir": "_content/mcp/dist",
         "strict": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
@@ -15,6 +15,6 @@
         ]
     },
     "include": [
-        "src/**/*"
+        "_content/mcp/src/**/*"
     ]
 }
