@@ -2,8 +2,8 @@
 /scripts/git-tools/temp_*.txt
 
 # MCP build artifacts
-/mcp/node_modules/
-/mcp/dist/
+**/node_modules/
+**/dist/
 coverage/
 **/bin/**/*
 **/obj/**/*

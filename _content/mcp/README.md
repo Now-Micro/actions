@@ -130,6 +130,28 @@ npm run build
    - Cwd: <repo>/mcp
 3) List resources → read nowmicro-actions://actions/index → call tools like search-actions or make-workflow-snippet.
 
+### Using Inspector to test get-action
+
+If you see an error like `keyValidator._parse is not a function`, it usually means the tool's input schema wasn't a proper Zod object. This repo now uses Zod for all tool schemas.
+
+Steps:
+1. Connect as above (Command: node, Args: ["dist/index.js"]).
+2. Click "List Tools".
+3. Pick "search-actions", run with empty args to get a list, copy an `id` (slug).
+4. Select "get-action", click "Run Tool" and set arguments to something like:
+
+```json
+{ "id": "dotnet-build" }
+```
+
+or
+
+```json
+{ "slug": "dotnet-build" }
+```
+
+You should receive the full JSON spec for that action. If the client doesn’t support resources, use "list-actions" to get the catalog.
+
 ## Extend with new tools
 - Add a file in `src/tools/your-tool.ts` exporting a Tool and wire it up in `src/index.ts`.
 - Prefer adding actions-centric utilities (e.g., more search filters, snippet variations) over generic demo tools.

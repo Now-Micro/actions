@@ -5,9 +5,9 @@
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
-        "build": "tsc -p .",
-        "start": "node dist/index.js",
-        "dev": "tsx src/index.ts",
+        "build": "tsc -p _content/mcp/",
+        "start": "node _content/mcp/dist/index.js",
+        "dev": "tsx _content/mcp/src/index.ts",
         "inspect": "set DANGEROUSLY_OMIT_AUTH=true && npx @modelcontextprotocol/inspector npm run dev",
         "dev:docker": "docker-compose build",
         "dev:docker:up": "docker-compose up",
