@@ -122,7 +122,7 @@ test('run swallows GITHUB_OUTPUT append errors (directory path)', () => {
 });
 
 test('computeRelative cases from spec (platform-aware)', () => {
-  const root = './src/demo/coding-standards/Coding.Standards.sln';
+  const root = './demo/coding-standards/Coding.Standards.sln';
   const one = computeRelative(root, '.\\demo\\coding-standards\\src\\Coding.Standards.csproj');
   const two = computeRelative(root, '.\\demo\\coding-standards\\src\\subdir\\Coding.Standards.csproj');
   const three = computeRelative(root, '.\\demo\\coding-standards\\tests\\subdir2\\Coding.Standards.Tests.csproj');
