@@ -29,7 +29,7 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 4. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
 5. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
 6. Add extensive logging for new JS actions. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.  Only output logs if `INPUT_DEBUG_MODE` is truthy.
-7. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
+7. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `src/testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
 
 ## Refactoring
 - Analyze the existing implementation.  If it makes sense to separate the code into smaller composite action, propose it to the user and ask how to proceed.
@@ -53,6 +53,6 @@ Run single action tests: `node --test get-unique-root-directories/*.test.js`
 Generate coverage: `npx --yes c8 -r text -r lcov node --test`
 
 ## When in Doubt
-Mirror existing action structure; look at `get-project-and-solution-files-from-directory` for traversal + debug, and `testing/assert` for env parsing & exit handling.
+Mirror existing action structure; look at `get-project-and-solution-files-from-directory` for traversal + debug, and `src/testing/assert` for env parsing & exit handling.
 
 Provide any new or updated patterns here to keep AI guidance current.

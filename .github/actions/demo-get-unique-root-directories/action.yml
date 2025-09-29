@@ -22,7 +22,7 @@ runs:
         paths: "src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Util.cs"
         debug-mode: "true"
     - name: assert t1 output
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "extracts unique roots array"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -37,7 +37,7 @@ runs:
         paths: "src/Api/Program.cs"
         debug-mode: "true"
     - name: assert t2 output
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "no matches empty"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -57,7 +57,7 @@ runs:
         EOF
         echo "code=$?" >> $GITHUB_OUTPUT
     - name: assert invalid regex failed
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "invalid regex exits 1"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -76,7 +76,7 @@ runs:
         EOF
         echo "code=$?" >> $GITHUB_OUTPUT
     - name: assert missing pattern failure
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "missing pattern exits 1"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -91,7 +91,7 @@ runs:
         paths: "src/Api/One.cs,src/Api/Two.cs"
         debug-mode: "true"
     - name: assert duplicates output
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "duplicates single root"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -106,7 +106,7 @@ runs:
         paths: "src/Api/Program.cs,src/Api/Program.cs,src/Api/Controllers/Home.cs,src/Lib/Lib.cs,src/Lib/Lib.cs,src/Util/Helper.cs,src/Util/Helper.cs,src/Util/Another.cs"
         debug-mode: "true"
     - name: assert three roots
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "three unique roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -121,7 +121,7 @@ runs:
         paths: "ProjectA/src/Program.cs,ProjectA/src/Utils/Helper.cs,ProjectB/test/ProjectB.csproj,ProjectB/tests/Another.cs,ProjectC/tests/Solution.sln,ProjectC/test/Other.cs,My-App/src/Util.cs,My.App/tests/Suite.sln,ProjectD/lib/Program.cs,ProjectE/src/README.md,/ProjectF/src/Program.cs,ProjectG/tests/Program.txt,ProjectH/src/Dir,ProjectI/tests/Program.csx"
         debug-mode: "true"
     - name: assert complex pattern roots
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "complex pattern roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -136,7 +136,7 @@ runs:
         paths: "Alpha/lib/File.cs,Beta/source/Program.cs,Gamma/src/Readme.md,/Delta/src/Program.cs,Epsilon/tests/Notes.txt,Zeta/src/Folder"
         debug-mode: "true"
     - name: assert complex no matches
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "complex pattern no matches"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -151,7 +151,7 @@ runs:
         paths: "Alpha/src/File.cs,Beta/tests/Test.cs,Alpha/docs/Readme.md,Gamma/one/two/three.txt,Bad.Root/src/File.cs,.hidden/src/File.cs,delta/,epsilon,foo.bar/,my-app/src/index.cs,my_app/src/index.cs,Zeta/Another.cs,Alpha/more/Deeper.cs,  Beta/space.cs"
         debug-mode: "true"
     - name: assert caret pattern roots
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "caret simple pattern roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -166,7 +166,7 @@ runs:
         paths: "Proj/one.cs,Proj/two.cs,Proj/three.cs,Other/file.cs,Other/file2.cs"
         debug-mode: "true"
     - name: assert caret pattern duplicates
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "caret duplicates"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -181,7 +181,7 @@ runs:
         paths: ".hidden,with.dot,.hidden/file,bad.root/file,onlyfile,/leading/slash/file"
         debug-mode: "true"
     - name: assert caret pattern no matches
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "caret no matches"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -196,7 +196,7 @@ runs:
         paths: "Solution1/src/Api/Program.cs,Solution1/src/Api/Program.cs,Solution1/src/Api/Controllers/Home.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Lib/Lib.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Helper.cs,Solution1/src/Util/Another.cs,Solution2/tests/Util/Another.cs,Solution3/tests/Test.cs,SkipSolution1/example/tests/README.md,SkipSolution2/src/Api/README.md,SkipSolution3/README.md"
         debug-mode: "true"
     - name: assert Solution 1,2,3 roots
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "Testing Regex 1,2,3 roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -211,7 +211,7 @@ runs:
         paths: "Solution1/src/Api/Program.cs, Solution1/src/Api/Program.cs, Solution1/src/Api/Controllers/Home.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Lib/Lib.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Helper.cs, Solution1/src/Util/Another.cs, Solution2/tests/Util/Another.cs, Solution3/tests/Test.cs, Solution4/example/tests/README.md, Solution5/src/Api/README.md, Solution6/README.md"
         debug-mode: "true"
     - name: assert linting Solution 1,2,3 roots
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "Linting Regex 1,2,3 roots"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -227,7 +227,7 @@ runs:
         output-is-json: "false"
         debug-mode: "true"
     - name: assert linting non-JSON output (string false)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "Linting non-JSON (string false)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -243,7 +243,7 @@ runs:
         output-is-json: false
         debug-mode: "true"
     - name: assert linting non-JSON output (boolean false)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "Linting non-JSON (boolean false)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
