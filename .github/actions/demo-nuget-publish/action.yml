@@ -13,7 +13,7 @@ inputs:
   directory:
     description: "Directory to search for project"
     required: false
-    default: "demo/dotnet/src/Api"
+    default: "src/demo/dotnet/src/Api"
   github-token:
     description: "GitHub token for deploying nuget packages."
     required: false
@@ -119,7 +119,7 @@ runs:
         additional-build-args: ${{ inputs.additional-build-args }}
         additional-pack-args: ${{ inputs.additional-pack-args }}
         directory: ""
-        project-file: demo/dotnet/src/Api/Api.csproj
+        project-file: src/demo/dotnet/src/Api/Api.csproj
         dotnet-version: "8.0.x"
         github-token: ${{ inputs.github-token }}
         publish-source: ".artifacts/nuget-local-pf"

@@ -4,7 +4,7 @@ This demo solution provides a minimal ASP.NET Core API (`Api`) and corresponding
 
 ## Structure
 ```
-/demo/dotnet
+/src/demo/dotnet
   demo.sln
   Directory.Build.props
   src/Api
@@ -22,7 +22,7 @@ This demo solution provides a minimal ASP.NET Core API (`Api`) and corresponding
 
 ## Run locally
 ```bash
-dotnet build demo/dotnet/demo.sln
-dotnet test demo/dotnet/demo.sln
-dotnet run --project demo/dotnet/src/Api
+dotnet build src/demo/dotnet/demo.sln
+dotnet test src/demo/dotnet/demo.sln
+dotnet run --project src/demo/dotnet/src/Api
 ```

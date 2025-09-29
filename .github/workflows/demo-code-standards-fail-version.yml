@@ -11,5 +11,5 @@ jobs:
       - name: Run demo for code standards
         uses: ./.github/actions/demo-code-standards
         with:
-          directory: './demo/coding-standards-fail'
-          roslyn-version: '4.9.2'
+          directory: "./src/demo/coding-standards-fail"
+          roslyn-version: "4.9.2"

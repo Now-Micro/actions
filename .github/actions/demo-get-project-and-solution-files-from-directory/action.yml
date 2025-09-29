@@ -20,14 +20,14 @@ runs:
       shell: bash
       run: |
         echo "Demo directory structure:" 
-        find demo/get-project-and-solution-files-from-directory -maxdepth 8 -print
+        find src/demo/get-project-and-solution-files-from-directory -maxdepth 8 -print
 
     - name: Test 1 - Find root solution with depth=1
       id: root_solution
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         max-depth: 1
 
     - name: Assert 1 - Solution found is RootSolution.sln
@@ -53,7 +53,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 1 # reduced from 2 so Test.csproj (depth 2) is not discovered
@@ -81,7 +81,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory/SolutionA/src/A
+        directory: src/demo/get-project-and-solution-files-from-directory/SolutionA/src/A
         find-solution: "true"
         find-project: "true"
         max-depth: 3
@@ -109,7 +109,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory/SolutionB
+        directory: src/demo/get-project-and-solution-files-from-directory/SolutionB
         find-solution: "true"
         find-project: "true"
         max-depth: 4
@@ -137,7 +137,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/coding-standards-fail
+        directory: src/demo/coding-standards-fail
         find-solution: "true"
         find-project: "true"
         max-depth: 8
@@ -165,7 +165,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "true"
         find-project: "false"
         max-depth: 8
@@ -194,7 +194,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 8
@@ -223,7 +223,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "true"
         find-project: "false"
         max-depth: 2
@@ -243,7 +243,7 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 2

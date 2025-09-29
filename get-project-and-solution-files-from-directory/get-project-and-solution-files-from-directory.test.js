@@ -269,7 +269,7 @@ test('DFS walk maxDepth prevents deeper scanning', () => {
 {
   const repoRoot = path.resolve(__dirname, '..');
   const demoAbs = path.resolve(repoRoot, 'demo', 'get-project-and-solution-files-from-directory');
-  const demoRel = process.platform === 'win32' ? '.\\demo\\get-project-and-solution-files-from-directory' : './demo/get-project-and-solution-files-from-directory';
+  const demoRel = process.platform === 'win32' ? '.\\demo\\get-project-and-solution-files-from-directory' : './src/demo/get-project-and-solution-files-from-directory';
   const present = fs.existsSync(demoAbs);
   test('Demo get-project-and-solution-files-from-directory directory yields solution and project (relative path input)', { skip: !present }, () => {
     const { exitCode, outputContent } = runWithEnv({
