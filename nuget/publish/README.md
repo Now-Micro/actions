@@ -42,7 +42,7 @@ Using a project file, publish to a local folder (for demo):
 - name: NuGet publish (project-file to local)
   uses: Now-Micro/actions/nuget/publish@v1
   with:
-    project-file: demo/dotnet/src/Api/Api.csproj
+    project-file: src/demo/dotnet/src/Api/Api.csproj
     additional-pack-args: --output nupkgs /p:PackageVersion=1.0.0
     publish-source: .artifacts/nuget-local
     github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
@@ -54,7 +54,7 @@ Discover from a directory and publish to GitHub Packages (default target):
 - name: NuGet publish (directory -> GitHub Packages)
   uses: Now-Micro/actions/nuget/publish@v1
   with:
-    directory: demo/dotnet/src/Api
+    directory: src/demo/dotnet/src/Api
     project-regex: 'Api\.csproj$'
     additional-pack-args: --output nupkgs /p:PackageVersion=1.0.0
     github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}

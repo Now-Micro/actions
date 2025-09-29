@@ -2,4 +2,5 @@ coverage/
 **/bin/**/*
 **/obj/**/*
 
-demo/coding-standards/.editorconfig
+src/demo/coding-standards/.editorconfig
+**/node_modules/**/*

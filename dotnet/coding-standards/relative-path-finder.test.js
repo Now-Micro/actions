@@ -36,27 +36,27 @@ test('normalizeToPosix converts backslashes', () => {
 });
 
 test('computeRelative cases from spec', () => {
-  const root = './demo/coding-standards/Coding.Standards.sln';
+  const root = './src/demo/coding-standards/Coding.Standards.sln';
   const sep = path.sep;
   const expOne = ['..', ''].join(sep); // one level up with trailing sep
   const expTwo = ['..', '..', ''].join(sep); // two levels up with trailing sep
-  assert.strictEqual(computeRelative(root, './demo/coding-standards/src/Coding.Standards.csproj'), expOne);
-  assert.strictEqual(computeRelative(root, './demo/coding-standards/src/subdir/Coding.Standards.csproj'), expTwo);
-  assert.strictEqual(computeRelative(root, './demo/coding-standards/tests/subdir2/Coding.Standards.Tests.csproj'), expTwo);
-  assert.strictEqual(computeRelative(root, '["./demo/coding-standards/src/Coding.Standards.csproj"]'), expOne);
-  assert.strictEqual(computeRelative(root, '["./demo/coding-standards/src/subdir/Coding.Standards.csproj"]'), expTwo);
-  assert.strictEqual(computeRelative(root, '["./demo/coding-standards/tests/subdir2/Coding.Standards.Tests.csproj"]'), expTwo);
+  assert.strictEqual(computeRelative(root, './src/demo/coding-standards/src/Coding.Standards.csproj'), expOne);
+  assert.strictEqual(computeRelative(root, './src/demo/coding-standards/src/subdir/Coding.Standards.csproj'), expTwo);
+  assert.strictEqual(computeRelative(root, './src/demo/coding-standards/tests/subdir2/Coding.Standards.Tests.csproj'), expTwo);
+  assert.strictEqual(computeRelative(root, '["./src/demo/coding-standards/src/Coding.Standards.csproj"]'), expOne);
+  assert.strictEqual(computeRelative(root, '["./src/demo/coding-standards/src/subdir/Coding.Standards.csproj"]'), expTwo);
+  assert.strictEqual(computeRelative(root, '["./src/demo/coding-standards/tests/subdir2/Coding.Standards.Tests.csproj"]'), expTwo);
 });
 
 test('computeRelative returns empty when in same directory', () => {
-  const root = './demo/coding-standards/Coding.Standards.sln';
-  const subSameDir = './demo/coding-standards/App.csproj';
+  const root = './src/demo/coding-standards/Coding.Standards.sln';
+  const subSameDir = './src/demo/coding-standards/App.csproj';
   assert.strictEqual(computeRelative(root, subSameDir), '');
 });
 
 test('computeRelative returns empty when root is deeper than sub directory', () => {
-  const deeperRoot = './demo/coding-standards/src/Coding.Standards.csproj';
-  const higherSub = './demo/coding-standards/Coding.Standards.sln';
+  const deeperRoot = './src/demo/coding-standards/src/Coding.Standards.csproj';
+  const higherSub = './src/demo/coding-standards/Coding.Standards.sln';
   assert.strictEqual(computeRelative(deeperRoot, higherSub), '');
 });
 
@@ -69,8 +69,8 @@ test('run writes to GITHUB_OUTPUT and stdout', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-'));
   const out = path.join(tmp, 'out.txt');
   const { out: stdout } = withEnv({
-    INPUT_ROOT_FILE: './demo/coding-standards/Coding.Standards.sln',
-    INPUT_SUBDIRECTORY_FILE: './demo/coding-standards/src/Coding.Standards.csproj',
+    INPUT_ROOT_FILE: './src/demo/coding-standards/Coding.Standards.sln',
+    INPUT_SUBDIRECTORY_FILE: './src/demo/coding-standards/src/Coding.Standards.csproj',
     GITHUB_OUTPUT: out
   }, () => run());
   const fileOut = fs.readFileSync(out, 'utf8');
@@ -95,8 +95,8 @@ test('run does not write output file when GITHUB_OUTPUT missing', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-'));
   const out = path.join(tmp, 'out.txt');
   const { out: stdout } = withEnv({
-    INPUT_ROOT_FILE: './demo/coding-standards/Coding.Standards.sln',
-    INPUT_SUBDIRECTORY_FILE: './demo/coding-standards/src/Coding.Standards.csproj'
+    INPUT_ROOT_FILE: './src/demo/coding-standards/Coding.Standards.sln',
+    INPUT_SUBDIRECTORY_FILE: './src/demo/coding-standards/src/Coding.Standards.csproj'
   }, () => run());
   // stdout still has the relative path
   const sepRe = new RegExp(`\\.\\.${path.sep.replace('\\', '\\\\')}`);
@@ -110,8 +110,8 @@ test('run swallows GITHUB_OUTPUT append errors (directory path)', () => {
   const outDir = path.join(tmp, 'outdir');
   fs.mkdirSync(outDir, { recursive: true });
   const { out: stdout } = withEnv({
-    INPUT_ROOT_FILE: './demo/coding-standards/Coding.Standards.sln',
-    INPUT_SUBDIRECTORY_FILE: './demo/coding-standards/src/Coding.Standards.csproj',
+    INPUT_ROOT_FILE: './src/demo/coding-standards/Coding.Standards.sln',
+    INPUT_SUBDIRECTORY_FILE: './src/demo/coding-standards/src/Coding.Standards.csproj',
     GITHUB_OUTPUT: outDir // appendFileSync will throw; catch branch should swallow
   }, () => run());
   const sepRe = new RegExp(`\.\.${path.sep.replace('\\', '\\\\')}`);
@@ -136,8 +136,8 @@ test('computeRelative cases from spec (platform-aware)', () => {
 });
 
 test('computeRelative throws when inputs missing', () => {
-  assert.throws(() => computeRelative('', './demo/file.csproj'), /required/);
-  assert.throws(() => computeRelative('./demo/file.sln', ''), /required/);
+  assert.throws(() => computeRelative('', './src/demo/file.csproj'), /required/);
+  assert.throws(() => computeRelative('./src/demo/file.sln', ''), /required/);
 });
 
 // Ensure run uses platform separator

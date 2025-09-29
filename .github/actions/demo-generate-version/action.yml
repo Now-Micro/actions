@@ -43,7 +43,7 @@ runs:
         infix-value: ${{ inputs.infix }}
 
     - name: Assert version shape (csproj)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "version from csproj has timestamp"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -52,7 +52,7 @@ runs:
         actual: ${{ steps.csproj.outputs['version-number'] }}
 
     - name: Assert default patch bump (csproj)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "default patch bump from 2.3.4 -> 2.3.5"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -69,7 +69,7 @@ runs:
         release-keyword: "initial"
 
     - name: Assert version shape (releases - initial version)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "version from releases (initial version) has timestamp"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -78,7 +78,7 @@ runs:
         actual: ${{ steps.rel_initial.outputs['version-number'] }}
 
     - name: Assert fallback to csproj patch (releases - initial version)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "falls back to csproj default patch when no semver found in release"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -95,7 +95,7 @@ runs:
         increment-type: minor
 
     - name: Assert minor bump (csproj)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "minor bump from 2.3.4 -> 2.4.0"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -112,7 +112,7 @@ runs:
         increment-type: major
 
     - name: Assert major bump (csproj)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "major bump from 2.3.4 -> 3.0.0"
         summary-file: ${{ steps.pre.outputs.summary_file }}

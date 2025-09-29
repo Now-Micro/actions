@@ -23,14 +23,14 @@ inputs:
     required: true
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Install Node.js
       uses: ./setup-node
 
     - name: Run assertion
       shell: bash
-      run: node ./testing/assert/assert.js
+      run: node ./src/testing/assert/assert.js
       env:
         INPUT_ACTUAL: ${{ inputs.actual }}
         INPUT_EXIT_ON_FAIL: ${{ inputs.exit-on-fail }}

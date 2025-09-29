@@ -20,18 +20,18 @@ runs:
       shell: bash
       run: |
         echo "Demo directory structure:" 
-        find demo/get-project-and-solution-files-from-directory -maxdepth 8 -print
+        find src/demo/get-project-and-solution-files-from-directory -maxdepth 8 -print
 
     - name: Test 1 - Find root solution with depth=1
       id: root_solution
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         max-depth: 1
 
     - name: Assert 1 - Solution found is RootSolution.sln
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: RootSolution.sln
         actual: ${{ steps.root_solution.outputs.solution-found || ' ' }}
@@ -40,7 +40,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 1 - Project found is Test.csproj
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: Test.csproj
         actual: ${{ steps.root_solution.outputs.project-found || ' ' }}
@@ -53,13 +53,13 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 1 # reduced from 2 so Test.csproj (depth 2) is not discovered
 
     - name: Assert 2 - Solution Found is RootSolution.sln
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: RootSolution.sln
         actual: ${{ steps.project_shallow.outputs.solution-found || ' ' }}
@@ -68,7 +68,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 2 - No project found at Depth of 2
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.project_shallow.outputs.project-found || ' ' }}
@@ -81,13 +81,13 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory/SolutionA/src/A
+        directory: src/demo/get-project-and-solution-files-from-directory/SolutionA/src/A
         find-solution: "true"
         find-project: "true"
         max-depth: 3
 
     - name: Assert 3 - No Project Found at Depth 3
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.project_appa.outputs.project-found || ' ' }}
@@ -96,7 +96,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 3 - No Solution Found at Depth 3
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.project_appa.outputs.solution-found || ' ' }}
@@ -109,13 +109,13 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory/SolutionB
+        directory: src/demo/get-project-and-solution-files-from-directory/SolutionB
         find-solution: "true"
         find-project: "true"
         max-depth: 4
 
     - name: Assert 4 - SolutionB solution and Service.csproj detected (solution)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: SolutionB.sln
         actual: ${{ steps.solutionb.outputs.solution-found || ' ' }}
@@ -124,7 +124,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 4 - SolutionB project Service.csproj detected
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: Service.csproj
         actual: ${{ steps.solutionb.outputs.project-found || ' ' }}
@@ -137,13 +137,13 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/coding-standards-fail
+        directory: src/demo/coding-standards-fail
         find-solution: "true"
         find-project: "true"
         max-depth: 8
 
     - name: Assert 5 - Demo.Linting.sln detected
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: Demo.Linting.sln
         actual: ${{ steps.coding_standards.outputs.solution-found || ' ' }}
@@ -152,7 +152,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 5 - Demo project detected
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /(Demo\.Linting\.csproj|Demo\.Analyzers\.csproj)$/
         actual: ${{ steps.coding_standards.outputs.project-found || ' ' }}
@@ -165,14 +165,14 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "true"
         find-project: "false"
         max-depth: 8
         solution-regex: '^SolutionB\.sln$'
 
     - name: Assert 6 - SolutionB selected by regex
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: SolutionB.sln
         actual: ${{ steps.solution_regex_solutionb.outputs.solution-found || ' ' }}
@@ -181,7 +181,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 6 - No project expected when only solution searched
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.solution_regex_solutionb.outputs.project-found || ' ' }}
@@ -194,14 +194,14 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 8
         project-regex: 'Service.*Tests\.csproj$'
 
     - name: Assert 7 - Service.Tests.csproj selected by regex
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: Service.Tests.csproj
         actual: ${{ steps.project_regex_service.outputs.project-found || ' ' }}
@@ -210,7 +210,7 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Assert 7 - No solution expected when only project searched
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.project_regex_service.outputs.solution-found || ' ' }}
@@ -223,14 +223,14 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "true"
         find-project: "false"
         max-depth: 2
         solution-regex: '^DoesNotExist\.sln$'
 
     - name: Assert 8 - No solution found when regex excludes all
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.solution_regex_none.outputs.solution-found || ' ' }}
@@ -243,14 +243,14 @@ runs:
       uses: ./get-project-and-solution-files-from-directory
       with:
         debug-mode: "true"
-        directory: demo/get-project-and-solution-files-from-directory
+        directory: src/demo/get-project-and-solution-files-from-directory
         find-solution: "false"
         find-project: "true"
         max-depth: 2
         project-regex: '^DoesNotExist\.csproj$'
 
     - name: Assert 9 - No project found when regex excludes all
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         expected: /^\s*$/
         actual: ${{ steps.project_regex_none.outputs.project-found || ' ' }}

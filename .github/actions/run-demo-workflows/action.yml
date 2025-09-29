@@ -16,18 +16,18 @@ runs:
     - name: Demo - code standards (fail)
       uses: ./.github/actions/demo-code-standards
       with:
-        directory: "./demo/coding-standards-fail"
+        directory: "./src/demo/coding-standards-fail"
 
     - name: Demo - code standards (fail, roslyn version)
       uses: ./.github/actions/demo-code-standards
       with:
-        directory: "./demo/coding-standards-fail"
+        directory: "./src/demo/coding-standards-fail"
         roslyn-version: "4.9.2"
 
     - name: Demo - code standards (success)
       uses: ./.github/actions/demo-code-standards
       with:
-        directory: "./demo/coding-standards-success"
+        directory: "./src/demo/coding-standards-success"
 
     - name: Demo - dotnet actions
       uses: ./.github/actions/demo-dotnet-actions
@@ -45,7 +45,7 @@ runs:
       with:
         additional-build-args: --property WarningLevel=0 /p:VersionSuffix=1.0.0
         additional-pack-args: /p:VersionSuffix=1.0.0 /p:PackageVersion=1.0.0
-        directory: "demo/dotnet/src/Api"
+        directory: "src/demo/dotnet/src/Api"
         github-token: ${{ inputs.github-token }}
 
     - name: Demo - get-project-and-solution-files-from-directory

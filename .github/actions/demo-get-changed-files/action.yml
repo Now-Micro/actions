@@ -47,7 +47,7 @@ runs:
         working-directory: ${{ steps.pre.outputs.repo_dir }}
 
     - name: Assert (SHA -> SHA)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "changed files between base and head (sha)"
         summary-file: ${{ steps.pre.outputs.summary_file }}
@@ -64,7 +64,7 @@ runs:
         working-directory: ${{ steps.pre.outputs.repo_dir }}
 
     - name: Assert (tag -> branch)
-      uses: ./testing/assert
+      uses: ./src/testing/assert
       with:
         test-name: "changed files between tag and branch"
         summary-file: ${{ steps.pre.outputs.summary_file }}

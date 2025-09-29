@@ -27,7 +27,7 @@ runs:
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
       with:
-        file-to-build: demo/dotnet/demo.sln
+        file-to-build: src/demo/dotnet/demo.sln
         build-configuration: "Release"
         dotnet-version: "8.0.x"
         node-version: "18.x"
@@ -36,7 +36,7 @@ runs:
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
       with:
-        file-to-build: demo/dotnet/src/Api/Api.csproj
+        file-to-build: src/demo/dotnet/src/Api/Api.csproj
         build-configuration: "Release"
         dotnet-version: "8.0.x"
         node-version: "18.x"
@@ -45,7 +45,7 @@ runs:
       if: ${{ inputs.run-test-step == 'true' }}
       uses: ./dotnet/test
       with:
-        directory: demo/dotnet
+        directory: src/demo/dotnet
         dotnet-version: "8.0.x"
         project-regex: '.*Tests\.csproj\s*$'
 
