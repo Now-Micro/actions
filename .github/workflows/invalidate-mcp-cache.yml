@@ -1,0 +1,22 @@
+name: Notify external MCP server of new Content (e.g., to invalidate cache)
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        types: [closed]
+        branches: [main]
+
+concurrency:
+    group: invalidate-mcp-cache
+    cancel-in-progress: true
+
+jobs:
+    notify:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Call webhook for MCP server
+              run: |
+                  curl -sS -X POST "${{vars.MCP_URL}}" \
+                      -H "Content-Type: application/json" \
+                      -H "${{secrets.MCP_AUTH_HEADER}}: ${{secrets.MCP_AUTH_TOKEN}}" \
