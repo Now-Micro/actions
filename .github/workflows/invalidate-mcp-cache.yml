@@ -25,11 +25,11 @@ jobs:
           url="${{ vars.MCP_WEBHOOK_URL }}"
           header_name="${{ secrets.MCP_AUTH_HEADER }}"
           header_token="${{ secrets.MCP_AUTH_TOKEN }}"
-          max_attempts=${{ vars.MCP_WEBHOOK_RETRY_COUNT }}
+          max_attempts=${{ vars.MCP_WEBHOOK_RETRY_COUNT_MAX }}
           attempt=1
           while [ $attempt -le $max_attempts ]; do
             echo "Attempt $attempt of $max_attempts: POST $url"
-            if curl --fail -sS --max-time ${{ vars.WEBHOOK_MCP_TIMEOUT }} -X POST "$url" -H "Content-Type: application/json" -H "$header_name: $header_token"; then
+            if curl --fail -sS --max-time ${{ vars.WEBHOOK_MCP_TIMEOUT_MAX }} -X POST "$url" -H "Content-Type: application/json" -H "$header_name: $header_token"; then
               echo "Webhook POST succeeded"
               exit 0
             else
