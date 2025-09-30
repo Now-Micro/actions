@@ -17,6 +17,6 @@ jobs:
         steps:
             - name: Call webhook for MCP server
               run: |
-                  curl -sS -X POST "${{vars.MCP_URL}}" \
+                  curl -sS -X POST "${{vars.MCP_WEBHOOK_URL}}" \
                       -H "Content-Type: application/json" \
                       -H "${{secrets.MCP_AUTH_HEADER}}: ${{secrets.MCP_AUTH_TOKEN}}" \
