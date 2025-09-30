@@ -6,6 +6,8 @@ on:
     pull_request:
         types: [closed]
         branches: [main]
+    release:
+        types: [published]
     workflow_dispatch:
 
 concurrency:
@@ -21,4 +23,3 @@ jobs:
                   curl --fail -sS -X POST "${{vars.MCP_WEBHOOK_URL}}" \
                       -H "Content-Type: application/json" \
                       -H "${{secrets.MCP_AUTH_HEADER}}: ${{secrets.MCP_AUTH_TOKEN}}" \
-                  
