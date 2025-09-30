@@ -25,11 +25,23 @@ jobs:
           url="${{ vars.MCP_WEBHOOK_URL }}"
           header_name="${{ secrets.MCP_AUTH_HEADER }}"
           header_token="${{ secrets.MCP_AUTH_TOKEN }}"
-          max_attempts=${{ vars.MCP_WEBHOOK_RETRY_COUNT || 5 }}
+          max_attempts="${{ vars.MCP_WEBHOOK_RETRY_COUNT }}"  
+          # Validate max_attempts: must be a positive integer, default to 5 if unset/invalid  
+          if ! [[ "$max_attempts" =~ ^[1-9][0-9]*$ ]]; then  
+            echo "Warning: MCP_WEBHOOK_RETRY_COUNT is unset or invalid ('$max_attempts'). Defaulting to 5."  
+            max_attempts=5  
+          fi  
+          retry_delay="${{ vars.MCP_WEBHOOK_TIMEOUT }}"  
+          # Validate retry_delay: must be a positive integer, default to 5 if unset/invalid  
+          if ! [[ "$retry_delay" =~ ^[1-9][0-9]*$ ]]; then  
+            echo "Warning: MCP_WEBHOOK_TIMEOUT is unset or invalid ('$retry_delay'). Defaulting to 5."  
+            retry_delay=5  
+          fi 
+          
           attempt=1
           while [ $attempt -le $max_attempts ]; do
             echo "Attempt $attempt of $max_attempts: POST $url"
-            if curl --fail -sS --max-time ${{ vars.MCP_WEBHOOK_TIMEOUT || 5 }} -X POST "$url" -H "Content-Type: application/json" -H "$header_name: $header_token"; then
+            if curl --fail -sS --max-time $retry_delay -X POST "$url" -H "Content-Type: application/json" -H "$header_name: $header_token"; then
               echo "Webhook POST succeeded"
               exit 0
             else
