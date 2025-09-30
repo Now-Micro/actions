@@ -1,25 +1,45 @@
 name: Notify external MCP server of new Content (e.g., to invalidate cache)
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        types: [closed]
-        branches: [main]
-    release:
-        types: [published]
-    workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
 
 concurrency:
-    group: invalidate-mcp-cache
-    cancel-in-progress: true
+  group: invalidate-mcp-cache
+  cancel-in-progress: true
 
 jobs:
-    notify:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Call webhook for MCP server
-              run: |
-                  curl --fail -sS -X POST "${{vars.MCP_WEBHOOK_URL}}" \
-                      -H "Content-Type: application/json" \
-                      -H "${{secrets.MCP_AUTH_HEADER}}: ${{secrets.MCP_AUTH_TOKEN}}" \
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call webhook for MCP server (with retries)
+        shell: bash
+        run: |
+          set -uo pipefail
+          url="${{ vars.MCP_WEBHOOK_URL }}"
+          header_name="${{ secrets.MCP_AUTH_HEADER }}"
+          header_token="${{ secrets.MCP_AUTH_TOKEN }}"
+          max_attempts=5
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts: POST $url"
+            if curl --fail -sS --max-time 5 -X POST "$url" -H "Content-Type: application/json" -H "$header_name: $header_token"; then
+              echo "Webhook POST succeeded"
+              exit 0
+            else
+              echo "Webhook POST failed (attempt $attempt)"
+              if [ $attempt -lt $max_attempts ]; then
+                echo "Retrying in 5s..."
+                sleep 5
+              fi
+            fi
+            attempt=$((attempt+1))
+          done
+          echo "All $max_attempts attempts to call webhook failed. Exiting with status 1."
+          exit 1
