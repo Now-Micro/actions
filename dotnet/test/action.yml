@@ -36,16 +36,15 @@ runs:
       run: |
         PROJECT_FILE="${{ inputs.project-file }}"
         DIRECTORY="${{ inputs.directory }}"
-        PROJECT_REGEX="${{ inputs.project-regex }}"
         if [ -n "${PROJECT_FILE}" ]; then
           echo "project-file provided: validation passed"
           exit 0
         fi
-        if [ -z "${DIRECTORY}" ] || [ -z "${PROJECT_REGEX}" ]; then
-          echo "Error: Provide 'project-file' or both 'directory' and 'project-regex'." >&2
+        if [ -z "${DIRECTORY}" ]; then
+          echo "Error: Provide 'project-file' or 'directory' and an optional 'project-regex'." >&2
           exit 1
         fi
-        echo "directory & project-regex provided: validation passed"
+        echo "directory provided: validation passed"
 
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v4
