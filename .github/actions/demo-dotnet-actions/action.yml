@@ -56,7 +56,7 @@ runs:
         dotnet-version: "8.0.x"
         project-file: src/demo/dotnet/tests/Api.Tests/Api.Tests.csproj
 
-    - name: Run tests (Should Fail)
+    - name: Run tests (Should Fail due to correct inputs not given)
       id: test-fail
       if: ${{ inputs.run-test-step == 'true' }}
       continue-on-error: true
