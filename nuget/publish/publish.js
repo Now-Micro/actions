@@ -42,7 +42,7 @@ function run() {
 
         const allEntries = fs.readdirSync(pkgDir);
         log(`entries in pkgDir: ${allEntries.length}`);
-        const files = allEntries.filter(f => f.endsWith('.nupkg'));
+        const files = allEntries.filter(f => f.endsWith('.nupkg') && !f.endsWith('.symbols.nupkg'));
         const symbolFiles = allEntries.filter(f => f.endsWith('.snupkg'));
         const legacySymbolFiles = allEntries.filter(f => f.endsWith('.symbols.nupkg'));
         log(`nupkg files detected: ${files.length}`);
