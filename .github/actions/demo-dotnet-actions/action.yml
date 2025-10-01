@@ -65,7 +65,7 @@ runs:
         dotnet-version: "8.0.x"
 
     - name: Assert Failure of Previous
-      if: ${{ steps.test-fail.outcome != 'failure' }}
+      if: ${{ inputs.run-test-step == 'true' }} && ${{ steps.test-fail.outcome != 'failure' }}
       shell: bash
       run: |
         echo "Expected previous test step to fail, but it did not." >&2
