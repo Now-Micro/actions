@@ -3,6 +3,10 @@ description: 'Runs tests for a specific directory'
 author: 'Trafera'
 
 inputs:
+  args:
+    description: 'Additional arguments to pass to dotnet test command'
+    required: false
+    default: '--verbosity normal'
   directory:
     description: 'Directory to run tests in'
     required: true
@@ -41,9 +45,9 @@ runs:
       shell: bash
       run: |
         PROJECT_OR_SOLUTION=${{ steps.get-solution-or-proj.outputs.project-found || steps.get-solution-or-proj.outputs.solution-found}}
-        echo "Running: dotnet test $PROJECT_OR_SOLUTION --verbosity normal"
+        echo "Running: dotnet test $PROJECT_OR_SOLUTION ${{ inputs.args }}"
         if [ -z "$PROJECT_OR_SOLUTION" ]; then
           echo "No .sln or .csproj found in ${{ inputs.directory }}"
           exit 1
         fi
-        dotnet test "$PROJECT_OR_SOLUTION" --verbosity normal
+        dotnet test "$PROJECT_OR_SOLUTION" ${{ inputs.args }}
