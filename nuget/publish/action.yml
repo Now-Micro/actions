@@ -107,8 +107,9 @@ runs:
 
     - name: Test
       if: ${{ inputs.test-project-file != '' }}
-      shell: bash
-      run: dotnet test --no-restore ${{ inputs.test-project-file }}
+      uses: Now-Micro/actions/dotnet/test@v1
+      with:
+        project-file: ${{ inputs.test-project-file }}
 
     - name: Publish NuGet Package
       shell: bash

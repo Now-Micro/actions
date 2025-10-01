@@ -49,6 +49,28 @@ runs:
         dotnet-version: "8.0.x"
         project-regex: '.*Tests\.csproj\s*$'
 
+    - name: Run tests (specific project)
+      if: ${{ inputs.run-test-step == 'true' }}
+      uses: ./dotnet/test
+      with:
+        dotnet-version: "8.0.x"
+        project-file: src/demo/dotnet/tests/Api.Tests/Api.Tests.csproj
+
+    - name: Run tests (Should Fail)
+      id: test-fail
+      if: ${{ inputs.run-test-step == 'true' }}
+      continue-on-error: true
+      uses: ./dotnet/test
+      with:
+        dotnet-version: "8.0.x"
+
+    - name: Assert Failure of Previous
+      if: ${{ steps.test-fail.outcome != 'failure' }}
+      shell: bash
+      run: |
+        echo "Expected previous test step to fail, but it did not." >&2
+        exit 1
+
     - name: Lint
       if: ${{ inputs.run-lint-step == 'true' }}
       uses: ./dotnet/lint

@@ -1,31 +1,52 @@
-name: 'Run Tests'
-description: 'Runs tests for a specific directory'
-author: 'Trafera'
+name: "Run Tests"
+description: "Runs tests for a specific directory"
+author: "Trafera"
 
 inputs:
   args:
-    description: 'Additional arguments to pass to dotnet test command'
+    description: "Additional arguments to pass to dotnet test command"
     required: false
-    default: '--verbosity normal'
+    default: "--verbosity normal"
   directory:
-    description: 'Directory to run tests in'
-    required: true
+    description: "Directory to run tests in (required when project-file is not provided)"
+    required: false
+    default: ""
   dotnet-version:
-    description: 'Version of .NET SDK to use'
+    description: "Version of .NET SDK to use"
     required: true
-    default: '6.0.x'
+    default: "6.0.x"
   max-depth:
-    description: 'Maximum depth to search for .sln or .csproj files.'
+    description: "Maximum depth to search for .sln or .csproj files."
     required: false
-    default: '5'
+    default: "5"
   project-regex:
-    description: 'Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true.'
+    description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
     required: false
-    default: ''
+    default: ""
+  project-file:
+    description: "Path to the project file. If specified, this will be used instead of searching the directory for a .csproj or .sln file."
+    required: false
+    default: ""
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        PROJECT_FILE="${{ inputs.project-file }}"
+        DIRECTORY="${{ inputs.directory }}"
+        PROJECT_REGEX="${{ inputs.project-regex }}"
+        if [ -n "${PROJECT_FILE}" ]; then
+          echo "project-file provided: validation passed"
+          exit 0
+        fi
+        if [ -z "${DIRECTORY}" ] || [ -z "${PROJECT_REGEX}" ]; then
+          echo "Error: Provide 'project-file' or both 'directory' and 'project-regex'." >&2
+          exit 1
+        fi
+        echo "directory & project-regex provided: validation passed"
+
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v4
       with:
@@ -33,6 +54,7 @@ runs:
 
     - name: Get solution or project file
       id: get-solution-or-proj
+      if: ${{ inputs.project-file == '' }}
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         directory: ${{ inputs.directory }}
@@ -41,13 +63,26 @@ runs:
         find-solution: true
         project-regex: ${{ inputs.project-regex }}
 
+    - name: Resolve project or solution
+      id: resolve-target
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.project-file }}" ]; then
+          echo "path=${{ inputs.project-file }}" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        TARGET="${{ steps.get-solution-or-proj.outputs.project-found }}"
+        if [ -z "${TARGET}" ]; then
+          TARGET="${{ steps.get-solution-or-proj.outputs.solution-found }}"
+        fi
+        if [ -z "${TARGET}" ]; then
+          echo "Error: No project or solution discovered by get-project-and-solution-files-from-directory." >&2
+          exit 1
+        fi
+        echo "path=${TARGET}" >> "$GITHUB_OUTPUT"
+
     - name: Run tests
       shell: bash
       run: |
-        PROJECT_OR_SOLUTION=${{ steps.get-solution-or-proj.outputs.project-found || steps.get-solution-or-proj.outputs.solution-found}}
-        echo "Running: dotnet test $PROJECT_OR_SOLUTION ${{ inputs.args }}"
-        if [ -z "$PROJECT_OR_SOLUTION" ]; then
-          echo "No .sln or .csproj found in ${{ inputs.directory }}"
-          exit 1
-        fi
-        dotnet test "$PROJECT_OR_SOLUTION" ${{ inputs.args }}
+        echo "Running: dotnet test "${{ steps.resolve-target.outputs.path }}" ${{ inputs.args }}"
+        dotnet test "${{ steps.resolve-target.outputs.path }}" ${{ inputs.args }}
