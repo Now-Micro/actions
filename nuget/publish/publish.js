@@ -7,6 +7,21 @@ function log(msg) { process.stdout.write(`${msg}\n`); }
 function error(msg) { process.stderr.write(`${msg}\n`); }
 function maskToken(t) { if (!t) return ''; return `${t.slice(0, 3)}…${t.slice(-3)}`; }
 
+function pushPattern(pattern, kind, target, token) {
+    const args = ['nuget', 'push', pattern, '--api-key', token, '--source', target];
+    log(`Remote publish using dotnet (${kind})`);
+    log(`   pattern: ${pattern}`);
+    log(`   source: ${target}`);
+    log(`   api-key: ${maskToken(token)}`);
+    log(`   command: dotnet ${args.join(' ')}`);
+    const r = spawnSync('dotnet', args, { stdio: 'inherit' });
+    if (r.status !== 0) {
+        error(`dotnet nuget push failed with code ${r.status}`);
+        process.exit(r.status || 1);
+    }
+    log('Push completed successfully');
+};
+
 function run() {
     const t0 = Date.now();
     try {
@@ -27,8 +42,12 @@ function run() {
 
         const allEntries = fs.readdirSync(pkgDir);
         log(`entries in pkgDir: ${allEntries.length}`);
-        const files = allEntries.filter(f => f.endsWith('.nupkg'));
+        const files = allEntries.filter(f => f.endsWith('.nupkg') && !f.endsWith('.symbols.nupkg'));
+        const symbolFiles = allEntries.filter(f => f.endsWith('.snupkg'));
+        const legacySymbolFiles = allEntries.filter(f => f.endsWith('.symbols.nupkg'));
         log(`nupkg files detected: ${files.length}`);
+        log(`snupkg files detected: ${symbolFiles.length}`);
+        log(`legacy symbol files detected: ${legacySymbolFiles.length}`);
         if (files.length === 0) {
             error('No .nupkg files found to publish');
             process.exit(1);
@@ -36,6 +55,14 @@ function run() {
 
         log('Package list:');
         files.forEach(f => log(`   - ${f}`));
+        if (symbolFiles.length > 0) {
+            log('Symbol package list:');
+            symbolFiles.forEach(f => log(`   - ${f}`));
+        }
+        if (legacySymbolFiles.length > 0) {
+            log('Legacy symbol package list:');
+            legacySymbolFiles.forEach(f => log(`   - ${f}`));
+        }
 
         let target = publishSource && publishSource.trim();
         if (!target) {
@@ -56,13 +83,14 @@ function run() {
             const dest = path.isAbsolute(target) ? target : path.join(workspace, target);
             log(`Local publish to: ${dest}`);
             fs.mkdirSync(dest, { recursive: true });
-            for (const f of files) {
+            const allPackages = [...files, ...symbolFiles, ...legacySymbolFiles];
+            for (const f of allPackages) {
                 const from = path.join(pkgDir, f);
                 const to = path.join(dest, f);
                 log(`   copy ${from} -> ${to}`);
                 fs.copyFileSync(from, to);
             }
-            log(`Copied ${files.length} package(s) to ${dest}`);
+            log(`Copied ${allPackages.length} package(s) to ${dest}`);
             log(`Done in ${Date.now() - t0} ms`);
             return;
         }
@@ -72,20 +100,15 @@ function run() {
             process.exit(1);
         }
 
-        // Push to remote via dotnet nuget push
-        const pattern = path.join(pkgDir, '*.nupkg');
-        const args = ['nuget', 'push', pattern, '--api-key', token, '--source', target];
-        log(`Remote publish using dotnet`);
-        log(`   pattern: ${pattern}`);
-        log(`   source: ${target}`);
-        log(`   api-key: ${maskToken(token)}`);
-        log(`   command: dotnet ${args.join(' ')}`);
-        const r = spawnSync('dotnet', args, { stdio: 'inherit' });
-        if (r.status !== 0) {
-            error(`dotnet nuget push failed with code ${r.status}`);
-            process.exit(r.status || 1);
+
+
+        pushPattern(path.join(pkgDir, '*.nupkg'), 'packages', target, token);
+        if (symbolFiles.length > 0) {
+            pushPattern(path.join(pkgDir, '*.snupkg'), 'symbols', target, token);
         }
-        log('Push completed successfully');
+        if (legacySymbolFiles.length > 0) {
+            pushPattern(path.join(pkgDir, '*.symbols.nupkg'), 'legacy symbols', target, token);
+        }
         log(`Done in ${Date.now() - t0} ms`);
     } catch (e) {
         error(e && e.stack || String(e));

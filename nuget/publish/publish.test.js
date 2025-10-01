@@ -20,11 +20,21 @@ function withEnv(env, fn) {
     return { exitCode, out, err };
 }
 
-function mkpkg(tmp) {
+function mkpkg(tmp, options = {}) {
+    const includeSymbols = options.includeSymbols !== undefined ? options.includeSymbols : true;
+    const includeLegacySymbols = options.includeLegacySymbols || false;
     const nupkgs = path.join(tmp, 'nupkgs');
     fs.mkdirSync(nupkgs, { recursive: true });
     fs.writeFileSync(path.join(nupkgs, 'A.1.0.0.nupkg'), 'x');
     fs.writeFileSync(path.join(nupkgs, 'B.2.0.0.nupkg'), 'y');
+    if (includeSymbols) {
+        fs.writeFileSync(path.join(nupkgs, 'A.1.0.0.snupkg'), 'sx');
+        fs.writeFileSync(path.join(nupkgs, 'B.2.0.0.snupkg'), 'sy');
+    }
+    if (includeLegacySymbols) {
+        fs.writeFileSync(path.join(nupkgs, 'A.1.0.0.symbols.nupkg'), 'osx');
+        fs.writeFileSync(path.join(nupkgs, 'B.2.0.0.symbols.nupkg'), 'osy');
+    }
     return nupkgs;
 }
 
@@ -53,6 +63,19 @@ test('local publish copies to folder (relative)', () => {
     const dest = path.join(tmp, destRel);
     assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
     assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.nupkg')));
+    assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.snupkg')));
+    assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.snupkg')));
+});
+
+test('local publish copies legacy symbol packages when present', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp, { includeLegacySymbols: true });
+    const destRel = '.artifacts/local-legacy';
+    const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: destRel }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const dest = path.join(tmp, destRel);
+    assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.symbols.nupkg')));
+    assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.symbols.nupkg')));
 });
 
 test('local publish reads from INPUT_PACKAGE_DIRECTORY override', () => {
@@ -75,6 +98,8 @@ test('local publish copies to absolute path', () => {
     assert.strictEqual(r.exitCode, 0);
     assert.ok(fs.existsSync(path.join(absDest, 'A.1.0.0.nupkg')));
     assert.ok(fs.existsSync(path.join(absDest, 'B.2.0.0.nupkg')));
+    assert.ok(fs.existsSync(path.join(absDest, 'A.1.0.0.snupkg')));
+    assert.ok(fs.existsSync(path.join(absDest, 'B.2.0.0.snupkg')));
 });
 
 test('default target requires owner when publish-source empty', () => {
@@ -121,4 +146,27 @@ test('remote publish success path logs and masks token', () => {
     assert.match(r.out, /Remote publish using dotnet/);
     assert.match(r.out, /api-key: tok…xyz/);
     assert.match(r.out, /Push completed successfully/);
+});
+
+test('remote publish pushes symbol packages when present', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp, { includeLegacySymbols: true });
+    const cp = require('child_process');
+    const orig = cp.spawnSync;
+    const calls = [];
+    cp.spawnSync = (cmd, args) => { calls.push({ cmd, args }); return { status: 0 }; };
+    delete require.cache[require.resolve('./publish')];
+    const { run: runStubbed } = require('./publish');
+    const r = withEnv({
+        GITHUB_WORKSPACE: tmp,
+        INPUT_PUBLISH_SOURCE: 'https://example.com/index.json',
+        INPUT_GITHUB_TOKEN: 'tok_abc123xyz'
+    }, () => runStubbed());
+    cp.spawnSync = orig;
+    delete require.cache[require.resolve('./publish')];
+    assert.strictEqual(r.exitCode, 0);
+    assert.strictEqual(calls.length, 3);
+    assert.ok(calls[0].args[2].endsWith('*.nupkg'));
+    assert.ok(calls[1].args[2].endsWith('*.snupkg'));
+    assert.ok(calls[2].args[2].endsWith('*.symbols.nupkg'));
 });
