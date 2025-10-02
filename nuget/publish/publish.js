@@ -101,8 +101,6 @@ function run() {
             process.exit(1);
         }
 
-
-
         const hasModernSymbols = symbolFiles.length > 0;
         const hasLegacySymbols = legacySymbolFiles.length > 0;
 
