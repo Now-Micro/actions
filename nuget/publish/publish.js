@@ -100,13 +100,13 @@ function run() {
             process.exit(1);
         }
 
-
+        const hasModernSymbols = symbolFiles.length > 0;
+        const hasLegacySymbols = legacySymbolFiles.length > 0;
 
         pushPattern(path.join(pkgDir, '*.nupkg'), 'packages', target, token);
-        if (symbolFiles.length > 0) {
+        if (hasModernSymbols) {
             pushPattern(path.join(pkgDir, '*.snupkg'), 'symbols', target, token);
-        }
-        if (legacySymbolFiles.length > 0) {
+        } else if (hasLegacySymbols) {
             pushPattern(path.join(pkgDir, '*.symbols.nupkg'), 'legacy symbols', target, token);
         }
         log(`Done in ${Date.now() - t0} ms`);

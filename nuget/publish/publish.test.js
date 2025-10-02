@@ -110,6 +110,32 @@ test('default target requires owner when publish-source empty', () => {
     assert.match(r.err, /GITHUB_REPOSITORY_OWNER is not set/);
 });
 
+test('default target uses repository owner when publish-source omitted', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    const cp = require('child_process');
+    const orig = cp.spawnSync;
+    const calls = [];
+    cp.spawnSync = (cmd, args) => { calls.push({ cmd, args }); return { status: 0 }; };
+    delete require.cache[require.resolve('./publish')];
+    const { run: runStubbed } = require('./publish');
+    const r = withEnv({
+        GITHUB_WORKSPACE: tmp,
+        GITHUB_REPOSITORY_OWNER: 'octocat',
+        INPUT_GITHUB_TOKEN: 'tok_abc123xyz'
+    }, () => runStubbed());
+    cp.spawnSync = orig;
+    delete require.cache[require.resolve('./publish')];
+    assert.strictEqual(r.exitCode, 0);
+    assert.strictEqual(calls.length, 2);
+    const sources = calls.map(call => {
+        const idx = call.args.indexOf('--source');
+        return call.args[idx + 1];
+    });
+    assert.deepStrictEqual([...new Set(sources)], ['https://nuget.pkg.github.com/octocat/index.json']);
+    assert.ok(calls[1].args[2].endsWith('*.snupkg'));
+});
+
 test('remote publish attempts push and fails without dotnet', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     mkpkg(tmp);
@@ -124,6 +150,24 @@ test('remote publish requires token', () => {
     const r = withEnv({ GITHUB_WORKSPACE: tmp, INPUT_PUBLISH_SOURCE: 'https://example.com/index.json' }, () => run());
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /INPUT_GITHUB_TOKEN is required/);
+});
+
+test('cli entrypoint runs successfully', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp);
+    const dest = path.join(tmp, 'cli-out');
+    const cp = require('child_process');
+    const result = cp.spawnSync(process.execPath, [path.join(__dirname, 'publish.js')], {
+        env: {
+            ...process.env,
+            GITHUB_WORKSPACE: tmp,
+            INPUT_PUBLISH_SOURCE: dest
+        },
+        encoding: 'utf8'
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(fs.existsSync(path.join(dest, 'A.1.0.0.nupkg')));
+    assert.ok(fs.existsSync(path.join(dest, 'B.2.0.0.nupkg')));
 });
 
 test('remote publish success path logs and masks token', () => {
@@ -148,7 +192,7 @@ test('remote publish success path logs and masks token', () => {
     assert.match(r.out, /Push completed successfully/);
 });
 
-test('remote publish pushes symbol packages when present', () => {
+test('remote publish pushes modern symbol packages when both present', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
     mkpkg(tmp, { includeLegacySymbols: true });
     const cp = require('child_process');
@@ -165,8 +209,31 @@ test('remote publish pushes symbol packages when present', () => {
     cp.spawnSync = orig;
     delete require.cache[require.resolve('./publish')];
     assert.strictEqual(r.exitCode, 0);
-    assert.strictEqual(calls.length, 3);
+    assert.strictEqual(calls.length, 2);
     assert.ok(calls[0].args[2].endsWith('*.nupkg'));
     assert.ok(calls[1].args[2].endsWith('*.snupkg'));
-    assert.ok(calls[2].args[2].endsWith('*.symbols.nupkg'));
+    assert.ok(!calls.some(call => call.args[2].endsWith('*.symbols.nupkg')));
+});
+
+test('remote publish falls back to legacy symbols when modern missing', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'npub-'));
+    mkpkg(tmp, { includeSymbols: false, includeLegacySymbols: true });
+    const cp = require('child_process');
+    const orig = cp.spawnSync;
+    const calls = [];
+    cp.spawnSync = (cmd, args) => { calls.push({ cmd, args }); return { status: 0 }; };
+    delete require.cache[require.resolve('./publish')];
+    const { run: runStubbed } = require('./publish');
+    const r = withEnv({
+        GITHUB_WORKSPACE: tmp,
+        INPUT_PUBLISH_SOURCE: 'https://example.com/index.json',
+        INPUT_GITHUB_TOKEN: 'tok_abc123xyz'
+    }, () => runStubbed());
+    cp.spawnSync = orig;
+    delete require.cache[require.resolve('./publish')];
+    assert.strictEqual(r.exitCode, 0);
+    assert.strictEqual(calls.length, 2);
+    assert.ok(calls[0].args[2].endsWith('*.nupkg'));
+    assert.ok(calls[1].args[2].endsWith('*.symbols.nupkg'));
+    assert.ok(!calls.some(call => call.args[2].endsWith('*.snupkg')));
 });

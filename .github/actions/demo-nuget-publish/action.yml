@@ -133,6 +133,142 @@ runs:
         test-name: "local publish with project-file succeeded"
         summary-file: ${{ env.SUMMARY_FILE }}
 
+    - name: Prepare symbol fixtures
+      shell: bash
+      run: |
+        FIXTURES="$GITHUB_WORKSPACE/.artifacts/symbol-fixtures"
+        RESULTS="$GITHUB_WORKSPACE/.artifacts/symbol-results"
+        rm -rf "$FIXTURES" "$RESULTS"
+        mkdir -p "$FIXTURES/no-symbols/nupkgs"
+        printf 'package' > "$FIXTURES/no-symbols/nupkgs/Sample.1.0.0.nupkg"
+        mkdir -p "$FIXTURES/both-symbols/nupkgs" "$FIXTURES/snupkg-only/nupkgs" "$FIXTURES/legacy-symbols-only/nupkgs"
+        cp "$FIXTURES/no-symbols/nupkgs/Sample.1.0.0.nupkg" "$FIXTURES/both-symbols/nupkgs/Sample.1.0.0.nupkg"
+        cp "$FIXTURES/no-symbols/nupkgs/Sample.1.0.0.nupkg" "$FIXTURES/snupkg-only/nupkgs/Sample.1.0.0.nupkg"
+        cp "$FIXTURES/no-symbols/nupkgs/Sample.1.0.0.nupkg" "$FIXTURES/legacy-symbols-only/nupkgs/Sample.1.0.0.nupkg"
+        printf 'modern symbols' > "$FIXTURES/both-symbols/nupkgs/Sample.1.0.0.snupkg"
+        printf 'legacy symbols' > "$FIXTURES/both-symbols/nupkgs/Sample.1.0.0.symbols.nupkg"
+        printf 'modern symbols' > "$FIXTURES/snupkg-only/nupkgs/Sample.1.0.0.snupkg"
+        printf 'legacy symbols' > "$FIXTURES/legacy-symbols-only/nupkgs/Sample.1.0.0.symbols.nupkg"
+        echo "SYMBOL_FIXTURE_ROOT=$FIXTURES" >> "$GITHUB_ENV"
+        echo "SYMBOL_RESULTS_ROOT=$RESULTS" >> "$GITHUB_ENV"
+        ls -R "$FIXTURES"
+
+    - name: Publish fixtures - no symbols
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/nuget/publish/publish.js"
+      env:
+        GITHUB_WORKSPACE: ${{ env.SYMBOL_FIXTURE_ROOT }}/no-symbols
+        INPUT_PACKAGE_DIRECTORY: ${{ env.SYMBOL_FIXTURE_ROOT }}/no-symbols/nupkgs
+        INPUT_PUBLISH_SOURCE: ${{ env.SYMBOL_RESULTS_ROOT }}/no-symbols
+
+    - name: Assert fixture publish (no symbols) copied packages only
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/no-symbols/*.nupkg') != '') && 'present' || '' }}
+        test-name: "no symbols - nupkg present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (no symbols) has no snupkg
+      uses: ./src/testing/assert
+      with:
+        expected: absent
+        mode: absent
+        actual: ${{ (hashFiles('.artifacts/symbol-results/no-symbols/*.snupkg') != '') && 'present' || '' }}
+        test-name: "no symbols - snupkg absent"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (no symbols) has no legacy symbols
+      uses: ./src/testing/assert
+      with:
+        expected: absent
+        mode: absent
+        actual: ${{ (hashFiles('.artifacts/symbol-results/no-symbols/*.symbols.nupkg') != '') && 'present' || '' }}
+        test-name: "no symbols - legacy symbols absent"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Publish fixtures - both symbol types
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/nuget/publish/publish.js"
+      env:
+        GITHUB_WORKSPACE: ${{ env.SYMBOL_FIXTURE_ROOT }}/both-symbols
+        INPUT_PACKAGE_DIRECTORY: ${{ env.SYMBOL_FIXTURE_ROOT }}/both-symbols/nupkgs
+        INPUT_PUBLISH_SOURCE: ${{ env.SYMBOL_RESULTS_ROOT }}/both-symbols
+
+    - name: Assert fixture publish (both) copied nupkg
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/both-symbols/*.nupkg') != '') && 'present' || '' }}
+        test-name: "both symbols - nupkg present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (both) copied snupkg
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/both-symbols/*.snupkg') != '') && 'present' || '' }}
+        test-name: "both symbols - snupkg present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (both) copied legacy symbols
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/both-symbols/*.symbols.nupkg') != '') && 'present' || '' }}
+        test-name: "both symbols - legacy present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Publish fixtures - snupkg only
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/nuget/publish/publish.js"
+      env:
+        GITHUB_WORKSPACE: ${{ env.SYMBOL_FIXTURE_ROOT }}/snupkg-only
+        INPUT_PACKAGE_DIRECTORY: ${{ env.SYMBOL_FIXTURE_ROOT }}/snupkg-only/nupkgs
+        INPUT_PUBLISH_SOURCE: ${{ env.SYMBOL_RESULTS_ROOT }}/snupkg-only
+
+    - name: Assert fixture publish (snupkg only) copied snupkg
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/snupkg-only/*.snupkg') != '') && 'present' || '' }}
+        test-name: "snupkg only - snupkg present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (snupkg only) lacks legacy symbols
+      uses: ./src/testing/assert
+      with:
+        expected: absent
+        mode: absent
+        actual: ${{ (hashFiles('.artifacts/symbol-results/snupkg-only/*.symbols.nupkg') != '') && 'present' || '' }}
+        test-name: "snupkg only - legacy symbols absent"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Publish fixtures - legacy symbols only
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/nuget/publish/publish.js"
+      env:
+        GITHUB_WORKSPACE: ${{ env.SYMBOL_FIXTURE_ROOT }}/legacy-symbols-only
+        INPUT_PACKAGE_DIRECTORY: ${{ env.SYMBOL_FIXTURE_ROOT }}/legacy-symbols-only/nupkgs
+        INPUT_PUBLISH_SOURCE: ${{ env.SYMBOL_RESULTS_ROOT }}/legacy-symbols-only
+
+    - name: Assert fixture publish (legacy only) copied legacy symbols
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ (hashFiles('.artifacts/symbol-results/legacy-symbols-only/*.symbols.nupkg') != '') && 'present' || '' }}
+        test-name: "legacy only - legacy symbols present"
+        summary-file: ${{ env.SUMMARY_FILE }}
+    - name: Assert fixture publish (legacy only) lacks snupkg
+      uses: ./src/testing/assert
+      with:
+        expected: absent
+        mode: absent
+        actual: ${{ (hashFiles('.artifacts/symbol-results/legacy-symbols-only/*.snupkg') != '') && 'present' || '' }}
+        test-name: "legacy only - snupkg absent"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
     - name: Summary
       shell: bash
       if: always()
