@@ -210,13 +210,13 @@ runs:
         actual: ${{ (hashFiles('.artifacts/symbol-results/both-symbols/*.snupkg') != '') && 'present' || '' }}
         test-name: "both symbols - snupkg present"
         summary-file: ${{ env.SUMMARY_FILE }}
-    - name: Assert fixture publish (both) copied legacy symbols
+    - name: Assert fixture publish (both) lacks legacy symbols
       uses: ./src/testing/assert
       with:
-        expected: present
-        mode: present
+        expected: absent
+        mode: absent
         actual: ${{ (hashFiles('.artifacts/symbol-results/both-symbols/*.symbols.nupkg') != '') && 'present' || '' }}
-        test-name: "both symbols - legacy present"
+        test-name: "both symbols - legacy symbols absent"
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Publish fixtures - snupkg only
