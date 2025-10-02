@@ -7,12 +7,12 @@ function log(msg) { process.stdout.write(`${msg}\n`); }
 function error(msg) { process.stderr.write(`${msg}\n`); }
 function maskToken(t) { if (!t) return ''; return `${t.slice(0, 3)}…${t.slice(-3)}`; }
 
-function pushPattern(pattern, kind, target, token) {
+function pushPattern(pattern, kind, target, token, maskedToken = maskToken(token)) {
     const args = ['nuget', 'push', pattern, '--api-key', token, '--source', target];
     log(`Remote publish using dotnet (${kind})`);
     log(`   pattern: ${pattern}`);
     log(`   source: ${target}`);
-    log(`   api-key: ${maskToken(token)}`);
+    log(`   api-key: ${maskedToken}`);
     log(`   command: dotnet ${args.join(' ')}`);
     const r = spawnSync('dotnet', args, { stdio: 'inherit' });
     if (r.status !== 0) {
@@ -30,6 +30,7 @@ function run() {
         const pkgDir = process.env.INPUT_PACKAGE_DIRECTORY || path.join(workspace, 'nupkgs');
         const publishSource = process.env.INPUT_PUBLISH_SOURCE || '';
         const token = process.env.INPUT_GITHUB_TOKEN || '';
+        const maskedToken = maskToken(token);
 
         // Session header (ASCII only for log stability)
         log('nuget/publish starting');
@@ -102,12 +103,14 @@ function run() {
 
 
 
-        pushPattern(path.join(pkgDir, '*.nupkg'), 'packages', target, token);
-        if (symbolFiles.length > 0) {
-            pushPattern(path.join(pkgDir, '*.snupkg'), 'symbols', target, token);
-        }
-        if (legacySymbolFiles.length > 0) {
-            pushPattern(path.join(pkgDir, '*.symbols.nupkg'), 'legacy symbols', target, token);
+        const hasModernSymbols = symbolFiles.length > 0;
+        const hasLegacySymbols = legacySymbolFiles.length > 0;
+
+        pushPattern(path.join(pkgDir, '*.nupkg'), 'packages', target, token, maskedToken);
+        if (hasModernSymbols) {
+            pushPattern(path.join(pkgDir, '*.snupkg'), 'symbols', target, token, maskedToken);
+        } else if (hasLegacySymbols) {
+            pushPattern(path.join(pkgDir, '*.symbols.nupkg'), 'legacy symbols', target, token, maskedToken);
         }
         log(`Done in ${Date.now() - t0} ms`);
     } catch (e) {
