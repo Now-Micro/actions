@@ -20,8 +20,17 @@ runs:
         set -euo pipefail
         echo "Running Node tests with coverage"
         node --version
+        summary_path="$RUNNER_TEMP/node-test-output.txt"
+        set +e
         npx --yes c8 \
           --check-coverage --per-file \
           --statements 90 --branches 75 --functions 80 --lines 90\
           -r text -r lcov \
-          node --test --test-reporter=spec
+          node --test --test-reporter=spec | tee "$summary_path"
+        test_status=${PIPESTATUS[0]}
+        set -e
+        {
+          echo "\n### Node test output";
+          cat "$summary_path";
+        } >> "$GITHUB_STEP_SUMMARY"
+        exit $test_status
