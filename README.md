@@ -1,6 +1,8 @@
 # GitHub Actions Monorepo
 
-This repository serves ## Creating New Actions
+This repository serves as a centralized source for reusable GitHub Actions across the organization. It contains a collection of custom composite actions designed for high signal, low dependency workflows. Actions are built with deterministic behavior, comprehensive testing, and minimal external dependencies.
+
+## Creating New Actions
 
 To add a new reusable action:
 
@@ -20,7 +22,6 @@ To add a new reusable action:
 
 Ensure the action is self-contained, with no external dependencies beyond Node.js standard library.
 
-This repository serves as a centralized source for reusable GitHub Actions across the organization. It contains a collection of custom composite actions designed for high signal, low dependency workflows. Actions are built with deterministic behavior, comprehensive testing, and minimal external dependencies.
 ## Prerequisites
 
 - Node.js 20.x (matches the default version in the `setup-node` action).
@@ -100,7 +101,7 @@ Releases are managed via the `release.yml` workflow, which creates GitHub releas
    - **Target**: Commitish (branch or SHA; defaults to `main`).
    - **Draft/Prerelease**: Mark as draft or prerelease.
    - **Generate Release Notes**: Auto-generate from PRs/commits.
-   - **Should Delete Current**: Delete existing release/tag if it exists.
+   - **Should Delete Existing Release/Tag**: Delete existing release/tag if it exists.
    - **Skip Tests**: Skip running tests (default: true for faster releases).
 
 The workflow runs tests, creates or updates the release, and provides outputs like `release_id`, `html_url`, and `upload_url` for further automation.
@@ -109,7 +110,7 @@ The workflow runs tests, creates or updates the release, and provides outputs li
 - Use simple versioning (e.g., `v1`, `v2`, `v3`, ...).
 - Tag releases after merging changes to `main`.
 - Enable auto-generated notes for changelog summaries.
-- If updating an action, ensure backward compatibility or bump major version.
+- If updating an action, ensure backward compatibility or bump version.
 
 ## Conventions
 
@@ -132,6 +133,18 @@ The workflow runs tests, creates or updates the release, and provides outputs li
 - **Test failures**: Check coverage gaps; add scenarios for untested paths.
 
 If issues persist, review action-specific READMEs or test files for examples.
+
+## Demo Workflows and Testing
+
+This repository includes demo workflows and testing actions to validate and showcase the actions.
+
+### Demo Workflows
+
+Demo workflows are located in `.github/workflows/` and demonstrate practical usage of the actions in CI/CD pipelines. They serve as examples for consumers and are built following the guidelines in `.github/instructions/demo-workflows.md`. Each demo workflow tests specific action functionality and can be used as a starting point for integration.
+
+### Node Tests Workflow
+
+The `run-node-tests` action (in `.github/actions/run-node-tests/`) is a composite action designed for running Node.js tests in CI environments. It handles test execution, coverage reporting, and failure handling across different Node.js versions and environments.
 
 ## Notes
 
