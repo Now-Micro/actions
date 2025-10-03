@@ -20,8 +20,38 @@ runs:
         set -euo pipefail
         echo "Running Node tests with coverage"
         node --version
+        summary_path="$RUNNER_TEMP/node-test-output.txt"
+        filtered_path="$RUNNER_TEMP/node-test-output-filtered.txt"
+        set +e
         npx --yes c8 \
           --check-coverage --per-file \
           --statements 90 --branches 75 --functions 80 --lines 90\
           -r text -r lcov \
-          node --test --test-reporter=spec
+          node --test --test-reporter=spec | tee "$summary_path"
+        test_status=${PIPESTATUS[0]}
+        set -e
+        INPUT_PATH="$summary_path" OUTPUT_PATH="$filtered_path" node - <<'NODE'
+          const fs = require('fs');
+          const input = process.env.INPUT_PATH;
+          const output = process.env.OUTPUT_PATH;
+          if (!input || !output) process.exit(1);
+          const patterns = [
+            /^[\s]*[✔✖✘]/u,
+            /^ℹ/u,
+            /^[\s]*[-]{4,}/u,
+            /^[\s]*File\b/u,
+            /^[\s]*All files\b/u,
+            /^[\s]*[\w./-]+\s*\|.*\|/u,
+          ];
+          const text = fs.readFileSync(input, 'utf8');
+          const lines = text.split(/\r?\n/);
+          const filtered = lines.filter(line => patterns.some(re => re.test(line)));
+          fs.writeFileSync(output, filtered.join('\n') + (filtered.length ? '\n' : ''));
+        NODE
+        if [ -s "$filtered_path" ]; then
+          {
+            echo "### Node test results";
+            cat "$filtered_path";
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+        exit $test_status
