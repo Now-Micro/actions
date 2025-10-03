@@ -18,8 +18,9 @@ To add a new reusable action:
 5. **Handle inputs/outputs**: Read from `process.env.INPUT_*`, write to `process.env.GITHUB_OUTPUT`.
 6. **Test locally**: Run `node --test my-new-action/*.test.js` and check coverage with `npx c8 -r text node --test`.
 
-Ensure the action is self-contained, with no external dependencies beyond Node.js standard library.ralized source for reusable GitHub Actions across the organization. It contains a collection of custom composite actions designed for high signal, low dependency workflows. Actions are built with deterministic behavior, comprehensive testing, and minimal external dependencies.
+Ensure the action is self-contained, with no external dependencies beyond Node.js standard library.
 
+This repository serves as a centralized source for reusable GitHub Actions across the organization. It contains a collection of custom composite actions designed for high signal, low dependency workflows. Actions are built with deterministic behavior, comprehensive testing, and minimal external dependencies.
 ## Prerequisites
 
 - Node.js 20.x (matches the default version in the `setup-node` action).
