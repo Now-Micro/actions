@@ -1,26 +1,26 @@
-name: "Demo - Get Last Run SHA"
+name: "Demo - Get Last Run SHA (Manual Only)"
 
 on:
-  workflow_dispatch: {}
+    workflow_dispatch:
 
 jobs:
-  demo:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    demo:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-      - name: Get last qualifying run SHA
-        id: find
-        uses: ./get-last-run-sha
-        with:
-          # The workflow file in this repo to inspect (required input for this action)
-          workflow-file: checks.yml
-          # Search the current branch / ref; for PRs github.head_ref will be set
-          branch: ${{ github.head_ref || github.ref_name }}
-          # Token to allow reading workflow runs
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+            - name: Get last qualifying run SHA
+              id: find
+              uses: ./get-last-run-sha
+              with:
+                  # The workflow file in this repo to inspect (required input for this action)
+                  workflow-file: checks.yml
+                  # Search the current branch / ref; for PRs github.head_ref will be set
+                  branch: ${{ github.head_ref || github.ref_name }}
+                  # Token to allow reading workflow runs
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Show last-success-sha
-        run: |
-          echo "Last qualifying run SHA: ${{ steps.find.outputs.last-success-sha }}"
+            - name: Show last-success-sha
+              run: |
+                  echo "Last qualifying run SHA: ${{ steps.find.outputs.last-success-sha }}"
