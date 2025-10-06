@@ -1,5 +1,5 @@
 const fs = require('fs');
-const https = require('https');
+let https = require('https');
 const { URL } = require('url');
 
 function parseBoolean(value) {
@@ -199,7 +199,10 @@ module.exports = {
     extractField,
     parseBoolean,
     httpRequestJson,
+    writeOutput,
     resolveDefaultBranchSha,
+    // test helper to inject a fake https implementation
+    __setHttps: (h) => { https = h; }
 };
 
 if (require.main === module) {
