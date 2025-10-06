@@ -1,0 +1,59 @@
+name: "Get Last Run SHA"
+description: "Finds the commit SHA for the most recent workflow run that meets configurable job success criteria."
+author: Now Micro
+
+inputs:
+  branch:
+    description: "Branch to search for workflow runs. Defaults to the current branch when omitted."
+    required: false
+  debug-mode:
+    description: "When true, prints additional diagnostic logging."
+    required: false
+  github-token:
+    description: "GitHub token with permission to read workflow runs."
+    required: true
+  per-page:
+    description: "Number of runs to request from the GitHub API (max 100)."
+    required: false
+    default: "50"
+  repository:
+    description: "Repository in owner/name format. Defaults to the current repository when omitted."
+    required: false
+  run-id-field:
+    description: "Dot-separated field path used to extract the run identifier from each workflow run object."
+    required: false
+    default: "id"
+  test-job-prefix:
+    description: "Prefix for test jobs that must succeed or be skipped (default: test)."
+    required: false
+    default: "test"
+  test-setup-job-name:
+    description: "Name of the setup job that must succeed (default: test-setup)."
+    required: false
+    default: "test-setup"
+  workflow-file:
+    description: "Workflow file name to inspect (e.g. checks.yml)."
+    required: true
+    default: ""
+
+outputs:
+  last-success-sha:
+    description: "Commit SHA of the most recent qualifying run or the default branch head when no runs match."
+    value: ${{ steps.find.outputs.last-success-sha }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: find
+      shell: bash
+      env:
+        INPUT_BRANCH: ${{ inputs.branch }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_PER_PAGE: ${{ inputs.per-page }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_RUN_ID_FIELD: ${{ inputs.run-id-field }}
+        INPUT_TEST_JOB_PREFIX: ${{ inputs.test-job-prefix }}
+        INPUT_TEST_SETUP_JOB_NAME: ${{ inputs.test-setup-job-name }}
+        INPUT_WORKFLOW_FILE: ${{ inputs.workflow-file }}
+      run: node "$GITHUB_ACTION_PATH/get-last-run-sha.js"
