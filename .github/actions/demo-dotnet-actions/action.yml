@@ -32,6 +32,11 @@ runs:
         dotnet-version: "8.0.x"
         node-version: "18.x"
 
+    - name: Dotnet install
+      uses: ./dotnet/install
+      with:
+        dotnet-version: "8.0.x, 6.0.x"
+
     - name: Build Project
       if: ${{ inputs.run-build-step == 'true' }}
       uses: ./dotnet/build
