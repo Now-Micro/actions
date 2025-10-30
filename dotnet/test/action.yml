@@ -54,8 +54,14 @@ runs:
         # Split comma-separated list into array (handles spaces)
         IFS=',' read -ra VERSIONS <<< "${{ inputs.dotnet-version }}"
         TMP_INSTALL="$(mktemp -d)"
+        # Ensure temporary installer directory is removed on exit (success or error)
+        trap 'rm -rf "$TMP_INSTALL"' EXIT
         INSTALL_DIR="$HOME/.dotnet"
         mkdir -p "$INSTALL_DIR"
+
+        # Download installer once to avoid repeated network requests when installing multiple versions
+        curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$TMP_INSTALL/dotnet-install.sh"
+
         for raw in "${VERSIONS[@]}"; do
           # trim whitespace
           ver="$(echo "$raw" | sed -e 's/^\s*//' -e 's/\s*$//')"
@@ -63,7 +69,6 @@ runs:
             continue
           fi
           echo "Installing .NET SDK: $ver"
-          curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$TMP_INSTALL/dotnet-install.sh"
           # If caller requested an 'x' channel (e.g. 8.0.x) use --channel to install latest patch
           if [[ "$ver" == *x ]]; then
             channel="${ver%%.x}"
