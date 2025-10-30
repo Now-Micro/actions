@@ -101,8 +101,15 @@ test('errors when installer download fails', () => {
 test('errors when GITHUB_PATH not set', () => {
     __setExecSync(() => Buffer.from('ok'));
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
-    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', HOME: tmp }, () => run()));
-    assert.strictEqual(code, 1);
+    // Save and explicitly delete GITHUB_PATH to test missing env var
+    const savedPath = process.env.GITHUB_PATH;
+    delete process.env.GITHUB_PATH;
+    try {
+        const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', HOME: tmp }, () => run()));
+        assert.strictEqual(code, 1);
+    } finally {
+        if (savedPath !== undefined) process.env.GITHUB_PATH = savedPath;
+    }
 });
 
 test('uses os.homedir() when HOME not set', () => {
