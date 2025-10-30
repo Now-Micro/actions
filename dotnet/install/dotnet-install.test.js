@@ -63,3 +63,131 @@ test('cleans up temp directory', () => {
     // there should be no new lingering dotnet-install- folders (best-effort)
     assert.ok(after.length <= before.length);
 });
+
+test('errors when no versions parsed (empty string after trim)', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '  ,  , ', GITHUB_PATH: ghPath }, () => run()));
+    assert.strictEqual(code, 1);
+});
+
+test('errors when install dir creation fails', () => {
+    __setExecSync(() => Buffer.from('ok'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    // create a file at the install dir path to cause mkdir to fail
+    const badInstallDir = path.join(tmp, '.dotnet');
+    fs.writeFileSync(badInstallDir, 'blocking file');
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', GITHUB_PATH: ghPath, HOME: tmp }, () => run()));
+    assert.strictEqual(code, 1);
+});
+
+test('errors when installer download fails', () => {
+    __setExecSync((cmd) => {
+        if (cmd.includes('curl')) {
+            throw new Error('curl failed');
+        }
+        return Buffer.from('ok');
+    });
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', GITHUB_PATH: ghPath, HOME: tmp }, () => run()));
+    assert.strictEqual(code, 1);
+});
+
+test('errors when GITHUB_PATH not set', () => {
+    __setExecSync(() => Buffer.from('ok'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', HOME: tmp }, () => run()));
+    assert.strictEqual(code, 1);
+});
+
+test('uses os.homedir() when HOME not set', () => {
+    const called = [];
+    __setExecSync((cmd) => {
+        called.push(cmd);
+        return Buffer.from('ok');
+    });
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    // Don't set HOME, so code falls back to os.homedir()
+    const env = { INPUT_DOTNET_VERSION: '8.0.100', GITHUB_PATH: ghPath };
+    delete env.HOME;
+    withEnv(env, () => run());
+    const content = fs.readFileSync(ghPath, 'utf8');
+    assert.ok(content.includes('.dotnet'));
+});
+
+test('installs exact version (non-.x version)', () => {
+    const called = [];
+    __setExecSync((cmd) => {
+        called.push(cmd);
+        return Buffer.from('ok');
+    });
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    withEnv({ INPUT_DOTNET_VERSION: '8.0.100', GITHUB_PATH: ghPath, HOME: tmp }, () => run());
+    // Verify the --version flag was used (not --channel)
+    assert.ok(called.some(c => c.includes('--version') && c.includes('8.0.100')));
+    assert.ok(!called.some(c => c.includes('--channel')));
+});
+
+test('handles download error without message property', () => {
+    __setExecSync((cmd) => {
+        if (cmd.includes('curl')) {
+            const err = new Error();
+            delete err.message; // remove message property
+            throw err;
+        }
+        return Buffer.from('ok');
+    });
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '6.0.x', GITHUB_PATH: ghPath, HOME: tmp }, () => run()));
+    assert.strictEqual(code, 1);
+});
+
+test('skips empty version strings in list', () => {
+    const called = [];
+    __setExecSync((cmd) => {
+        called.push(cmd);
+        return Buffer.from('ok');
+    });
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+    // Mix of valid and empty (after trim) versions
+    withEnv({ INPUT_DOTNET_VERSION: '6.0.x,  , 7.0.100, ', GITHUB_PATH: ghPath, HOME: tmp }, () => run());
+    // Should install 6.0.x and 7.0.100, skipping the empty entries
+    const installCalls = called.filter(c => c.includes('bash') && c.includes('dotnet-install.sh'));
+    assert.strictEqual(installCalls.length, 2);
+});
+
+test('finally block handles rmSync failure gracefully', () => {
+    // Mock fs.rmSync to throw an error
+    const origRmSync = fs.rmSync;
+    let rmSyncCalled = false;
+    fs.rmSync = (p, opts) => {
+        rmSyncCalled = true;
+        throw new Error('rmSync simulated failure');
+    };
+
+    __setExecSync(() => Buffer.from('ok'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-'));
+    const ghPath = path.join(tmp, 'out');
+    fs.writeFileSync(ghPath, '');
+
+    try {
+        // This should complete without throwing despite rmSync failure
+        withEnv({ INPUT_DOTNET_VERSION: '6.0.x', GITHUB_PATH: ghPath, HOME: tmp }, () => run());
+        assert.ok(rmSyncCalled, 'rmSync should have been called');
+    } finally {
+        fs.rmSync = origRmSync;
+    }
+});

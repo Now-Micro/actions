@@ -126,7 +126,19 @@ async function run() {
 
     let baseVersion = '';
 
-    if (releaseKeyword) {
+    if (projectFile) {
+        const abs = path.isAbsolute(projectFile) ? projectFile : path.join(process.cwd(), projectFile);
+        if (!fs.existsSync(abs)) exitWith(`Project file not found: ${abs}`);
+        try {
+            console.log(`📄 Reading version from project file: ${abs}`);
+            baseVersion = readCsprojVersion(abs);
+            console.log(`📌 Project file base version: ${baseVersion || '(empty)'}`);
+        } catch (e) {
+            exitWith(`Failed to read project file: ${e.message}`);
+        }
+    }
+
+    if (releaseKeyword && !baseVersion) {
         const repoFull = process.env.GITHUB_REPOSITORY || '';
         const [owner, repo] = repoFull.split('/');
         if (!owner || !repo) exitWith('GITHUB_REPOSITORY not set');
@@ -140,19 +152,6 @@ async function run() {
             }
         } catch (e) {
             console.log(`Failed to query releases: ${e.message}.  Continuing to check the project file.`);
-        }
-    }
-
-    if (!baseVersion) {
-        if (!projectFile) exitWith('INPUT_PROJECT_FILE is required to read version from csproj');
-        const abs = path.isAbsolute(projectFile) ? projectFile : path.join(process.cwd(), projectFile);
-        if (!fs.existsSync(abs)) exitWith(`Project file not found: ${abs}`);
-        try {
-            console.log(`📄 Reading version from project file: ${abs}`);
-            baseVersion = readCsprojVersion(abs);
-            console.log(`📌 Project file base version: ${baseVersion || '(empty)'}`);
-        } catch (e) {
-            exitWith(`Failed to read project file: ${e.message}`);
         }
     }
 
