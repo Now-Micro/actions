@@ -1,0 +1,2 @@
+## Prompt to refactor the dotnet-test step into a new action called dotnet-test
+I want you to take this script and create a new composite action called dotnet-test from it.  The action should take one input called 'dotnet-version'.  Be sure to convert the bash to a node script as well as add tests and create a demo workflow.
