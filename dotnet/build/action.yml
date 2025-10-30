@@ -73,8 +73,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup .NET SDKs
-      # uses: Now-Micro/actions/dotnet/install@v1
-      uses: ./dotnet/install
+      uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
