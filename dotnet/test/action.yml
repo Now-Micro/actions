@@ -64,7 +64,14 @@ runs:
           fi
           echo "Installing .NET SDK: $ver"
           curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$TMP_INSTALL/dotnet-install.sh"
-          bash "$TMP_INSTALL/dotnet-install.sh" --version "$ver" --install-dir "$INSTALL_DIR"
+          # If caller requested an 'x' channel (e.g. 8.0.x) use --channel to install latest patch
+          if [[ "$ver" == *x ]]; then
+            channel="${ver%%.x}"
+            echo "Detected channel version, installing latest patch for channel: $channel"
+            bash "$TMP_INSTALL/dotnet-install.sh" --channel "$channel" --install-dir "$INSTALL_DIR"
+          else
+            bash "$TMP_INSTALL/dotnet-install.sh" --version "$ver" --install-dir "$INSTALL_DIR"
+          fi
         done
         # Expose installed dotnet to remaining steps
         echo "$INSTALL_DIR" >> "$GITHUB_PATH"
