@@ -139,7 +139,7 @@ async function run() {
                 console.log('ℹ️ No matching release found, will fall back to project file if provided.');
             }
         } catch (e) {
-            exitWith(`Failed to query releases: ${e.message}`);
+            console.log(`Failed to query releases: ${e.message}.  Continuing to check the project file.`);
         }
     }
 
