@@ -46,40 +46,11 @@ runs:
         fi
         echo "directory provided: validation passed"
 
-    - name: Setup .NET SDKs (supports multiple comma-separated versions)
-      shell: bash
-      run: |
-        set -euo pipefail
-        echo "Requested dotnet versions: '${{ inputs.dotnet-version }}'"
-        # Split comma-separated list into array (handles spaces)
-        IFS=',' read -ra VERSIONS <<< "${{ inputs.dotnet-version }}"
-        TMP_INSTALL="$(mktemp -d)"
-        # Ensure temporary installer directory is removed on exit (success or error)
-        trap 'rm -rf "$TMP_INSTALL"' EXIT
-        INSTALL_DIR="$HOME/.dotnet"
-        mkdir -p "$INSTALL_DIR"
-
-        # Download installer once to avoid repeated network requests when installing multiple versions
-        curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$TMP_INSTALL/dotnet-install.sh"
-
-        for raw in "${VERSIONS[@]}"; do
-          # trim whitespace
-          ver="$(echo "$raw" | sed -e 's/^\s*//' -e 's/\s*$//')"
-          if [ -z "$ver" ]; then
-            continue
-          fi
-          echo "Installing .NET SDK: $ver"
-          # If caller requested an 'x' channel (e.g. 8.0.x) use --channel to install latest patch
-          if [[ "$ver" == *x ]]; then
-            channel="${ver%%.x}"
-            echo "Detected channel version, installing latest patch for channel: $channel"
-            bash "$TMP_INSTALL/dotnet-install.sh" --channel "$channel" --install-dir "$INSTALL_DIR"
-          else
-            bash "$TMP_INSTALL/dotnet-install.sh" --version "$ver" --install-dir "$INSTALL_DIR"
-          fi
-        done
-        # Expose installed dotnet to remaining steps
-        echo "$INSTALL_DIR" >> "$GITHUB_PATH"
+    - name: Setup .NET SDKs
+      # uses: Now-Micro/actions/dotnet/install@v1
+      uses: ./dotnet/install@v1
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Get solution or project file
       id: get-solution-or-proj
