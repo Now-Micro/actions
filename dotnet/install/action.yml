@@ -1,5 +1,5 @@
 name: "Run .NET Tests (dotnet-test)"
-description: "Installs one or more .NET SDKs and runs dotnet test when a project/solution is discovered."
+description: "Installs one or more .NET SDKs using the dotnet install script."
 author: "Now-Micro"
 inputs:
   dotnet-version:
