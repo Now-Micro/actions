@@ -48,7 +48,7 @@ runs:
 
     - name: Setup .NET SDKs
       # uses: Now-Micro/actions/dotnet/install@v1
-      uses: ./dotnet/install@v1
+      uses: ./dotnet/install
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
