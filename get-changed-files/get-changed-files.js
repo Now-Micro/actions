@@ -199,7 +199,7 @@ function run() {
         }
         if (headSha && !ensureCommitExists(headSha, prNumber)) {
             throw new Error(`Head SHA ${headSha} not found and could not be fetched.`);
-        }
+        } 
 
         let gitCommand;
         if (baseSha && headSha) {
