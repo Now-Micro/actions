@@ -165,7 +165,7 @@ function extractSha(ref, prNumber) {
 
     return '';
 }
-
+ 
 function run() {
     try {
         const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
