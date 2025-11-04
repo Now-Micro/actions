@@ -209,9 +209,6 @@ function run() {
         const fileList = files.split('\n').filter(f => f.trim());
         const json = JSON.stringify(fileList);
 
-        console.log(`\n📤 Output:`);
-        console.log(`  changed_files: ${json}`);
-
         // Write to GITHUB_OUTPUT
         fs.appendFileSync(process.env.GITHUB_OUTPUT, `changed_files=${json}\n`);
         console.log('✅ Complete - outputs written successfully');
