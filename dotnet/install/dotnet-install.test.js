@@ -128,7 +128,7 @@ test('uses os.homedir() when HOME not set', () => {
     const content = fs.readFileSync(ghPath, 'utf8');
     assert.ok(content.includes('.dotnet'));
 });
-
+ 
 test('installs exact version (non-.x version)', () => {
     const called = [];
     __setExecSync((cmd) => {
