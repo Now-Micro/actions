@@ -91,12 +91,15 @@ jobs:
             # Extract job conclusions
             TEST_SETUP_STATUS=$(echo "$JOBS" | jq -r '.jobs[]? | select(.name == "test-setup") | .conclusion' 2>/dev/null || echo "missing")
             
-            # Check if there are any test jobs (matrix jobs have names like "test (directory)")
-            TEST_JOB_EXISTS=$(echo "$JOBS" | jq -r '.jobs[]? | select(.name | startswith("test")) | .name' 2>/dev/null | wc -l)
-            
+            # Check if there are any test-like jobs or the node-tests/demo-workflows jobs
+            # Matrix test jobs often have names like "test (directory)" so we match startswith("test").
+            # Also include explicit jobs named "node-tests" and "demo-workflows" since we want runs
+            # that exercised those steps.
+            TEST_JOB_EXISTS=$(echo "$JOBS" | jq -r '.jobs[]? | select((.name | startswith("test")) or (.name == "node-tests") or (.name == "demo-workflows")) | .name' 2>/dev/null | wc -l)
+
             if [ "$TEST_JOB_EXISTS" -gt 0 ]; then
-              # Get all test job conclusions
-              TEST_JOB_CONCLUSIONS=$(echo "$JOBS" | jq -r '.jobs[]? | select(.name | startswith("test")) | .conclusion' 2>/dev/null)
+              # Get all relevant job conclusions (test matrix jobs, node-tests, demo-workflows)
+              TEST_JOB_CONCLUSIONS=$(echo "$JOBS" | jq -r '.jobs[]? | select((.name | startswith("test")) or (.name == "node-tests") or (.name == "demo-workflows")) | .conclusion' 2>/dev/null)
               
               # Check if all test jobs succeeded or were skipped
               ALL_TESTS_PASSED=true
@@ -116,11 +119,17 @@ jobs:
               TEST_STATUS="missing"
             fi
             
-            echo "    test-setup: $TEST_SETUP_STATUS, test jobs: $TEST_JOB_EXISTS found, status: $TEST_STATUS"
-            
+            # Also inspect the workflow run status/conclusion to avoid canceled/stopped runs
+            RUN_STATUS=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .status" 2>/dev/null || echo "")
+            RUN_CONCLUSION=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .conclusion" 2>/dev/null || echo "")
+
+            echo "    run status: $RUN_STATUS, conclusion: $RUN_CONCLUSION, test-setup: $TEST_SETUP_STATUS, test jobs: $TEST_JOB_EXISTS found, status: $TEST_STATUS"
+
             # Check if this run meets our success criteria:
-            # test-setup must be success, AND test must be either success or skipped
-            if [ "$TEST_SETUP_STATUS" = "success" ] && { [ "$TEST_STATUS" = "success" ] || [ "$TEST_STATUS" = "skipped" ]; }; then
+            # - run must be completed and not cancelled
+            # - test-setup must be success
+            # - test jobs must be success or skipped
+            if [ "$RUN_STATUS" = "completed" ] && [ "$RUN_CONCLUSION" != "cancelled" ] && [ "$TEST_SETUP_STATUS" = "success" ] && { [ "$TEST_STATUS" = "success" ] || [ "$TEST_STATUS" = "skipped" ]; }; then
               echo "    ✅ This run meets success criteria!"
               LAST_SUCCESS_SHA=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .head_sha" 2>/dev/null || echo "")
               FOUND_RUN_ID=$RUN_ID
