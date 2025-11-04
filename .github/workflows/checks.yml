@@ -148,6 +148,7 @@ jobs:
           head-ref: ${{ github.event.pull_request.head.sha }}
           base-ref: ${{ steps.last-success.outputs.last_success_sha || github.event.repository.default_branch }}
 
+
       - name: Check if tests should run based on changed files
         id: check-changed-files
         shell: bash
@@ -162,7 +163,8 @@ jobs:
             SHOULD_RUN=true
           fi
 
-          echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "Should run: $SHOULD_RUN"
+          echo "should_run_tests=true" >> "$GITHUB_OUTPUT"
 
   node-tests:
     if: ${{ needs.test-setup.outputs.should_run_tests == 'true' }}
