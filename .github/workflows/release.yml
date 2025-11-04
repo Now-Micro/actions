@@ -156,7 +156,7 @@ jobs:
             } catch (e) {
               core.info(`Tag ref refs/tags/${currentTag} not found as a git ref: ${e.message}; falling back to release.target_commitish`);
               originalSha = existing.target_commitish || undefined;
-            }
+            } 
 
             if (originalSha) {
               try {
