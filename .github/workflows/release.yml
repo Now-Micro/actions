@@ -4,44 +4,44 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag name to release (identifier)'
+        description: "Tag name to release (identifier)"
         required: true
         type: string
       name:
-        description: 'Release name (defaults to tag)'
+        description: "Release name (defaults to tag)"
         required: false
         type: string
       body:
-        description: 'Release notes body (optional; ignored if generate-release-notes=true)'
+        description: "Release notes body (optional; ignored if generate-release-notes=true)"
         required: false
         type: string
       target:
-        description: 'Target commitish (branch or SHA). Ignored if tag already exists.'
+        description: "Target commitish (branch or SHA). Ignored if tag already exists."
         required: false
         type: string
         default: main
       draft:
-        description: 'Create as draft'
+        description: "Create as draft"
         required: false
         type: boolean
         default: false
       prerelease:
-        description: 'Mark as prerelease'
+        description: "Mark as prerelease"
         required: false
         type: boolean
         default: false
       generate-release-notes:
-        description: 'Auto-generate release notes'
+        description: "Auto-generate release notes"
         required: false
         type: boolean
         default: true
-      should-delete-current:
-        description: 'Should delete current release if one already exists for this tag?'
+      overwrite-strategy:
+        description: "How to handle an existing release for the same tag: 'none' (reuse), 'rename' (move existing to backup tag), or 'delete' (remove existing)."
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: "rename"
       skip-tests:
-        description: 'Skip running tests'
+        description: "Skip running tests"
         required: false
         type: boolean
         default: true
@@ -54,31 +54,31 @@ jobs:
     name: Run Node tests
     runs-on: ubuntu-latest
     steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-        - name: Run Node tests
-          if: ${{ !fromJson(inputs['skip-tests']) }}
-          uses: ./.github/actions/run-node-tests
-        - name: Skipping Node tests
-          if: ${{ fromJson(inputs['skip-tests']) }}
-          run: echo "skip-tests input=true; skipping Node tests"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Node tests
+        if: ${{ !fromJson(inputs['skip-tests']) }}
+        uses: ./.github/actions/run-node-tests
+      - name: Skipping Node tests
+        if: ${{ fromJson(inputs['skip-tests']) }}
+        run: echo "skip-tests input=true; skipping Node tests"
 
   run-workflow-tests:
-    name: Run workflow tests    
+    name: Run workflow tests
     runs-on: ubuntu-latest
     steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-        - name: Run demo composites
-          if: ${{ !fromJson(inputs['skip-tests']) }}
-          uses: ./.github/actions/run-demo-workflows
-        - name: Skipping demo workflows
-          if: ${{ fromJson(inputs['skip-tests']) }}
-          run: echo "skip-tests input=true; skipping demo workflows"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run demo composites
+        if: ${{ !fromJson(inputs['skip-tests']) }}
+        uses: ./.github/actions/run-demo-workflows
+      - name: Skipping demo workflows
+        if: ${{ fromJson(inputs['skip-tests']) }}
+        run: echo "skip-tests input=true; skipping demo workflows"
 
   publish:
     name: Publish release
@@ -116,8 +116,40 @@ jobs:
               }
             }
 
+      - name: Rename existing release (if requested)
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'rename' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Instead of deleting the existing release, rename it and move its tag to a backup name
+            const release_id = Number(`${{ steps.get.outputs.id }}`);
+            const currentTag = `${{ inputs.tag }}`;
+            const now = new Date().toISOString().replace(/[:.]/g, '-');
+            const backupTag = `${currentTag}-backup-${now}`;
+
+            // Read the existing release to get current name and target
+            const { data: existing } = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id,
+            });
+
+            const newName = `${existing.name || existing.tag_name || currentTag} (renamed ${now})`;
+
+            // Update the release to point to the backup tag name and update its display name
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id,
+              tag_name: backupTag,
+              name: newName
+            });
+
+            core.info(`Renamed release id ${release_id} -> name='${newName}', tag='${backupTag}'`);
+
       - name: Delete existing release (if requested)
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'delete' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -131,7 +163,7 @@ jobs:
             core.info(`Deleted existing release id ${release_id}`);
 
       - name: Delete tag for existing release (if requested)
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy != 'none' }}
         uses: actions/github-script@v7
         env:
           TAG_NAME: ${{ inputs.tag }}
@@ -155,9 +187,9 @@ jobs:
               }
             }
 
-      - name: Use existing release (no delete requested)
+      - name: Use existing release (no overwrite requested)
         id: create_or_reuse
-        if: ${{ steps.get.outputs.exists == 'true' && !inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'none' }}
         run: |
           echo "release_id=${{ steps.get.outputs.id }}" >> $GITHUB_OUTPUT
           echo "html_url=${{ steps.get.outputs.html_url }}" >> $GITHUB_OUTPUT
@@ -165,7 +197,7 @@ jobs:
 
       - name: Create release
         id: create
-        if: ${{ steps.get.outputs.exists != 'true' || inputs.should-delete-current }}
+        if: ${{ steps.get.outputs.exists != 'true' || inputs.overwrite-strategy != 'none' }}
         uses: actions/github-script@v7
         env:
           INPUT_TAG: ${{ inputs.tag }}
@@ -225,5 +257,5 @@ jobs:
         if: always()
         run: |
           echo "Release tag: ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Deleted existing: ${{ steps.get.outputs.exists == 'true' && inputs.should-delete-current }}" >> $GITHUB_STEP_SUMMARY
+          echo "Overwrite strategy: ${{ inputs.overwrite-strategy }}" >> $GITHUB_STEP_SUMMARY
           echo "Release URL: ${{ steps.release_out.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
