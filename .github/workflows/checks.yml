@@ -156,54 +156,10 @@ jobs:
           SHOULD_RUN=false
 
           # Example logic: run tests if any .js or .cs files changed
-          # Prefer exact checks using jq for the changed_files JSON array when available.
-          CHANGED_FILES_JSON='${{ steps.changed-files.outputs.changed_files }}'
-          SHOULD_RUN=false
-
-          if command -v jq >/dev/null 2>&1; then
-            echo "DEBUG: jq is available; using precise JSON parsing of changed_files"
-            # Parse changed files into a newline list
-            mapfile -t FILES < <(echo "$CHANGED_FILES_JSON" | jq -r '.[]' 2>/dev/null || true)
-
-            echo "DEBUG: parsed changed files:" 
-            for df in "${FILES[@]}"; do echo "  - $df"; done
-
-            for f in "${FILES[@]}"; do
-              # Run tests if any .js or .cs files changed
-              if [[ "$f" =~ \.(js|cs)$ ]]; then
-                SHOULD_RUN=true
-                break
-              fi
-            done
-
-            if [ "$SHOULD_RUN" = false ]; then
-              # Find all action.yml files tracked in the repo and check if any changed file
-              # falls under those action directories. This precisely detects changes to
-              # actions even when files other than action.yml inside the action were modified.
-              ACTION_YMLS=$(git ls-files -- **/action.yml 2>/dev/null || true)
-              echo "DEBUG: discovered action.yml files:"; echo "$ACTION_YMLS"
-              if [ -n "$ACTION_YMLS" ]; then
-                for a in $ACTION_YMLS; do
-                  adir=$(dirname "$a")
-                  for f in "${FILES[@]}"; do
-                    if [[ "$f" == "$adir"* ]]; then
-                      echo "DEBUG: changed file '$f' is inside action dir '$adir' -> will run tests"
-                      SHOULD_RUN=true
-                      break 3
-                    fi
-                  done
-                done
-              fi
-            fi
-          else
-            echo "DEBUG: jq not available; falling back to grep-based detection"
-            # Fallback: use pragmatic grep on the JSON string if jq is not available
-            if echo "$CHANGED_FILES_JSON" | grep -qE '\.js|\.cs|action\.yml|\.github/actions/'; then
-              echo "DEBUG: grep matched changed files -> will run tests"
-              SHOULD_RUN=true
-            else
-              echo "DEBUG: grep did not match any trigger patterns"
-            fi
+          # Also run tests if any action.yml files or action folders changed (these affect actions behavior)
+          CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+          if echo "$CHANGED_FILES" | grep -qE '\.js|\.cs|action\.yml|\.github/actions/'; then
+            SHOULD_RUN=true
           fi
 
           echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"

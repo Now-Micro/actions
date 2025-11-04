@@ -162,7 +162,7 @@ function extractSha(ref, prNumber) {
             }
         } catch { }
     }
-
+ 
     return '';
 }
 
