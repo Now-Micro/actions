@@ -508,7 +508,8 @@ test('run() validates and clamps invalid numeric inputs', async () => {
 test('run() missing GITHUB_OUTPUT exits 1', async () => {
   const prev = { ...process.env };
   try {
-    // Provide all required inputs except GITHUB_OUTPUT
+    // Explicitly delete GITHUB_OUTPUT to test the validation
+    delete process.env.GITHUB_OUTPUT;
     const r = await withEnvAsync({
       INPUT_JOB_NAME: 'test-setup',
       INPUT_TEST_JOB_NAMES: 'node-tests',
@@ -529,7 +530,10 @@ test('run() missing GITHUB_REPOSITORY exits 1', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'glwss-'));
   const tmpOut = path.join(tmpDir, 'output.txt');
   fs.writeFileSync(tmpOut, '');
+  const prev = { ...process.env };
   try {
+    // Explicitly delete GITHUB_REPOSITORY to test the validation
+    delete process.env.GITHUB_REPOSITORY;
     const r = await withEnvAsync({
       GITHUB_OUTPUT: tmpOut,
       INPUT_JOB_NAME: 'test-setup',
@@ -542,6 +546,7 @@ test('run() missing GITHUB_REPOSITORY exits 1', async () => {
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /GITHUB_REPOSITORY.*required/);
   } finally {
+    process.env = prev;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
@@ -550,7 +555,10 @@ test('run() missing INPUT_BRANCH exits 1', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'glwss-'));
   const tmpOut = path.join(tmpDir, 'output.txt');
   fs.writeFileSync(tmpOut, '');
+  const prev = { ...process.env };
   try {
+    // Explicitly delete INPUT_BRANCH to test the validation
+    delete process.env.INPUT_BRANCH;
     const r = await withEnvAsync({
       GITHUB_OUTPUT: tmpOut,
       GITHUB_REPOSITORY: 'o/r',
@@ -563,6 +571,7 @@ test('run() missing INPUT_BRANCH exits 1', async () => {
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /INPUT_BRANCH.*required/);
   } finally {
+    process.env = prev;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
