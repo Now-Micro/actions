@@ -216,7 +216,7 @@ async function run() {
 
         logDebug(`    run status: ${runStatus}, conclusion: ${runConclusion}, ${mainJobName}: ${mainJobStatus}, test jobs: ${testJobExists} found [${foundTestJobNames.join(', ')}], status: ${testStatus}`, debugMode);
 
-        // Success criteria:
+        // Success criteria: 
         // - run must be completed and not cancelled/timed_out/stale
         // - main job must be success
         // - test jobs must be success or skipped
