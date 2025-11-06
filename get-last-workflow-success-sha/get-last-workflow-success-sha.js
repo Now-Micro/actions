@@ -173,8 +173,7 @@ async function run() {
 
         // Match main job by ID or name (exact match, case-insensitive)
         const mainJob = jobs.jobs.find(j => {
-            logDebug(j, debugMode);
-            logDebug(`      Considering job "${j.id}" (name: "${j.name}") for main job`, debugMode);
+            logDebug(`      Considering job "${j.name}"...`, debugMode);
             const jNameLower = String(j.name || '').toLowerCase();
             const mainJobNameLower = mainJobName.toLowerCase();
 
