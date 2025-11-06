@@ -24,131 +24,16 @@ jobs:
       - name: Find Last Successful Checks Run on Branch
         id: last-success
         if: ${{ vars.CHECKS_OPTIMIZE_BASE_REF == 'true' }}
-        run: |
-          echo "Looking for last successful checks run on branch: ${{ github.head_ref }}"
-          echo "Criteria: test-setup passed AND (test job succeeded OR was skipped)"
-
-          # Query GitHub API for recent workflow runs on this branch (not just successful)
-          # Use a larger page size and a small retry loop to reduce false negatives from transient errors.
-          URL="https://api.github.com/repos/${{ github.repository }}/actions/workflows/checks.yml/runs?per_page=50&branch=${{ github.head_ref }}"
-
-          DEFAULT_BRANCH_NAME="${{ github.event.repository.default_branch }}"
-          RUNS=""
-          ATTEMPT=0
-          MAX_ATTEMPTS=3
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            ATTEMPT=$((ATTEMPT + 1))
-            echo "Attempt $ATTEMPT: fetching workflow runs..."
-            RUNS=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$URL" || true)
-            # If we got any non-empty response, stop retrying
-            if [ -n "$RUNS" ] && [ "$RUNS" != "null" ]; then
-              break
-            fi
-            echo "  Warning: empty or null response from GitHub API (attempt $ATTEMPT). Retrying..."
-            sleep $ATTEMPT
-          done
-
-          if [ -z "$RUNS" ] || [ "$RUNS" = "null" ]; then
-            echo "⚠️  Could not fetch workflow runs from GitHub API. Reverting to most recent commit on $DEFAULT_BRANCH_NAME branch for base-ref."
-            echo "last_success_sha=$DEFAULT_BRANCH_NAME" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Ensure jq is available and that the response contains a workflow_runs array
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "⚠️  Could not fetch workflow runs from GitHub API. Reverting to most recent commit on $DEFAULT_BRANCH_NAME branch for base-ref."
-            echo "last_success_sha=$DEFAULT_BRANCH_NAME" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          RUN_COUNT=$(echo "$RUNS" | jq -r '.workflow_runs | length // 0' 2>/dev/null || echo 0)
-          if [ "$RUN_COUNT" -eq 0 ]; then
-            echo "⚠️  No workflow runs found in the API response. Falling back to PR base commit for base-ref."
-            echo "last_success_sha=$DEFAULT_BRANCH_NAME" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Checking workflow runs... (found $RUN_COUNT runs)"
-
-          # Process each run to find one that meets our criteria
-          LAST_SUCCESS_SHA=""
-          FOUND_RUN_ID=""
-
-          # Extract run IDs from the response (most recent first)
-          RUN_IDS=$(echo "$RUNS" | jq -r '.workflow_runs[]?.id' 2>/dev/null || echo "")
-
-          for RUN_ID in $RUN_IDS; do
-            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              continue
-            fi
-            
-            echo "  Checking run $RUN_ID..."
-            
-            # Get job details for this run
-            JOBS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/runs/$RUN_ID/jobs")
-            
-            # Extract job conclusions
-            TEST_SETUP_STATUS=$(echo "$JOBS" | jq -r '.jobs[]? | select(.name == "test-setup") | .conclusion' 2>/dev/null || echo "missing")
-            
-            # Check if there are any test-like jobs or the node-tests/demo-workflows jobs
-            # Matrix test jobs often have names like "test (directory)" so we match startswith("test").
-            # Also include explicit jobs named "node-tests" and "demo-workflows" since we want runs
-            # that exercised those steps.
-            TEST_JOB_EXISTS=$(echo "$JOBS" | jq -r '.jobs[]? | select((.name | startswith("test")) or (.name == "node-tests") or (.name == "demo-workflows")) | .name' 2>/dev/null | wc -l)
-
-            if [ "$TEST_JOB_EXISTS" -gt 0 ]; then
-              # Get all relevant job conclusions (test matrix jobs, node-tests, demo-workflows)
-              TEST_JOB_CONCLUSIONS=$(echo "$JOBS" | jq -r '.jobs[]? | select((.name | startswith("test")) or (.name == "node-tests") or (.name == "demo-workflows")) | .conclusion' 2>/dev/null)
-              
-              # Check if all test jobs succeeded or were skipped
-              ALL_TESTS_PASSED=true
-              while IFS= read -r conclusion; do
-                if [ "$conclusion" != "success" ] && [ "$conclusion" != "skipped" ]; then
-                  ALL_TESTS_PASSED=false
-                  break
-                fi
-              done <<< "$TEST_JOB_CONCLUSIONS"
-              
-              if [ "$ALL_TESTS_PASSED" = true ]; then
-                TEST_STATUS="success"
-              else
-                TEST_STATUS="failure"
-              fi
-            else
-              TEST_STATUS="missing"
-            fi
-            
-            # Also inspect the workflow run status/conclusion to avoid canceled/stopped runs
-            RUN_STATUS=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .status" 2>/dev/null || echo "")
-            RUN_CONCLUSION=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .conclusion" 2>/dev/null || echo "")
-
-            echo "    run status: $RUN_STATUS, conclusion: $RUN_CONCLUSION, test-setup: $TEST_SETUP_STATUS, test jobs: $TEST_JOB_EXISTS found, status: $TEST_STATUS"
-
-            # Check if this run meets our success criteria:
-            # - run must be completed and not cancelled
-            # - test-setup must be success
-            # - test jobs must be success or skipped
-            if [ "$RUN_STATUS" = "completed" ] && [ "$RUN_CONCLUSION" != "cancelled" ] && [ "$TEST_SETUP_STATUS" = "success" ] && { [ "$TEST_STATUS" = "success" ] || [ "$TEST_STATUS" = "skipped" ]; }; then
-              echo "    ✅ This run meets success criteria!"
-              LAST_SUCCESS_SHA=$(echo "$RUNS" | jq -r ".workflow_runs[]? | select(.id == $RUN_ID) | .head_sha" 2>/dev/null || echo "")
-              FOUND_RUN_ID=$RUN_ID
-              break
-            else
-              echo "    ❌ Does not meet criteria"
-            fi
-          done
-
-          echo ""
-          if [ -n "$LAST_SUCCESS_SHA" ] && [ "$LAST_SUCCESS_SHA" != "null" ]; then
-            echo "✅ Found qualifying run (ID: $FOUND_RUN_ID) with SHA: $LAST_SUCCESS_SHA"
-            echo "   Will compare changes against this commit"
-            echo "last_success_sha=$LAST_SUCCESS_SHA" >> $GITHUB_OUTPUT
-          else
-            echo "❌ No runs found that meet success criteria on branch ${{ github.head_ref }}"
-            echo "   Falling back to $DEFAULT_BRANCH_NAME head SHA"
-            echo "last_success_sha=$DEFAULT_BRANCH_NAME" >> $GITHUB_OUTPUT
-          fi
+        uses: ./get-last-workflow-success-sha
+        with:
+          branch: ${{ github.head_ref }}
+          default-branch: ${{ github.event.repository.default_branch }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          job-names-that-must-succeed: "Node Tests,Demo Workflows"
+          main-job-name: "test-setup"
+          request-size: 50
+          retry-attempts: 3
+          workflow-name: "checks.yml"
 
       - name: Get Changed Files
         uses: Now-Micro/actions/get-changed-files@v1
