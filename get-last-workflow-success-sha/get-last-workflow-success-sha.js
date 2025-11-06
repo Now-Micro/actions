@@ -178,8 +178,8 @@ async function run() {
 
         // Check test jobs: match case-insensitive exact or startsWith (to handle matrix names like "test (dir)")
         const foundTestJobs = jobs.jobs.filter(j => {
-            const jLower = j.name.toLowerCase();
-            logDebug(`      Considering job "${j.name}" for test jobs`, debugMode);
+            const jLower = j?.id?.toLowerCase() || j.name.toLowerCase();
+            logDebug(`      Considering job "${j.id}" for test jobs`, debugMode);
             return testJobNames.some(tn => {
                 logDebug(`        Comparing against test job name "${tn}"`, debugMode);
                 const tnLower = tn.toLowerCase();
