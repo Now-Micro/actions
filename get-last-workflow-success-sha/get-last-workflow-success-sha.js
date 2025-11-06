@@ -175,7 +175,6 @@ async function run() {
             logDebug(`      Considering job "${j.name}"...`, debugMode);
             const jNameLower = String(j.name || '').toLowerCase();
             const mainJobNameLower = mainJobName.toLowerCase();
-
             return jNameLower === mainJobNameLower;
         });
         const mainJobStatus = mainJob ? mainJob.conclusion : 'missing';
