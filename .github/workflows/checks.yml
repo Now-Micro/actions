@@ -27,7 +27,6 @@ jobs:
         uses: ./get-last-workflow-success-sha
         with:
           branch: ${{ github.head_ref }}
-          debug-mode: "true"
           default-branch: ${{ github.event.repository.default_branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           job-names-that-must-succeed: "Node Tests,Demo Workflows"

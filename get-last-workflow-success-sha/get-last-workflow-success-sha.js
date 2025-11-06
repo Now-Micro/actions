@@ -171,7 +171,6 @@ async function run() {
             continue;
         }
 
-        // Match main job by ID or name (exact match, case-insensitive)
         const mainJob = jobs.jobs.find(j => {
             logDebug(`      Considering job "${j.name}"...`, debugMode);
             const jNameLower = String(j.name || '').toLowerCase();
@@ -183,15 +182,12 @@ async function run() {
 
         logDebug(`    Main job "${mainJobName}" conclusion: ${mainJobStatus}`, debugMode);
 
-        // Check test jobs: match case-insensitive exact or startsWith (to handle matrix names like "test (dir)")
-        // Support matching by both job ID and job name for flexibility
         const foundTestJobs = jobs.jobs.filter(j => {
             const jNameLower = String(j.name || '').toLowerCase();
             logDebug(`      Considering job "${j.name}"...`, debugMode);
             return jobNamesThatMustSucceed.some(tn => {
                 logDebug(`        Comparing against job name "${tn}"`, debugMode);
                 const tnLower = tn.toLowerCase();
-                // Match either by ID or name (exact or startsWith)
                 return jNameLower === tnLower || jNameLower.startsWith(tnLower) ||
                     jNameLower === tnLower || jNameLower.startsWith(tnLower);
             });
