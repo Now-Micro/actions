@@ -174,10 +174,14 @@ async function run() {
         const mainJob = jobs.jobs.find(j => j.name.match(new RegExp(`^${escapeRegExp(jobName)}$`, 'i')));
         const mainJobStatus = mainJob ? mainJob.conclusion : 'missing';
 
+        logDebug(`    Main job "${jobName}" conclusion: ${mainJobStatus}`, debugMode);
+
         // Check test jobs: match case-insensitive exact or startsWith (to handle matrix names like "test (dir)")
         const foundTestJobs = jobs.jobs.filter(j => {
             const jLower = j.name.toLowerCase();
+            logDebug(`      Considering job "${j.name}" for test jobs`, debugMode);
             return testJobNames.some(tn => {
+                logDebug(`        Comparing against test job name "${tn}"`, debugMode);
                 const tnLower = tn.toLowerCase();
                 return jLower === tnLower || jLower.startsWith(tnLower);
             });
@@ -185,10 +189,14 @@ async function run() {
         const foundTestJobNames = foundTestJobs.map(j => j.name);
         const testJobExists = foundTestJobs.length;
 
+        logDebug(`    Found ${testJobExists} test jobs`, debugMode);
+        logDebug(`    Test job names: [${foundTestJobNames.join(', ')}]`, debugMode);
+
         let testStatus = 'missing';
         let allTestsPassed = true;
         if (testJobExists > 0) {
             for (const job of foundTestJobs) {
+                logDebug(`      Test job "${job.name}" conclusion: ${job.conclusion}`, debugMode);
                 if (job.conclusion !== 'success' && job.conclusion !== 'skipped') {
                     allTestsPassed = false;
                     break;
