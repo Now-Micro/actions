@@ -30,10 +30,10 @@ jobs:
           debug-mode: "true"
           default-branch: ${{ github.event.repository.default_branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          job-name: "test-setup"
+          job-ids-that-must-succeed: "node-tests,demo-workflows"
+          main-job-id: "test-setup"
           request-size: 50
           retry-attempts: 3
-          test-job-names: "node-tests,demo-workflows"
           workflow-name: "checks.yml"
 
       - name: Get Changed Files

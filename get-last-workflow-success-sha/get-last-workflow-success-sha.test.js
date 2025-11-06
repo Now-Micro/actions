@@ -1,4 +1,4 @@
-﻿const test = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -177,7 +177,7 @@ test('fetchWithRetry retries then succeeds', async () => {
 test('run() validation fails without required inputs', async () => {
   const r = await runWith({ GITHUB_REPOSITORY: 'x/y' });
   assert.strictEqual(r.exitCode, 1);
-  assert.match(r.err + r.out, /INPUT_JOB_NAME is required/);
+  assert.match(r.err + r.out, /INPUT_MAIN_JOB_ID is required/);
 });
 
 test('run() falls back to default branch when API fails', async () => {
@@ -185,8 +185,8 @@ test('run() falls back to default branch when API fails', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -209,8 +209,8 @@ test('run() selects qualifying run with jobs', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -230,8 +230,8 @@ test('run() ignores cancelled runs', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -254,8 +254,8 @@ test('run() treats missing test jobs as missing and falls back', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -278,8 +278,8 @@ test('run() when test jobs present but failing - fallback', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -303,8 +303,8 @@ test('run() empty workflow_runs (new PR, no prior runs) - fallback', async () =>
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -328,8 +328,8 @@ test('run() first run cancelled - fallback to default branch', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -363,8 +363,8 @@ test('run() first run passed, second cancelled, third run uses first SHA', async
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -386,8 +386,8 @@ test('run() ignores timed_out runs', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -407,8 +407,8 @@ test('run() ignores stale runs', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -432,8 +432,8 @@ test('run() handles job name with regex characters', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup (special)',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup (special)',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -464,8 +464,8 @@ test('run() startsWith matching for test job names (matrix jobs)', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'test', // should match 'test (dir1)' and 'test (dir2)'
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'test', // should match 'test (dir1)' and 'test (dir2)'
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -487,8 +487,8 @@ test('run() validates and clamps invalid numeric inputs', async () => {
   enableMockHttps();
   try {
     const r = await runWith({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -511,8 +511,8 @@ test('run() missing GITHUB_OUTPUT exits 1', async () => {
     // Explicitly delete GITHUB_OUTPUT to test the validation
     delete process.env.GITHUB_OUTPUT;
     const r = await withEnvAsync({
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       GITHUB_REPOSITORY: 'o/r',
@@ -536,8 +536,8 @@ test('run() missing GITHUB_REPOSITORY exits 1', async () => {
     delete process.env.GITHUB_REPOSITORY;
     const r = await withEnvAsync({
       GITHUB_OUTPUT: tmpOut,
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       INPUT_BRANCH: 'br',
@@ -562,8 +562,8 @@ test('run() missing INPUT_BRANCH exits 1', async () => {
     const r = await withEnvAsync({
       GITHUB_OUTPUT: tmpOut,
       GITHUB_REPOSITORY: 'o/r',
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: 'node-tests',
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       INPUT_DEFAULT_BRANCH: 'main'
@@ -584,17 +584,18 @@ test('run() empty test-job-names list exits 1', async () => {
     const r = await withEnvAsync({
       GITHUB_OUTPUT: tmpOut,
       GITHUB_REPOSITORY: 'o/r',
-      INPUT_JOB_NAME: 'test-setup',
-      INPUT_TEST_JOB_NAMES: '   ,  ,  ', // only whitespace/commas
+      INPUT_MAIN_JOB_ID: 'test-setup',
+      INPUT_JOB_IDS_THAT_MUST_SUCCEED: '   ,  ,  ', // only whitespace/commas
       INPUT_WORKFLOW_NAME: 'checks.yml',
       INPUT_GITHUB_TOKEN: 't',
       INPUT_BRANCH: 'br',
       INPUT_DEFAULT_BRANCH: 'main'
     }, async () => run());
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /must contain at least one job name/);
+    assert.match(r.err + r.out, /must contain at least one job ID/);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
 

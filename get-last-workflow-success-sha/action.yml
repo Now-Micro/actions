@@ -17,8 +17,8 @@ inputs:
     description: GitHub token for API access
     required: false
     default: ${{ github.token }}
-  job-name:
-    description: The name of the job that must have succeeded (e.g., "test-setup")
+  main-job-id:
+    description: The ID of the main job that must have succeeded (e.g., "test-setup")
     required: true
   request-size:
     description: Number of workflow runs to fetch per API request
@@ -28,8 +28,8 @@ inputs:
     description: Maximum number of retry attempts for API requests
     required: false
     default: "3"
-  test-job-names:
-    description: Comma-separated list of job names that must have passed or been skipped (e.g., "node-tests,demo-workflows")
+  job-ids-that-must-succeed:
+    description: Comma-separated list of job IDs that must have passed or been skipped (e.g., "node-tests,demo-workflows")
     required: true
   workflow-name:
     description: The workflow filename to check (e.g., "checks.yml")
@@ -47,15 +47,14 @@ runs:
       id: find-sha
       shell: bash
       env:
-        INPUT_JOB_NAME: ${{ inputs.job-name }}
-        INPUT_TEST_JOB_NAMES: ${{ inputs.test-job-names }}
-        INPUT_WORKFLOW_NAME: ${{ inputs.workflow-name }}
-        INPUT_REQUEST_SIZE: ${{ inputs.request-size }}
-        INPUT_RETRY_ATTEMPTS: ${{ inputs.retry-attempts }}
-        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
-        INPUT_DEFAULT_BRANCH: ${{ inputs.default-branch }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
         INPUT_BRANCH: ${{ inputs.branch }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
+        INPUT_DEFAULT_BRANCH: ${{ inputs.default-branch }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_JOB_IDS_THAT_MUST_SUCCEED: ${{ inputs.job-ids-that-must-succeed }}
+        INPUT_MAIN_JOB_ID: ${{ inputs.main-job-id }}
+        INPUT_REQUEST_SIZE: ${{ inputs.request-size }}
+        INPUT_RETRY_ATTEMPTS: ${{ inputs.retry-attempts }}
+        INPUT_WORKFLOW_NAME: ${{ inputs.workflow-name }}
       run: node "$GITHUB_ACTION_PATH/get-last-workflow-success-sha.js"
- 

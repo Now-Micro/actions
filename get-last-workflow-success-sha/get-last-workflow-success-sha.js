@@ -72,8 +72,8 @@ async function fetchWithRetry(url, token, maxAttempts, debugMode) {
 }
 
 async function run() {
-    const jobName = process.env.INPUT_JOB_NAME;
-    const testJobNamesStr = process.env.INPUT_TEST_JOB_NAMES;
+    const mainJobId = process.env.INPUT_MAIN_JOB_ID;
+    const jobIdsThatMustSucceedStr = process.env.INPUT_JOB_IDS_THAT_MUST_SUCCEED;
     const workflowName = process.env.INPUT_WORKFLOW_NAME;
     let requestSize = parseInt(process.env.INPUT_REQUEST_SIZE || '50', 10);
     let retryAttempts = parseInt(process.env.INPUT_RETRY_ATTEMPTS || '3', 10);
@@ -85,12 +85,12 @@ async function run() {
     const githubOutput = process.env.GITHUB_OUTPUT;
 
     // Validation
-    if (!jobName) {
-        console.error('❌ INPUT_JOB_NAME is required');
+    if (!mainJobId) {
+        console.error('❌ INPUT_MAIN_JOB_ID is required');
         process.exit(1);
     }
-    if (!testJobNamesStr) {
-        console.error('❌ INPUT_TEST_JOB_NAMES is required');
+    if (!jobIdsThatMustSucceedStr) {
+        console.error('❌ INPUT_JOB_IDS_THAT_MUST_SUCCEED is required');
         process.exit(1);
     }
     if (!workflowName) {
@@ -118,14 +118,14 @@ async function run() {
     if (!Number.isFinite(requestSize) || requestSize <= 0) requestSize = 50;
     if (!Number.isFinite(retryAttempts) || retryAttempts <= 0) retryAttempts = 3;
 
-    const testJobNames = testJobNamesStr.split(',').map(s => s.trim()).filter(Boolean);
-    if (testJobNames.length === 0) {
-        console.error('❌ INPUT_TEST_JOB_NAMES must contain at least one job name');
+    const jobIdsThatMustSucceed = jobIdsThatMustSucceedStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (jobIdsThatMustSucceed.length === 0) {
+        console.error('❌ INPUT_JOB_IDS_THAT_MUST_SUCCEED must contain at least one job ID');
         process.exit(1);
     }
 
     log(`Looking for last successful ${workflowName} run on branch: ${branch}`);
-    log(`Criteria: "${jobName}" must succeed AND all of [${testJobNames.join(', ')}] must succeed or be skipped`);
+    log(`Criteria: "${mainJobId}" must succeed AND all of [${jobIdsThatMustSucceed.join(', ')}] must succeed or be skipped`);
 
     const url = `https://api.github.com/repos/${githubRepository}/actions/workflows/${encodeURIComponent(workflowName)}/runs?per_page=${requestSize}&branch=${encodeURIComponent(branch)}`;
 
@@ -171,19 +171,29 @@ async function run() {
             continue;
         }
 
-        const mainJob = jobs.jobs.find(j => j.name.match(new RegExp(`^${escapeRegExp(jobName)}$`, 'i')));
+        // Match main job by ID or name (exact match, case-insensitive)
+        const mainJob = jobs.jobs.find(j => {
+            const jIdLower = j.id?.toLowerCase() || '';
+            const jNameLower = j.name?.toLowerCase() || '';
+            const mainJobIdLower = mainJobId.toLowerCase();
+            return jIdLower === mainJobIdLower || jNameLower === mainJobIdLower;
+        });
         const mainJobStatus = mainJob ? mainJob.conclusion : 'missing';
 
-        logDebug(`    Main job "${jobName}" conclusion: ${mainJobStatus}`, debugMode);
+        logDebug(`    Main job "${mainJobId}" conclusion: ${mainJobStatus}`, debugMode);
 
         // Check test jobs: match case-insensitive exact or startsWith (to handle matrix names like "test (dir)")
+        // Support matching by both job ID and job name for flexibility
         const foundTestJobs = jobs.jobs.filter(j => {
-            const jLower = j?.id?.toLowerCase() || j.name.toLowerCase();
-            logDebug(`      Considering job "${j.id}" for test jobs`, debugMode);
-            return testJobNames.some(tn => {
-                logDebug(`        Comparing against test job name "${tn}"`, debugMode);
+            const jIdLower = j.id?.toLowerCase() || '';
+            const jNameLower = j.name?.toLowerCase() || '';
+            logDebug(`      Considering job "${j.id}" (name: "${j.name}") for test jobs`, debugMode);
+            return jobIdsThatMustSucceed.some(tn => {
+                logDebug(`        Comparing against test job ID "${tn}"`, debugMode);
                 const tnLower = tn.toLowerCase();
-                return jLower === tnLower || jLower.startsWith(tnLower);
+                // Match either by ID or name (exact or startsWith)
+                return jIdLower === tnLower || jIdLower.startsWith(tnLower) ||
+                    jNameLower === tnLower || jNameLower.startsWith(tnLower);
             });
         });
         const foundTestJobNames = foundTestJobs.map(j => j.name);
@@ -209,7 +219,7 @@ async function run() {
         const runStatus = run.status;
         const runConclusion = run.conclusion;
 
-        logDebug(`    run status: ${runStatus}, conclusion: ${runConclusion}, ${jobName}: ${mainJobStatus}, test jobs: ${testJobExists} found [${foundTestJobNames.join(', ')}], status: ${testStatus}`, debugMode);
+        logDebug(`    run status: ${runStatus}, conclusion: ${runConclusion}, ${mainJobId}: ${mainJobStatus}, test jobs: ${testJobExists} found [${foundTestJobNames.join(', ')}], status: ${testStatus}`, debugMode);
 
         // Success criteria:
         // - run must be completed and not cancelled/timed_out/stale
