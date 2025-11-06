@@ -58,3 +58,4 @@ runs:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         GITHUB_REPOSITORY: ${{ github.repository }}
       run: node "$GITHUB_ACTION_PATH/get-last-workflow-success-sha.js"
+ 
