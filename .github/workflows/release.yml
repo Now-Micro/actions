@@ -118,7 +118,7 @@ jobs:
               } else {
                 throw e;
               }
-            } 
+            }
 
       - name: Rename existing release (if requested)
         id: rename_release
