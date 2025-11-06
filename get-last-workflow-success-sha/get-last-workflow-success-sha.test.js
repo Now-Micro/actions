@@ -293,3 +293,299 @@ test('run() when test jobs present but failing - fallback', async () => {
   }
 });
 
+// ===== ADDITIONAL COVERAGE TESTS =====
+
+test('run() empty workflow_runs (new PR, no prior runs) - fallback', async () => {
+  // Scenario: PR just opened, no workflow runs exist yet
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([]) }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'feature/new',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=main/);
+    assert.match(r.out, /No workflow runs found/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() first run cancelled - fallback to default branch', async () => {
+  // Scenario: user cancelled the first run, so no qualifying runs exist
+  const cancelledRun = { id: 100, head_sha: 'cancelled1', status: 'completed', conclusion: 'cancelled' };
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([cancelledRun]) }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'feature/first-try',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=main/);
+    assert.match(r.out, /No runs found that meet success criteria/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() first run passed, second cancelled, third run uses first SHA', async () => {
+  // Scenario: 
+  // - Run 1 (oldest): all jobs passed -> qualifying
+  // - Run 2 (middle): cancelled -> skip
+  // - Run 3 (current, not in history): should use Run 1 SHA
+  const run1 = { id: 1, head_sha: 'sha-run1-success', status: 'completed', conclusion: 'success' };
+  const run2 = { id: 2, head_sha: 'sha-run2-cancelled', status: 'completed', conclusion: 'cancelled' };
+
+  // API returns runs in reverse chronological order (newest first), so run2, run1
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([run2, run1]) },
+    // First check run2 jobs (cancelled, will be skipped by our logic - no jobs fetch needed in practice, but mock it)
+    { statusCode: 200, data: createJobsResponse([{ name: 'test-setup', conclusion: 'success' }, { name: 'node-tests', conclusion: 'success' }]) },
+    // Then check run1 jobs (success)
+    { statusCode: 200, data: createJobsResponse([{ name: 'test-setup', conclusion: 'success' }, { name: 'node-tests', conclusion: 'success' }]) }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'feature/retry',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    // Should select run1's SHA (the first qualifying run after skipping cancelled run2)
+    assert.match(r.outputContent, /last_success_sha=sha-run1-success/);
+    assert.match(r.out, /Found qualifying run.*1.*sha-run1-success/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() ignores timed_out runs', async () => {
+  const timedOutRun = { id: 5, head_sha: 'timeout', status: 'completed', conclusion: 'timed_out' };
+  setMockHttpsResponses([{ statusCode: 200, data: createRunsResponse([timedOutRun]) }]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=main/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() ignores stale runs', async () => {
+  const staleRun = { id: 6, head_sha: 'stale', status: 'completed', conclusion: 'stale' };
+  setMockHttpsResponses([{ statusCode: 200, data: createRunsResponse([staleRun]) }]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=main/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() handles job name with regex characters', async () => {
+  // Test escapeRegExp by using a job name with special regex chars
+  const runObj = { id: 7, head_sha: 'regex-test', status: 'completed', conclusion: 'success' };
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([runObj]) },
+    { statusCode: 200, data: createJobsResponse([{ name: 'test-setup (special)', conclusion: 'success' }, { name: 'node-tests', conclusion: 'success' }]) }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup (special)',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=regex-test/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() startsWith matching for test job names (matrix jobs)', async () => {
+  // Test that 'test' matches 'test (dir1)', 'test (dir2)' via startsWith
+  const runObj = { id: 8, head_sha: 'matrix-test', status: 'completed', conclusion: 'success' };
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([runObj]) },
+    {
+      statusCode: 200,
+      data: createJobsResponse([
+        { name: 'test-setup', conclusion: 'success' },
+        { name: 'test (dir1)', conclusion: 'success' },
+        { name: 'test (dir2)', conclusion: 'skipped' }
+      ])
+    }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'test', // should match 'test (dir1)' and 'test (dir2)'
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=matrix-test/);
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() validates and clamps invalid numeric inputs', async () => {
+  // Test that NaN or invalid numeric inputs are clamped to defaults
+  setMockHttpsResponses([
+    { statusCode: 200, data: createRunsResponse([]) }
+  ]);
+  enableMockHttps();
+  try {
+    const r = await runWith({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main',
+      INPUT_REQUEST_SIZE: 'not-a-number',
+      INPUT_RETRY_ATTEMPTS: '-1'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /last_success_sha=main/);
+    // If validation works, run() should not crash and should fallback correctly
+  } finally {
+    disableMockHttps();
+  }
+});
+
+test('run() missing GITHUB_OUTPUT exits 1', async () => {
+  const prev = { ...process.env };
+  try {
+    // Provide all required inputs except GITHUB_OUTPUT
+    const r = await withEnvAsync({
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    }, async () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /GITHUB_OUTPUT.*required/);
+  } finally {
+    process.env = prev;
+  }
+});
+
+test('run() missing GITHUB_REPOSITORY exits 1', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'glwss-'));
+  const tmpOut = path.join(tmpDir, 'output.txt');
+  fs.writeFileSync(tmpOut, '');
+  try {
+    const r = await withEnvAsync({
+      GITHUB_OUTPUT: tmpOut,
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    }, async () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /GITHUB_REPOSITORY.*required/);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('run() missing INPUT_BRANCH exits 1', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'glwss-'));
+  const tmpOut = path.join(tmpDir, 'output.txt');
+  fs.writeFileSync(tmpOut, '');
+  try {
+    const r = await withEnvAsync({
+      GITHUB_OUTPUT: tmpOut,
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: 'node-tests',
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      INPUT_DEFAULT_BRANCH: 'main'
+    }, async () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /INPUT_BRANCH.*required/);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('run() empty test-job-names list exits 1', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'glwss-'));
+  const tmpOut = path.join(tmpDir, 'output.txt');
+  fs.writeFileSync(tmpOut, '');
+  try {
+    const r = await withEnvAsync({
+      GITHUB_OUTPUT: tmpOut,
+      GITHUB_REPOSITORY: 'o/r',
+      INPUT_JOB_NAME: 'test-setup',
+      INPUT_TEST_JOB_NAMES: '   ,  ,  ', // only whitespace/commas
+      INPUT_WORKFLOW_NAME: 'checks.yml',
+      INPUT_GITHUB_TOKEN: 't',
+      INPUT_BRANCH: 'br',
+      INPUT_DEFAULT_BRANCH: 'main'
+    }, async () => run());
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /must contain at least one job name/);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
