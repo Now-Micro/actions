@@ -30,8 +30,8 @@ jobs:
           debug-mode: "true"
           default-branch: ${{ github.event.repository.default_branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          job-ids-that-must-succeed: "node-tests,demo-workflows"
-          main-job-id: "test-setup"
+          job-names-that-must-succeed: "Node Tests,Demo Workflows"
+          main-job-name: "test-setup"
           request-size: 50
           retry-attempts: 3
           workflow-name: "checks.yml"
