@@ -29,7 +29,7 @@ inputs:
     required: false
     default: "3"
   job-names-that-must-succeed:
-    description: Comma-separated list of job names that must have passed or been skipped. A job's name is defined in the workflow file in one of two places.  Either the job key itself (e.g., "test-setup") or the `name` property within the job definition.
+    description: Comma-separated list of job names that must have passed or been skipped. A job's name is defined in the workflow file in one of two places.  Either the job key itself (e.g., "test-setup") or the `name` property within the job definition.  It doesn't have to match the job name exactly, but it must be a case-insensitive match of some part of the job name.
     required: true
   workflow-name:
     description: The workflow filename to check (e.g., "checks.yml")

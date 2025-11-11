@@ -187,8 +187,7 @@ async function run() {
             return jobNamesThatMustSucceed.some(tn => {
                 logDebug(`        Comparing against job name "${tn}"`, debugMode);
                 const tnLower = tn.toLowerCase();
-                return jNameLower === tnLower || jNameLower.startsWith(tnLower) ||
-                    jNameLower === tnLower || jNameLower.startsWith(tnLower);
+                return jNameLower === tnLower || jNameLower.startsWith(tnLower);
             });
         });
         const foundTestJobNames = foundTestJobs.map(j => j.name);
@@ -224,7 +223,7 @@ async function run() {
             !['cancelled', 'timed_out', 'stale'].includes(String(runConclusion)) &&
             mainJobStatus === 'success' &&
             (testStatus === 'success' || testStatus === 'skipped')) {
-            log(`    ✅ This run meets success criteria!`);
+            logDebug(`    ✅ This run meets success criteria!`);
             lastSuccessSha = run.head_sha;
             foundRunId = runId;
             break;
