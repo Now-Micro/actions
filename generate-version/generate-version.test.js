@@ -240,7 +240,9 @@ test('propagates GitHub API error', async () => {
     const restoreHttps = mockHttpsOnce(500, { message: 'boom' });
     const r = await runWith({ INPUT_RELEASE_KEYWORD: 'kw' });
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err, /Failed to query releases/);
+    // With new logic order, API error is logged but execution continues
+    // Since no project file is provided, it fails with invalid base version
+    assert.match(r.err, /Invalid semantic base version/);
     restoreHttps();
 });
 

@@ -1,6 +1,15 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
+function parseBool(val, def) {
+    if (val === undefined || val === null) return def;
+    if (typeof val === 'boolean') return val;
+    const s = String(val).trim().toLowerCase();
+    if (["false", "0", "no", "off"].includes(s)) return false;
+    if (["true", "1", "yes", "on"].includes(s)) return true;
+    return def;
+}
+
 function hasRemoteOrigin() {
     try {
         execSync('git remote get-url origin', { stdio: 'ignore' });
@@ -11,11 +20,13 @@ function hasRemoteOrigin() {
 }
 
 function ensureCommitExists(sha, prNumber) {
+    const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     if (!sha) {
         return false;
     }
     // First, attempt to verify the object directly (no ^{commit} to avoid Windows cmd escaping issues)
     try {
+        if (debugMode) console.log(`🔍 Attempting to verify commit: ${sha}`);
         execSync(`git cat-file -e ${sha}`, { stdio: 'ignore' });
         return true;
     } catch {
@@ -30,6 +41,7 @@ function ensureCommitExists(sha, prNumber) {
     // Try to fetch the PR ref if prNumber is provided
     if (prNumber) {
         try {
+            if (debugMode) console.log(`🔍 Attempting to fetch PR ref: pull/${prNumber}/head`);
             execSync(`git fetch origin pull/${prNumber}/head:pr-${prNumber}`, { stdio: 'ignore' });
             execSync(`git cat-file -e ${sha}`, { stdio: 'ignore' });
             return true;
@@ -40,6 +52,7 @@ function ensureCommitExists(sha, prNumber) {
 
     // Try to fetch from origin by branch/sha
     try {
+        if (debugMode) console.log(`🔍 Attempting to fetch ${sha} from origin`);
         execSync(`git fetch origin ${sha}`, { stdio: 'ignore' });
         execSync(`git cat-file -e ${sha}`, { stdio: 'ignore' });
         return true;
@@ -83,8 +96,10 @@ function sanitizeRef(value) {
 function extractSha(ref, prNumber) {
     const r = (ref || '').trim();
     if (!r) return '';
+    const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
 
     if (getIsSha(r)) {
+        if (debugMode) console.log(`🔍 Input looks like a SHA: ${r}`);
         if (ensureCommitExists(r, prNumber)) return r;
     }
 
@@ -113,6 +128,7 @@ function extractSha(ref, prNumber) {
             execSync(`git fetch origin ${safeRef}`, { stdio: 'ignore' });
         } catch {
             // If specific fetch failed, try a broader fetch (including tags)
+            if (debugMode) console.log(`🔍 Specific fetch failed for ${safeRef}; trying --tags fetch`);
             try {
                 execSync('git fetch --tags --quiet origin', { stdio: 'ignore' });
             } catch { }
@@ -125,8 +141,11 @@ function extractSha(ref, prNumber) {
         }
         // Try the provided name, then explicit tag ref, then origin/<name> (for branches)
         sha = tryRevList();
+        if (sha && debugMode) console.log(`🔍 Resolved after fetch: ${safeRef} -> ${sha}`);
         if (!sha) sha = tryRevListRef(`origin/${safeRef}`);
+        if (sha && debugMode) console.log(`🔍 Resolved via origin/: ${safeRef} -> ${sha}`);
         if (!sha) sha = tryRevListRef(`refs/tags/${safeRef}`);
+        if (sha && debugMode) console.log(`🔍 Resolved via refs/tags/: ${safeRef} -> ${sha}`);
         if (sha) return sha;
 
         // As a last resort, resolve tag directly from remote without fetching
@@ -137,6 +156,7 @@ function extractSha(ref, prNumber) {
             if (line) {
                 const m = line.match(/^([0-9a-f]{7,40})\s+/i);
                 if (m && m[1] && getIsSha(m[1])) {
+                    if (debugMode) console.log(`🔍 Resolved from ls-remote: ${safeRef} -> ${m[1]}`);
                     return m[1];
                 }
             }
@@ -148,6 +168,8 @@ function extractSha(ref, prNumber) {
 
 function run() {
     try {
+        const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
+
         console.log(`🔍 Getting Changed Files between '${process.env.INPUT_BASE_REF}' and '${process.env.INPUT_HEAD_REF}'`);
         console.log('========================================');
 
@@ -209,8 +231,10 @@ function run() {
         const fileList = files.split('\n').filter(f => f.trim());
         const json = JSON.stringify(fileList);
 
-        console.log(`\n📤 Output:`);
-        console.log(`  changed_files: ${json}`);
+        if (debugMode) {
+            console.log(`\n📤 Output:`);
+            console.log(`  changed_files: ${json}`);
+        }
 
         // Write to GITHUB_OUTPUT
         fs.appendFileSync(process.env.GITHUB_OUTPUT, `changed_files=${json}\n`);

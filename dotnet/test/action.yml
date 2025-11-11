@@ -46,8 +46,8 @@ runs:
         fi
         echo "directory provided: validation passed"
 
-    - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v4
+    - name: Setup .NET SDKs
+      uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 

@@ -1,0 +1,21 @@
+name: "Run .NET Tests (dotnet-test)"
+description: "Installs one or more .NET SDKs using the dotnet install script."
+author: "Now-Micro"
+inputs:
+  dotnet-version:
+    description: 'Comma-separated list of .NET SDK versions or channels (e.g. "6.0.x,7.0.100")'
+    required: true
+    default: "6.0.x"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Install SDK(s)
+      id: dotnet-install
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/dotnet-install.js"
+      env:
+        INPUT_DOTNET_VERSION: ${{ inputs.dotnet-version }}

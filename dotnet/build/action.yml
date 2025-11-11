@@ -1,53 +1,53 @@
-name: 'Build Solution'
-description: 'Build solution with .NET and Node.js components'
+name: "Build Solution"
+description: "Build solution with .NET and Node.js components"
 inputs:
   additional-build-args:
-    description: 'Additional arguments for dotnet build command'
+    description: "Additional arguments for dotnet build command"
     required: false
-    default: ''
+    default: ""
   additional-pack-args:
     description: 'Additional arguments for dotnet pack command.  Only applicable if mode is "pack".'
     required: false
-    default: ''
+    default: ""
   additional-publish-args:
     description: 'Additional arguments for dotnet publish command.  Only applicable if mode is "publish".'
     required: false
-    default: ''
+    default: ""
   build-configuration:
-    description: 'Build configuration (Release/Debug)'
+    description: "Build configuration (Release/Debug)"
     required: false
-    default: 'Release'
+    default: "Release"
   dotnet-version:
-    description: '.NET version to use'
+    description: ".NET version to use"
     required: false
-    default: '6.0.x'
+    default: "6.0.x"
   mode:
     description: 'Mode of operation (pack/publish).  Use "pack" when building a NuGet package, "publish" otherwise.'
     required: false
-    default: 'publish'
+    default: "publish"
   node-version:
-    description: 'Node.js version to use'
+    description: "Node.js version to use"
     required: false
-    default: '16.x'
+    default: "16.x"
   node-project-path:
-    description: 'Path to the Node.js project.  If not specified, assumes no node project given and skips node-related steps.'
+    description: "Path to the Node.js project.  If not specified, assumes no node project given and skips node-related steps."
     required: false
-    default: ''
+    default: ""
   npm-cache-dependency-path:
-    description: 'Path to package-lock.json for npm caching'
+    description: "Path to package-lock.json for npm caching"
     required: false
-    default: ''
+    default: ""
   nuget-names:
-    description: 'Names of the NuGet source (comma-separated)'
+    description: "Names of the NuGet source (comma-separated)"
     required: false
   nuget-passwords:
-    description: 'Personal Access Tokens for authentication (comma-separated)'
+    description: "Personal Access Tokens for authentication (comma-separated)"
     required: false
   nuget-urls:
-    description: 'URLs of the NuGet feed (comma-separated)'
+    description: "URLs of the NuGet feed (comma-separated)"
     required: false
   nuget-usernames:
-    description: 'Usernames for source authentication (comma-separated)'
+    description: "Usernames for source authentication (comma-separated)"
     required: false
   file-to-build:
     description: 'Path to the solution/project file (e.g. "Legacy/CrmService/CRM.Service.csproj" or "DICE-Server.sln")'
@@ -55,34 +55,34 @@ inputs:
   upload-artifact-paths:
     description: "Paths to the artifacts to be deployed. If not specified, skips uploading artifacts."
     required: false
-    default: ''
+    default: ""
   upload-artifacts-name:
     description: 'Name of the uploaded artifacts. If not specified, defaults to "build-artifacts".  Only applicable if `upload-artifact-paths` is given.'
     required: false
-    default: ''
+    default: ""
 
 outputs:
   build-artifacts-name:
-    description: 'Name of the uploaded build artifacts.  Will be empty if `upload-artifact-paths` is not given.'
+    description: "Name of the uploaded build artifacts.  Will be empty if `upload-artifact-paths` is not given."
     value: ${{ inputs.upload-artifacts-name }}
   build-version:
-    description: 'Build version number'
+    description: "Build version number"
     value: ${{ steps.version.outputs.version }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v4
+    - name: Setup .NET SDKs
+      uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
-        
+
     - name: Setup Node.js
       if: inputs.node-project-path != ''
       uses: Now-Micro/actions/setup-node@v1
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm'
+        cache: "npm"
         cache-dependency-path: ${{ inputs.npm-cache-dependency-path }}
 
     - name: Configure NuGet sources
@@ -106,13 +106,13 @@ runs:
       shell: bash
       working-directory: ${{ inputs.node-project-path }}
       run: npm ci
-      
+
     - name: Build frontend
       if: inputs.node-project-path != ''
       shell: bash
       working-directory: ${{ inputs.node-project-path }}
       run: npm run build
-      
+
     - name: Set build version
       id: version
       shell: bash
@@ -129,7 +129,7 @@ runs:
       if: inputs.mode == 'pack'
       shell: bash
       run: dotnet pack ${{ inputs.file-to-build }} --configuration ${{ inputs.build-configuration }} --no-build ${{ inputs.additional-pack-args }}
-      
+
     - name: Upload build artifacts
       if: inputs.upload-artifacts-name != ''
       uses: actions/upload-artifact@v4

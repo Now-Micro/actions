@@ -161,7 +161,8 @@ function Convert-ToStringLines {
 
 try {
 	Get-Command git -ErrorAction Stop | Out-Null
-} catch {
+}
+catch {
 	throw "Git is not available on the PATH. Install Git before running this script."
 }
 
@@ -212,7 +213,8 @@ foreach ($pattern in $ignoreList) {
 	$ignorePatternTexts.Add($trimmedPattern) | Out-Null
 	try {
 		$ignoreRegexes.Add([System.Text.RegularExpressions.Regex]::new($trimmedPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) | Out-Null
-	} catch {
+	}
+ catch {
 		$reason = $_.Exception.Message
 		throw "Invalid regex pattern for ignore value '$trimmedPattern': $reason"
 	}
@@ -227,7 +229,7 @@ foreach ($name in $baseProtected) {
 
 foreach ($branchName in $localBranches) {
 	$shouldProtect = $baseProtected.Contains($branchName)
-	if (-not $shouldProtect -and $ignoreRegexes.Count -gt 0) {
+	if (-not $shouldProtect -and (@($ignoreRegexes).Count -gt 0)) {
 		foreach ($regex in $ignoreRegexes) {
 			if ($regex.IsMatch($branchName)) {
 				$shouldProtect = $true
@@ -244,12 +246,13 @@ $candidates = $localBranches | Where-Object { -not $protectedBranchNames.Contain
 if (-not $candidates) {
 	Write-Host "There are no branches eligible for deletion."
 	$protectedList = @($protectedBranchNames) | Sort-Object
-	if ($protectedList.Count -gt 0) {
+	if ((@($protectedList).Count -gt 0)) {
 		Write-Host "Protected branches: $([string]::Join(', ', $protectedList))"
-	} else {
+	}
+ else {
 		Write-Host "Protected branches: (none)"
 	}
-	if ($ignorePatternTexts.Count -gt 0) {
+	if ((@($ignorePatternTexts).Count -gt 0)) {
 		$patternList = @($ignorePatternTexts) | Sort-Object
 		Write-Host "Ignore patterns: $([string]::Join(', ', $patternList))"
 	}
@@ -257,13 +260,14 @@ if (-not $candidates) {
 }
 
 Write-Host "Current branch: $currentBranch"
- $protectedDisplay = @($protectedBranchNames) | Sort-Object
-if ($protectedDisplay.Count -gt 0) {
+$protectedDisplay = @($protectedBranchNames) | Sort-Object
+if ((@($protectedDisplay).Count -gt 0)) {
 	Write-Host "Protected branches: $([string]::Join(', ', $protectedDisplay))"
-} else {
+}
+else {
 	Write-Host "Protected branches: (none)"
 }
-if ($ignorePatternTexts.Count -gt 0) {
+if ((@($ignorePatternTexts).Count -gt 0)) {
 	$patternDisplay = @($ignorePatternTexts) | Sort-Object
 	Write-Host "Ignore patterns: $([string]::Join(', ', $patternDisplay))"
 }
@@ -299,7 +303,8 @@ foreach ($branch in $candidates) {
 	try {
 		$output = git branch -d -- $branch 2>&1
 		$exitCode = $LASTEXITCODE
-	} finally {
+	}
+ finally {
 		$ErrorActionPreference = $originalErrorActionPreference
 	}
 	$outputLines = Convert-ToStringLines $output
@@ -329,36 +334,39 @@ foreach ($branch in $candidates) {
 Write-Host ""
 Write-Host "Summary"
 Write-Host "======="
-Write-Host "Deleted branches ($($deleted.Count)):"
-if ($deleted.Count -gt 0) {
+Write-Host "Deleted branches ($(@($deleted).Count)):"
+if ((@($deleted).Count -gt 0)) {
 	foreach ($branch in $deleted) {
 		Write-Host "  - $branch"
 	}
-} else {
+}
+else {
 	Write-Host "  (none)"
 }
 
 if ($dryRunEnabled) {
-	Write-Host "Branches that would be deleted ($($simulated.Count)):"
-	if ($simulated.Count -gt 0) {
+	Write-Host "Branches that would be deleted ($(@($simulated).Count)):"
+	if ((@($simulated).Count -gt 0)) {
 		foreach ($branch in $simulated) {
 			Write-Host "  - $branch"
 		}
-	} else {
+	}
+ else {
 		Write-Host "  (none)"
 	}
 }
 
-Write-Host "Skipped branches ($($skipped.Count)):"
-if ($skipped.Count -gt 0) {
+Write-Host "Skipped branches ($(@($skipped).Count)):"
+if ((@($skipped).Count -gt 0)) {
 	foreach ($branch in $skipped) {
 		Write-Host "  - $branch"
 	}
-} else {
+}
+else {
 	Write-Host "  (none)"
 }
 
-Write-Host "Protected branches ($($protectedBranchNames.Count)):"
+Write-Host "Protected branches ($(@($protectedBranchNames).Count)):"
 foreach ($branch in $protectedBranchNames | Sort-Object) {
 	Write-Host "  - $branch"
 }
@@ -366,6 +374,7 @@ foreach ($branch in $protectedBranchNames | Sort-Object) {
 Write-Host ""
 if ($dryRunEnabled) {
 	Write-Host "Dry run complete. No branches were deleted."
-} else {
+}
+else {
 	Write-Host "Completed branch clean-up."
 }
