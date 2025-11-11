@@ -235,7 +235,6 @@ async function run() {
     log('');
     if (lastSuccessSha) {
         log(`✅ Found qualifying run (ID: ${foundRunId}) with SHA: ${lastSuccessSha}`);
-        log(`   Will compare changes against this commit`);
         fs.appendFileSync(githubOutput, `last_success_sha=${lastSuccessSha}\n`);
     } else {
         log(`❌ No runs found that meet success criteria on branch ${branch}`);
