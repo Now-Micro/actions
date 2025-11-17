@@ -20,7 +20,7 @@ inputs:
   clean-before-build:
     description: "Clean the solution before building (true/false)"
     required: false
-    default: "true"
+    default: "false"
   dotnet-version:
     description: ".NET version to use"
     required: false
