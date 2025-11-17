@@ -98,7 +98,7 @@ runs:
         usernames: ${{ inputs.nuget-usernames }}
 
     - name: Clean up disk space
-      if: inputs.clean-before-build == 'true'
+      if: inputs.clean-before-build == 'true' && runner.os == 'Linux'
       shell: bash
       run: |
         echo "=== Disk space before cleanup ==="
@@ -115,7 +115,6 @@ runs:
         fi
 
         echo "=== Removing unnecessary system directories ==="
-        sudo rm -rf /usr/share/dotnet 2>/dev/null || true
         sudo rm -rf /usr/local/lib/android 2>/dev/null || true
         sudo rm -rf /opt/ghc 2>/dev/null || true
         sudo rm -rf /opt/hostedtoolcache/CodeQL 2>/dev/null || true
@@ -130,7 +129,7 @@ runs:
 
     - name: Restore dependencies
       shell: bash
-      run: dotnet restore ${{ inputs.file-to-build }} --no-cache
+      run: dotnet restore ${{ inputs.file-to-build }} ${{ inputs.clean-before-build == 'true' && '--no-cache' || '' }}
 
     - name: Build File
       shell: bash
