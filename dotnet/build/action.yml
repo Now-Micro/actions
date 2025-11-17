@@ -101,14 +101,27 @@ runs:
       if: inputs.clean-before-build == 'true'
       shell: bash
       run: |
-        df -h
-        sudo apt-get clean
-        docker system prune -af || true
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /opt/hostedtoolcache/CodeQL
-        df -h
+        echo "=== Disk space before cleanup ==="
+        df -h || true
+
+        echo "=== Cleaning apt cache ==="
+        sudo apt-get clean 2>/dev/null || echo "apt-get not available or failed, skipping"
+
+        echo "=== Pruning Docker resources ==="
+        if command -v docker &> /dev/null; then
+          docker system prune -af 2>/dev/null || echo "Docker prune failed, skipping"
+        else
+          echo "Docker not installed, skipping Docker cleanup"
+        fi
+
+        echo "=== Removing unnecessary system directories ==="
+        sudo rm -rf /usr/share/dotnet 2>/dev/null || true
+        sudo rm -rf /usr/local/lib/android 2>/dev/null || true
+        sudo rm -rf /opt/ghc 2>/dev/null || true
+        sudo rm -rf /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+
+        echo "=== Disk space after cleanup ==="
+        df -h || true
 
     - name: Clean Solution
       if: inputs.clean-before-build == 'true'
