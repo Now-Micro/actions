@@ -8,17 +8,23 @@ To add a new reusable action:
 
 1. **Create the action folder**: `mkdir my-new-action/`
 2. **Write `action.yml`**: Define it as a composite action. Avoid inline logic; call your JS file:
+
    ```yaml
    runs:
      using: 'composite'
      steps:
+       - name: Set up Node.js
+         uses: Now-Micro/actions/setup-node@v1
+
        - run: node "$GITHUB_ACTION_PATH/my-new-action.js"
          shell: bash
    ```
+
 3. **Implement the JS file**: `my-new-action.js` with exported functions and a `run()` entry point.
-4. **Add tests**: `my-new-action.test.js` covering success, error, and edge cases. Use mocks for filesystem/git/network. Aim for 100% line/branch coverage.
-5. **Handle inputs/outputs**: Read from `process.env.INPUT_*`, write to `process.env.GITHUB_OUTPUT`.
-6. **Test locally**: Run `node --test my-new-action/*.test.js` and check coverage with `npx c8 -r text node --test`.
+4. **Install node**: use Now-Micro/actions/setup-node@v1**
+5. **Add tests**: `my-new-action.test.js` covering success, error, and edge cases. Use mocks for filesystem/git/network. Aim for 100% line/branch coverage.
+6. **Handle inputs/outputs**: Read from `process.env.INPUT_*`, write to `process.env.GITHUB_OUTPUT`.
+7. **Test locally**: Run `node --test my-new-action/*.test.js` and check coverage with `npx c8 -r text node --test`.
 
 Ensure the action is self-contained, with no external dependencies beyond Node.js standard library.
 
@@ -28,6 +34,7 @@ Ensure the action is self-contained, with no external dependencies beyond Node.j
 - Git for local development and testing.
 
 ## Action Structure Pattern
+
 Each action follows a consistent pattern:
 
 1. A folder named after the action.
@@ -38,6 +45,7 @@ Each action follows a consistent pattern:
 6. Outputs are written by appending `name=value` lines to the file pointed to by `GITHUB_OUTPUT`.
 
 Example mapping (from `get-project-and-solution-files-from-directory`):
+
 - `action.yml` step runs: `node "$GITHUB_ACTION_PATH/get-project-and-solution-files-from-directory.js`"
 - Inputs -> env: `INPUT_DIRECTORY`, `INPUT_MAX_DEPTH`, etc.
 - JS writes outputs: `solution-found=...`, `project-found=...`.
@@ -55,6 +63,7 @@ From the repo root:
 Tests validate edge cases like invalid inputs, depth limits, and filesystem interactions.
 
 ## Adding a New Action
+
 1. Create a folder: `my-new-action/`.
 2. Write `action.yml` as a composite action. Keep logic out of the YAML; only call your JS:  
    `run: node "$GITHUB_ACTION_PATH/my-new-action/main.js`"
@@ -69,17 +78,22 @@ Tests validate edge cases like invalid inputs, depth limits, and filesystem inte
 To use an action from this repo in your workflow:
 
 1. **Reference the action**: Use the full path or a local reference if in the same repo.
+
    ```yaml
    - uses: Now-Micro/actions/get-changed-files@v1  # For version 1
    - uses: ./get-changed-files  # If using locally in this repo (e.g. in a demo file)
    ```
+
 2. **Provide inputs**: Pass parameters as defined in the action's `action.yml`.
+
    ```yaml
    with:
      head-ref: ${{ github.head_ref }}
      base-ref: main
    ```
+
 3. **Consume outputs**: Access results in subsequent steps.
+
    ```yaml
    - run: echo "Changed files: ${{ steps.my-step.outputs.changed_files }}"
    ```
@@ -107,6 +121,7 @@ Releases are managed via the `release.yml` workflow, which creates GitHub releas
 The workflow runs tests, creates or updates the release, and provides outputs like `release_id`, `html_url`, and `upload_url` for further automation.
 
 ### Best Practices
+
 - Use simple versioning (e.g., `v1`, `v2`, `v3`, ...).
 - Tag releases after merging changes to `main`.
 - Enable auto-generated notes for changelog summaries.
