@@ -21,7 +21,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Node.js
+    - name: Set up Node.js
       uses: Now-Micro/actions/setup-node@v1
 
     - name: Validate and Expand Inputs
