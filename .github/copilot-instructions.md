@@ -24,6 +24,7 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 
 ## Adding / Modifying Actions
 1. Create folder + `action.yml` referencing new JS file (no inline heredoc JS).
+2. The `action.yml` should first set up node.js using `Now-Micro/actions/setup-node@v1` to ensure Node.js is available.
 2. The `action.yml` file should use `run: node "$GITHUB_ACTION_PATH/my-new-js-file.js"` instead of just `node ./some-action-name/my-new-js-file.js` to ensure that the correct path is used when used by an external repository's workflow.
 3. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
 4. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
