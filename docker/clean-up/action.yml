@@ -1,0 +1,80 @@
+name: "Docker Deploy Cleanup"
+description: "Remove old Docker containers, images, volumes, and networks matching a prefix"
+author: "Now-Micro"
+
+inputs:
+  prefix:
+    description: "Filter prefix for resource names"
+    required: true
+  keep-count:
+    description: "Number of newest resources to keep (for containers: per image; for images/volumes/networks: total)"
+    required: false
+    default: "0"
+  debug-mode:
+    description: "Enable debug logging (true/false)"
+    required: false
+    default: "false"
+  dry-run:
+    description: "Enable dry-run mode - no deletions will occur (true/false)"
+    required: false
+    default: "false"
+  skip-containers:
+    description: "Skip container cleanup (true/false)"
+    required: false
+    default: "false"
+  skip-images:
+    description: "Skip image cleanup (true/false)"
+    required: false
+    default: "false"
+  skip-volumes:
+    description: "Skip volume cleanup (true/false)"
+    required: false
+    default: "false"
+  skip-networks:
+    description: "Skip network cleanup (true/false)"
+    required: false
+    default: "false"
+  remove-dangling-images:
+    description: "Remove dangling (untagged) images (true/false)"
+    required: false
+    default: "false"
+  use-sudo:
+    description: "Use sudo for docker commands (true/false)"
+    required: false
+    default: "false"
+
+outputs:
+  containers-removed:
+    description: "Number of containers removed"
+    value: ${{ steps.cleanup.outputs.containers_removed }}
+  images-removed:
+    description: "Number of images removed"
+    value: ${{ steps.cleanup.outputs.images_removed }}
+  volumes-removed:
+    description: "Number of volumes removed"
+    value: ${{ steps.cleanup.outputs.volumes_removed }}
+  networks-removed:
+    description: "Number of networks removed"
+    value: ${{ steps.cleanup.outputs.networks_removed }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Run Docker cleanup
+      id: cleanup
+      shell: bash
+      env:
+        INPUT_PREFIX: ${{ inputs.prefix }}
+        INPUT_KEEP_COUNT: ${{ inputs.keep-count }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_SKIP_CONTAINERS: ${{ inputs.skip-containers }}
+        INPUT_SKIP_IMAGES: ${{ inputs.skip-images }}
+        INPUT_SKIP_VOLUMES: ${{ inputs.skip-volumes }}
+        INPUT_SKIP_NETWORKS: ${{ inputs.skip-networks }}
+        INPUT_REMOVE_DANGLING_IMAGES: ${{ inputs.remove-dangling-images }}
+        INPUT_USE_SUDO: ${{ inputs.use-sudo }}
+      run: node "$GITHUB_ACTION_PATH/docker-clean-up.js"
