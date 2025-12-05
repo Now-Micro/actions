@@ -56,3 +56,6 @@ runs:
 
     - name: Demo - string-manipulator
       uses: ./.github/actions/demo-string-manipulator
+
+    - name: Demo - docker-clean-up
+      uses: ./.github/actions/demo-docker-clean-up
