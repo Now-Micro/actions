@@ -453,6 +453,59 @@ test('cleanupContainers handles no containers to remove after grouping', () => {
     assert.strictEqual(stats.containersRemoved, 0);
 });
 
+test('cleanupContainers increments counter in non-dry-run mode (keepCount=0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '0', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'ps') return 'container1\ncontainer2\ncontainer3';
+        if (args[0] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2]; // Docker rm returns container ID on success
+        }
+        return '';
+    };
+
+    cleanupContainers(config, stats, mockExec);
+
+    assert.strictEqual(stats.containersRemoved, 3);
+    assert.deepStrictEqual(removedIds, ['container1', 'container2', 'container3']);
+});
+
+test('cleanupContainers increments counter in non-dry-run mode (keepCount>0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '1', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'ps') return 'c1\nc2\nc3';
+        if (args[0] === 'inspect') {
+            const format = args[2];
+            const id = args[3];
+            if (format.includes('Image')) return 'myimage';
+            if (format.includes('Created')) {
+                if (id === 'c1') return '2024-01-01T10:00:00Z';
+                if (id === 'c2') return '2024-01-02T10:00:00Z';
+                if (id === 'c3') return '2024-01-03T10:00:00Z';
+            }
+        }
+        if (args[0] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2];
+        }
+        return '';
+    };
+
+    cleanupContainers(config, stats, mockExec);
+
+    // Should keep 1 newest (c3), remove 2 (c1, c2)
+    assert.strictEqual(stats.containersRemoved, 2);
+    assert.ok(removedIds.includes('c1'));
+    assert.ok(removedIds.includes('c2'));
+    assert.ok(!removedIds.includes('c3'));
+});
+
 // ==================== cleanupImages tests ====================
 
 test('cleanupImages skips when no images found', () => {
@@ -491,8 +544,8 @@ test('cleanupImages keeps newest when keepCount > 0', () => {
 
     const mockExec = (args, cfg, opts) => {
         if (args[0] === 'images') return 'test-app:v1 img1\ntest-app:v2 img2';
-        if (args[0] === 'inspect' && args[2] === 'img1') return '2024-01-01T10:00:00Z';
-        if (args[0] === 'inspect' && args[2] === 'img2') return '2024-01-02T10:00:00Z';
+        if (args[0] === 'inspect' && args[3] === 'img1') return '2024-01-01T10:00:00Z';
+        if (args[0] === 'inspect' && args[3] === 'img2') return '2024-01-02T10:00:00Z';
         if (args[0] === 'rmi') return '';
         return '';
     };
@@ -517,6 +570,49 @@ test('cleanupImages handles no images to remove after filtering', () => {
 
     // keepCount=5 but only 1 image, so nothing removed
     assert.strictEqual(stats.imagesRemoved, 0);
+});
+
+test('cleanupImages increments counter in non-dry-run mode (keepCount=0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'myapp', INPUT_KEEP_COUNT: '0', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'images') return 'myapp:latest img1\nmyapp:v1 img2';
+        if (args[0] === 'rmi') {
+            removedIds.push(args[2]);
+            return `Untagged: ${args[2]}`;
+        }
+        return '';
+    };
+
+    cleanupImages(config, stats, mockExec);
+
+    assert.strictEqual(stats.imagesRemoved, 2);
+    assert.deepStrictEqual(removedIds, ['img1', 'img2']);
+});
+
+test('cleanupImages increments counter in non-dry-run mode (keepCount>0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '1', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'images') return 'test-app:v1 img1\ntest-app:v2 img2';
+        if (args[0] === 'inspect' && args[3] === 'img1') return '2024-01-01T10:00:00Z';
+        if (args[0] === 'inspect' && args[3] === 'img2') return '2024-01-02T10:00:00Z';
+        if (args[0] === 'rmi') {
+            removedIds.push(args[2]);
+            return `Untagged: ${args[2]}`;
+        }
+        return '';
+    };
+
+    cleanupImages(config, stats, mockExec);
+
+    // Should keep 1 newest (img2), remove 1 (img1)
+    assert.strictEqual(stats.imagesRemoved, 1);
+    assert.deepStrictEqual(removedIds, ['img1']);
 });
 
 // ==================== cleanupDanglingImages tests ====================
@@ -599,6 +695,49 @@ test('cleanupVolumes handles no volumes to remove after filtering', () => {
     assert.strictEqual(stats.volumesRemoved, 0);
 });
 
+test('cleanupVolumes increments counter in non-dry-run mode (keepCount=0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '0', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'volume' && args[1] === 'ls') return 'vol1\nvol2\nvol3';
+        if (args[0] === 'volume' && args[1] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2];
+        }
+        return '';
+    };
+
+    cleanupVolumes(config, stats, mockExec);
+
+    assert.strictEqual(stats.volumesRemoved, 3);
+    assert.deepStrictEqual(removedIds, ['vol1', 'vol2', 'vol3']);
+});
+
+test('cleanupVolumes increments counter in non-dry-run mode (keepCount>0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '1', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'volume' && args[1] === 'ls') return 'vol1\nvol2';
+        if (args[0] === 'volume' && args[1] === 'inspect' && args[4] === 'vol1') return '2024-01-01T10:00:00Z';
+        if (args[0] === 'volume' && args[1] === 'inspect' && args[4] === 'vol2') return '2024-01-02T10:00:00Z';
+        if (args[0] === 'volume' && args[1] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2];
+        }
+        return '';
+    };
+
+    cleanupVolumes(config, stats, mockExec);
+
+    // Should keep 1 newest (vol2), remove 1 (vol1)
+    assert.strictEqual(stats.volumesRemoved, 1);
+    assert.deepStrictEqual(removedIds, ['vol1']);
+});
+
 // ==================== cleanupNetworks tests ====================
 
 test('cleanupNetworks skips when no networks found', () => {
@@ -660,6 +799,52 @@ test('cleanupNetworks handles no networks to remove after filtering', () => {
     cleanupNetworks(config, stats, mockExec);
 
     assert.strictEqual(stats.networksRemoved, 0);
+});
+
+test('cleanupNetworks increments counter in non-dry-run mode (keepCount=0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '0', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'network' && args[1] === 'ls') return 'net1\nnet2';
+        if (args[0] === 'network' && args[1] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2];
+        }
+        return '';
+    };
+
+    cleanupNetworks(config, stats, mockExec);
+
+    assert.strictEqual(stats.networksRemoved, 2);
+    assert.deepStrictEqual(removedIds, ['net1', 'net2']);
+});
+
+test('cleanupNetworks increments counter in non-dry-run mode (keepCount>0)', () => {
+    const config = createConfig({ INPUT_PREFIX: 'test', INPUT_KEEP_COUNT: '1', INPUT_DRY_RUN: 'false' });
+    const stats = createStats();
+    const removedIds = [];
+
+    const mockExec = (args, cfg, opts) => {
+        if (args[0] === 'network' && args[1] === 'ls') return 'net1\nnet2\nnet3';
+        if (args[0] === 'network' && args[1] === 'inspect' && args[4] === 'net1') return '2024-01-01T10:00:00Z';
+        if (args[0] === 'network' && args[1] === 'inspect' && args[4] === 'net2') return '2024-01-02T10:00:00Z';
+        if (args[0] === 'network' && args[1] === 'inspect' && args[4] === 'net3') return '2024-01-03T10:00:00Z';
+        if (args[0] === 'network' && args[1] === 'rm') {
+            removedIds.push(args[2]);
+            return args[2];
+        }
+        return '';
+    };
+
+    cleanupNetworks(config, stats, mockExec);
+
+    // Should keep 1 newest (net3), remove 2 (net1, net2)
+    assert.strictEqual(stats.networksRemoved, 2);
+    assert.ok(removedIds.includes('net1'));
+    assert.ok(removedIds.includes('net2'));
+    assert.ok(!removedIds.includes('net3'));
 });
 
 // ==================== run tests ====================

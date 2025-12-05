@@ -7,7 +7,7 @@ inputs:
     description: "Filter prefix for resource names"
     required: true
   keep-count:
-    description: "Number of newest resources to keep per type (0 = remove all)"
+    description: "Number of newest resources to keep (for containers: per image; for images/volumes/networks: total)"
     required: false
     default: "0"
   debug-mode:
@@ -41,7 +41,7 @@ inputs:
   use-sudo:
     description: "Use sudo for docker commands (true/false)"
     required: false
-    default: "true"
+    default: "false"
 
 outputs:
   containers-removed:
