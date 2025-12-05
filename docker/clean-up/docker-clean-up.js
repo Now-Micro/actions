@@ -363,7 +363,7 @@ function run(env = process.env, execFn = dockerExec) {
         process.exit(1);
     }
 
-    debug(`Running cleanup with: PREFIX='${config.prefix}', KEEP_COUNT=${config.keepCount}, DEBUG=${config.debugMode}, DRY_RUN=${config.dryRun}, SKIP_CONTAINERS=${config.skipContainers}, SKIP_IMAGES=${config.skipImages}, SKIP_VOLUMES=${config.skipVolumes}, SKIP_NETWORKS=${config.skipNetworks}, REMOVE_DANGLING=${config.removeDanglingImages}, USE_SUDO=${config.useSudo}`, config.debugMode);
+    log(`Running cleanup with: PREFIX='${config.prefix}', KEEP_COUNT=${config.keepCount}, DEBUG=${config.debugMode}, DRY_RUN=${config.dryRun}, SKIP_CONTAINERS=${config.skipContainers}, SKIP_IMAGES=${config.skipImages}, SKIP_VOLUMES=${config.skipVolumes}, SKIP_NETWORKS=${config.skipNetworks}, REMOVE_DANGLING=${config.removeDanglingImages}, USE_SUDO=${config.useSudo}`);
 
     // Run cleanup steps
     if (!config.skipContainers) {
