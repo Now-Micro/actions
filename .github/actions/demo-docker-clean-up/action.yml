@@ -1,0 +1,224 @@
+name: Demo - Docker Clean-Up
+description: Demonstrates the docker/clean-up action with test Docker resources
+author: Now-Micro
+
+runs:
+  using: composite
+  steps:
+    - name: Title - Docker Clean-Up Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Docker Clean-Up Demo
+        path: ./.github/actions/demo-docker-clean-up
+
+    - name: Prepare summary file
+      id: pre
+      shell: bash
+      run: |
+        echo "summary_file=$(pwd)/docker-cleanup-summary.txt" >> $GITHUB_OUTPUT
+        echo "test_prefix=demotest$(date +%s)" >> $GITHUB_OUTPUT
+
+    # ========== Setup test resources ==========
+    - name: Create test Docker network
+      shell: bash
+      run: |
+        docker network create ${{ steps.pre.outputs.test_prefix }}-network1 || true
+        docker network create ${{ steps.pre.outputs.test_prefix }}-network2 || true
+
+    - name: Create test Docker volumes
+      shell: bash
+      run: |
+        docker volume create ${{ steps.pre.outputs.test_prefix }}-volume1 || true
+        docker volume create ${{ steps.pre.outputs.test_prefix }}-volume2 || true
+        docker volume create ${{ steps.pre.outputs.test_prefix }}-volume3 || true
+
+    - name: Create test Docker containers
+      shell: bash
+      run: |
+        # Create containers using alpine (small image)
+        docker run -d --name ${{ steps.pre.outputs.test_prefix }}-container1 alpine sleep 3600 || true
+        docker run -d --name ${{ steps.pre.outputs.test_prefix }}-container2 alpine sleep 3600 || true
+
+    # ========== Test 1: Dry-run mode ==========
+    - name: Run cleanup in dry-run mode
+      id: dryrun
+      uses: ./docker/clean-up
+      with:
+        prefix: ${{ steps.pre.outputs.test_prefix }}
+        keep-count: "0"
+        dry-run: "true"
+        debug-mode: "true"
+        skip-images: "true"
+
+    - name: Assert dry-run finds containers
+      uses: ./src/testing/assert
+      with:
+        test-name: "dry-run reports containers found"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.dryrun.outputs.containers-removed }}
+
+    - name: Assert dry-run finds volumes
+      uses: ./src/testing/assert
+      with:
+        test-name: "dry-run reports volumes found"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "3"
+        actual: ${{ steps.dryrun.outputs.volumes-removed }}
+
+    - name: Assert dry-run finds networks
+      uses: ./src/testing/assert
+      with:
+        test-name: "dry-run reports networks found"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.dryrun.outputs.networks-removed }}
+
+    - name: Verify containers still exist after dry-run
+      id: verify_dryrun
+      shell: bash
+      run: |
+        count=$(docker ps -a --filter "name=${{ steps.pre.outputs.test_prefix }}" --format "{{.ID}}" | wc -l)
+        echo "containers_after_dryrun=$count" >> $GITHUB_OUTPUT
+
+    - name: Assert containers still exist after dry-run
+      uses: ./src/testing/assert
+      with:
+        test-name: "containers still exist after dry-run"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.verify_dryrun.outputs.containers_after_dryrun }}
+
+    # ========== Test 2: Actual cleanup with keep-count=1 ==========
+    - name: Run cleanup with keep-count=1
+      id: keep1
+      uses: ./docker/clean-up
+      with:
+        prefix: ${{ steps.pre.outputs.test_prefix }}
+        keep-count: "1"
+        dry-run: "false"
+        debug-mode: "true"
+        skip-images: "true"
+
+    - name: Assert keeps 1 container per image
+      uses: ./src/testing/assert
+      with:
+        test-name: "keep-count=1 removes 1 container (keeps 1 per image)"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.keep1.outputs.containers-removed }}
+
+    - name: Assert keeps 1 volume
+      uses: ./src/testing/assert
+      with:
+        test-name: "keep-count=1 removes 2 volumes (keeps 1)"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.keep1.outputs.volumes-removed }}
+
+    - name: Assert keeps 1 network
+      uses: ./src/testing/assert
+      with:
+        test-name: "keep-count=1 removes 1 network (keeps 1)"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.keep1.outputs.networks-removed }}
+
+    # ========== Test 3: Full cleanup of remaining resources ==========
+    - name: Run full cleanup (keep-count=0)
+      id: fullclean
+      uses: ./docker/clean-up
+      with:
+        prefix: ${{ steps.pre.outputs.test_prefix }}
+        keep-count: "0"
+        dry-run: "false"
+        debug-mode: "true"
+        skip-images: "true"
+
+    - name: Assert remaining container removed
+      uses: ./src/testing/assert
+      with:
+        test-name: "full cleanup removes remaining container"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.fullclean.outputs.containers-removed }}
+
+    - name: Assert remaining volume removed
+      uses: ./src/testing/assert
+      with:
+        test-name: "full cleanup removes remaining volume"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.fullclean.outputs.volumes-removed }}
+
+    - name: Assert remaining network removed
+      uses: ./src/testing/assert
+      with:
+        test-name: "full cleanup removes remaining network"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.fullclean.outputs.networks-removed }}
+
+    # ========== Test 4: Skip flags ==========
+    - name: Create more test resources for skip test
+      shell: bash
+      run: |
+        docker network create ${{ steps.pre.outputs.test_prefix }}-skipnet || true
+        docker volume create ${{ steps.pre.outputs.test_prefix }}-skipvol || true
+
+    - name: Run cleanup with skip flags
+      id: skiptest
+      uses: ./docker/clean-up
+      with:
+        prefix: ${{ steps.pre.outputs.test_prefix }}
+        keep-count: "0"
+        dry-run: "false"
+        skip-containers: "true"
+        skip-images: "true"
+        skip-volumes: "true"
+        skip-networks: "false"
+
+    - name: Assert networks removed but volumes skipped
+      uses: ./src/testing/assert
+      with:
+        test-name: "skip flags work - networks removed"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.skiptest.outputs.networks-removed }}
+
+    - name: Assert volumes skipped
+      uses: ./src/testing/assert
+      with:
+        test-name: "skip flags work - volumes skipped"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "0"
+        actual: ${{ steps.skiptest.outputs.volumes-removed }}
+
+    # ========== Cleanup remaining test resources ==========
+    - name: Final cleanup
+      if: always()
+      shell: bash
+      run: |
+        docker rm -f $(docker ps -a --filter "name=${{ steps.pre.outputs.test_prefix }}" -q) 2>/dev/null || true
+        docker volume rm $(docker volume ls --filter "name=${{ steps.pre.outputs.test_prefix }}" -q) 2>/dev/null || true
+        docker network rm $(docker network ls --filter "name=${{ steps.pre.outputs.test_prefix }}" -q) 2>/dev/null || true
+
+    # ========== Summary ==========
+    - name: Summarize
+      shell: bash
+      if: always()
+      run: |
+        echo '=== Docker Clean-Up Demo Summary ===' >> $GITHUB_STEP_SUMMARY
+        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY

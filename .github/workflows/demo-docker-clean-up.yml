@@ -1,0 +1,13 @@
+name: Demo - Docker Clean-Up
+on:
+    workflow_dispatch: {}
+
+jobs:
+    demo-docker-clean-up:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Run demo for docker/clean-up
+              uses: ./.github/actions/demo-docker-clean-up
