@@ -139,10 +139,8 @@ function cleanupContainers(config, stats, execFn = dockerExec) {
         log(`Removing ALL ${ids.length} matching container(s)...`);
         for (const id of ids) {
             log(`Removing container ${id}...`);
-            const result = execFn(['rm', '-f', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.containersRemoved++;
-            }
+            execFn(['rm', '-f', id], config, { ignoreError: true });
+            stats.containersRemoved++;
         }
         debug('Completed container removals (KEEP_COUNT=0)', config.debugMode);
         return;
@@ -187,10 +185,8 @@ function cleanupContainers(config, stats, execFn = dockerExec) {
     if (removeIds.length > 0) {
         for (const id of removeIds) {
             log(`Removing container ${id}...`);
-            const result = execFn(['rm', '-f', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.containersRemoved++;
-            }
+            execFn(['rm', '-f', id], config, { ignoreError: true });
+            stats.containersRemoved++;
         }
     } else {
         debug('No containers to remove', config.debugMode);
@@ -226,10 +222,8 @@ function cleanupImages(config, stats, execFn = dockerExec) {
         log(`Removing ALL ${imgIds.length} matching image(s)...`);
         for (const id of imgIds) {
             log(`Removing image ${id}...`);
-            const result = execFn(['rmi', '-f', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.imagesRemoved++;
-            }
+            execFn(['rmi', '-f', id], config, { ignoreError: true });
+            stats.imagesRemoved++;
         }
         return;
     }
@@ -247,10 +241,8 @@ function cleanupImages(config, stats, execFn = dockerExec) {
     if (removeIds.length > 0) {
         for (const id of removeIds) {
             log(`Removing image ${id}...`);
-            const result = execFn(['rmi', '-f', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.imagesRemoved++;
-            }
+            execFn(['rmi', '-f', id], config, { ignoreError: true });
+            stats.imagesRemoved++;
         }
     }
 }
@@ -279,10 +271,8 @@ function cleanupVolumes(config, stats, execFn = dockerExec) {
         log(`Removing ALL ${ids.length} matching volume(s)...`);
         for (const id of ids) {
             log(`Removing volume ${id}...`);
-            const result = execFn(['volume', 'rm', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.volumesRemoved++;
-            }
+            execFn(['volume', 'rm', id], config, { ignoreError: true });
+            stats.volumesRemoved++;
         }
         return;
     }
@@ -300,10 +290,8 @@ function cleanupVolumes(config, stats, execFn = dockerExec) {
     if (removeIds.length > 0) {
         for (const id of removeIds) {
             log(`Removing volume ${id}...`);
-            const result = execFn(['volume', 'rm', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.volumesRemoved++;
-            }
+            execFn(['volume', 'rm', id], config, { ignoreError: true });
+            stats.volumesRemoved++;
         }
     }
 }
@@ -326,10 +314,8 @@ function cleanupNetworks(config, stats, execFn = dockerExec) {
         log(`Removing ALL ${ids.length} matching network(s)...`);
         for (const id of ids) {
             log(`Removing network ${id}...`);
-            const result = execFn(['network', 'rm', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.networksRemoved++;
-            }
+            execFn(['network', 'rm', id], config, { ignoreError: true });
+            stats.networksRemoved++;
         }
         return;
     }
@@ -347,10 +333,8 @@ function cleanupNetworks(config, stats, execFn = dockerExec) {
     if (removeIds.length > 0) {
         for (const id of removeIds) {
             log(`Removing network ${id}...`);
-            const result = execFn(['network', 'rm', id], config, { ignoreError: true });
-            if (result !== '' || config.dryRun) {
-                stats.networksRemoved++;
-            }
+            execFn(['network', 'rm', id], config, { ignoreError: true });
+            stats.networksRemoved++;
         }
     }
 }
