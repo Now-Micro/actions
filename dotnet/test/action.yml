@@ -59,6 +59,9 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
     - name: Get solution or project file
       id: get-solution-or-proj
       if: ${{ inputs.project-file == '' }}
