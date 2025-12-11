@@ -1,3 +1,5 @@
+const fs = require('node:fs');
+
 function parseBool(value) {
     if (typeof value === 'string') {
         return ['1', 'true', 'yes'].includes(value.toLowerCase().trim());
@@ -56,9 +58,16 @@ function resolveTarget(env = {}) {
 }
 
 function main(env = process.env) {
+    const githubOutput = env.GITHUB_OUTPUT?.trim();
+    if (!githubOutput) {
+        console.error('GITHUB_OUTPUT not set');
+        process.exit(1);
+        return;
+    }
+
     try {
         const target = resolveTarget(env);
-        console.log(`path=${target}`);
+        fs.appendFileSync(githubOutput, `path=${target}\n`, 'utf8');
     } catch (err) {
         console.error(`Error: ${err.message}`);
         process.exit(1);

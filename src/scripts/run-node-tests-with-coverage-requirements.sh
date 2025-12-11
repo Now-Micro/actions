@@ -1,0 +1,1 @@
+npx --yes c8 --check-coverage --per-file --statements 90 --branches 75 --functions 80 --lines 90 -r text -r lcov node --test --test-reporter=spec
