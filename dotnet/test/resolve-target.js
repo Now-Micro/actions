@@ -1,5 +1,3 @@
-const env = process.env;
-
 function parseBool(value) {
     if (typeof value === 'string') {
         return ['1', 'true', 'yes'].includes(value.toLowerCase().trim());
@@ -7,35 +5,53 @@ function parseBool(value) {
     return Boolean(value);
 }
 
-const projectFile = env.PROJECT_FILE?.trim();
-const preferSolution = parseBool(env.PREFER_SOLUTION);
-const projectFound = env.PROJECT_FOUND?.trim() || '';
-const solutionFound = env.SOLUTION_FOUND?.trim() || '';
-
-if (projectFile) {
-    console.log(`path=${projectFile}`);
-    process.exit(0);
-}
-
-let target = '';
-if (preferSolution) {
-    if (solutionFound) {
-        target = solutionFound;
-    } else if (projectFound) {
-        target = projectFound;
+function resolveTarget(env = {}) {
+    const projectFile = env.PROJECT_FILE?.trim();
+    if (projectFile) {
+        return projectFile;
     }
-} else {
-    if (projectFound) {
-        target = projectFound;
-    } else if (solutionFound) {
-        target = solutionFound;
+
+    const preferSolution = parseBool(env.PREFER_SOLUTION);
+    const projectFound = env.PROJECT_FOUND?.trim() || '';
+    const solutionFound = env.SOLUTION_FOUND?.trim() || '';
+
+    let target = '';
+    if (preferSolution) {
+        if (solutionFound) {
+            target = solutionFound;
+        } else if (projectFound) {
+            target = projectFound;
+        }
+    } else {
+        if (projectFound) {
+            target = projectFound;
+        } else if (solutionFound) {
+            target = solutionFound;
+        }
+    }
+
+    if (!target) {
+        throw new Error('No project or solution discovered by get-project-and-solution-files-from-directory.');
+    }
+
+    return target;
+}
+
+function main(env = process.env) {
+    try {
+        const target = resolveTarget(env);
+        console.log(`path=${target}`);
+    } catch (err) {
+        console.error(`Error: ${err.message}`);
+        process.exit(1);
     }
 }
 
-if (!target) {
-    console.error('Error: No project or solution discovered by get-project-and-solution-files-from-directory.');
-    process.exit(1);
+if (require.main === module) {
+    main();
 }
 
-console.log(`path=${target}`);
-process.exit(0);
+module.exports = {
+    resolveTarget,
+    main,
+};
