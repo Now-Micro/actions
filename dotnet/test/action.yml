@@ -23,6 +23,10 @@ inputs:
     description: "When both project and solution files are discovered, use the solution over the project (true/false)"
     required: false
     default: "false"
+  debug-mode:
+    description: "Enable detailed debug logging for target resolution"
+    required: false
+    default: "false"
   project-regex:
     description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
     required: false
@@ -74,6 +78,7 @@ runs:
         PREFER_SOLUTION: ${{ inputs.prefer-solution }}
         PROJECT_FOUND: ${{ steps.get-solution-or-proj.outputs.project-found }}
         SOLUTION_FOUND: ${{ steps.get-solution-or-proj.outputs.solution-found }}
+        DEBUG_MODE: ${{ inputs.debug-mode }}
       run: |
         node "$GITHUB_ACTION_PATH/resolve-target.js"
 
