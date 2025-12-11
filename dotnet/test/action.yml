@@ -19,6 +19,14 @@ inputs:
     description: "Maximum depth to search for .sln or .csproj files."
     required: false
     default: "5"
+  prefer-solution:
+    description: "When both project and solution files are discovered, use the solution over the project (true/false)"
+    required: false
+    default: "false"
+  debug-mode:
+    description: "Enable detailed debug logging for target resolution"
+    required: false
+    default: "false"
   project-regex:
     description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
     required: false
@@ -31,20 +39,16 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
     - name: Validate inputs
       shell: bash
+      env:
+        PROJECT_FILE: ${{ inputs.project-file }}
+        DIRECTORY: ${{ inputs.directory }}
       run: |
-        PROJECT_FILE="${{ inputs.project-file }}"
-        DIRECTORY="${{ inputs.directory }}"
-        if [ -n "${PROJECT_FILE}" ]; then
-          echo "project-file provided: validation passed"
-          exit 0
-        fi
-        if [ -z "${DIRECTORY}" ]; then
-          echo "Error: Provide 'project-file' or 'directory' and an optional 'project-regex'." >&2
-          exit 1
-        fi
-        echo "directory provided: validation passed"
+        node "$GITHUB_ACTION_PATH/validate-inputs.js"
 
     - name: Setup .NET SDKs
       uses: Now-Micro/actions/dotnet/install@v1
@@ -65,20 +69,14 @@ runs:
     - name: Resolve project or solution
       id: resolve-target
       shell: bash
+      env:
+        PROJECT_FILE: ${{ inputs.project-file }}
+        PREFER_SOLUTION: ${{ inputs.prefer-solution }}
+        PROJECT_FOUND: ${{ steps.get-solution-or-proj.outputs.project-found }}
+        SOLUTION_FOUND: ${{ steps.get-solution-or-proj.outputs.solution-found }}
+        DEBUG_MODE: ${{ inputs.debug-mode }}
       run: |
-        if [ -n "${{ inputs.project-file }}" ]; then
-          echo "path=${{ inputs.project-file }}" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-        TARGET="${{ steps.get-solution-or-proj.outputs.project-found }}"
-        if [ -z "${TARGET}" ]; then
-          TARGET="${{ steps.get-solution-or-proj.outputs.solution-found }}"
-        fi
-        if [ -z "${TARGET}" ]; then
-          echo "Error: No project or solution discovered by get-project-and-solution-files-from-directory." >&2
-          exit 1
-        fi
-        echo "path=${TARGET}" >> "$GITHUB_OUTPUT"
+        node "$GITHUB_ACTION_PATH/resolve-target.js"
 
     - name: Run tests
       shell: bash
