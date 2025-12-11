@@ -19,6 +19,10 @@ inputs:
     description: "Maximum depth to search for .sln or .csproj files."
     required: false
     default: "5"
+  prefer-solution:
+    description: "When both project and solution files are discovered, use the solution over the project (true/false)"
+    required: false
+    default: "false"
   project-regex:
     description: "Regular expression to identify project file desired.  If empty, will return the first .csproj file found when find-project is true."
     required: false
@@ -65,20 +69,13 @@ runs:
     - name: Resolve project or solution
       id: resolve-target
       shell: bash
+      env:
+        PROJECT_FILE: ${{ inputs.project-file }}
+        PREFER_SOLUTION: ${{ inputs.prefer-solution }}
+        PROJECT_FOUND: ${{ steps.get-solution-or-proj.outputs.project-found }}
+        SOLUTION_FOUND: ${{ steps.get-solution-or-proj.outputs.solution-found }}
       run: |
-        if [ -n "${{ inputs.project-file }}" ]; then
-          echo "path=${{ inputs.project-file }}" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-        TARGET="${{ steps.get-solution-or-proj.outputs.project-found }}"
-        if [ -z "${TARGET}" ]; then
-          TARGET="${{ steps.get-solution-or-proj.outputs.solution-found }}"
-        fi
-        if [ -z "${TARGET}" ]; then
-          echo "Error: No project or solution discovered by get-project-and-solution-files-from-directory." >&2
-          exit 1
-        fi
-        echo "path=${TARGET}" >> "$GITHUB_OUTPUT"
+        node "$GITHUB_ACTION_PATH/resolve-target.js"
 
     - name: Run tests
       shell: bash
