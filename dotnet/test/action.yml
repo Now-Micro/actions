@@ -39,28 +39,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
     - name: Validate inputs
       shell: bash
+      env:
+        PROJECT_FILE: ${{ inputs.project-file }}
+        DIRECTORY: ${{ inputs.directory }}
       run: |
-        PROJECT_FILE="${{ inputs.project-file }}"
-        DIRECTORY="${{ inputs.directory }}"
-        if [ -n "${PROJECT_FILE}" ]; then
-          echo "project-file provided: validation passed"
-          exit 0
-        fi
-        if [ -z "${DIRECTORY}" ]; then
-          echo "Error: Provide 'project-file' or 'directory' and an optional 'project-regex'." >&2
-          exit 1
-        fi
-        echo "directory provided: validation passed"
+        node "$GITHUB_ACTION_PATH/validate-inputs.js"
 
     - name: Setup .NET SDKs
       uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
-
-    - name: Setup Node.js
-      uses: Now-Micro/actions/setup-node@v1
 
     - name: Get solution or project file
       id: get-solution-or-proj
