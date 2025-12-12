@@ -13,10 +13,10 @@ inputs:
   usernames:
     description: "Comma-separated usernames for source authentication"
     required: true
-  degug-mode:
+  debug-mode:
     description: "Enable verbose debug logging (true/false)"
     required: false
-    default: 'false'
+    default: "false"
 
 runs:
   using: "composite"
@@ -33,33 +33,15 @@ runs:
         INPUT_USERNAMES: ${{ inputs.usernames }}
         INPUT_PASSWORDS: ${{ inputs.passwords }}
         INPUT_URLS: ${{ inputs.urls }}
-        INPUT_DEGUG_MODE: ${{ inputs.degug-mode }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
 
     - name: Configure NuGet authentication for each source
       if: steps.validate.outputs.count != '0'
       shell: bash
-      run: |
-        set -e
-        echo "Configuring ${{ steps.validate.outputs.count }} NuGet source(s)..."
-        count='${{ steps.validate.outputs.count }}'
-        IFS=',' read -ra names <<< '${{ steps.validate.outputs.names }}'
-        IFS=',' read -ra usernames <<< '${{ steps.validate.outputs.usernames }}'
-        IFS=',' read -ra passwords <<< '${{ steps.validate.outputs.passwords }}'
-        IFS=',' read -ra urls <<< '${{ steps.validate.outputs.urls }}'
-
-        for ((i=0; i<count; i++)); do
-          name="${names[$i]}"
-          username="${usernames[$i]}"
-          password="${passwords[$i]}"
-          url="${urls[$i]}"
-
-          echo "Processing NuGet source '$name' ($url)"
-          dotnet nuget list source
-          if dotnet nuget list source | grep -q "$url"; then
-            echo "NuGet source '$name' already exists. Updating..."
-            dotnet nuget update source "$name" --username "$username" --password "$password" --store-password-in-clear-text
-          else
-            echo "Adding NuGet source '$name'..."
-            dotnet nuget add source --username "$username" --password "$password" --store-password-in-clear-text --name "$name" "$url"
-          fi
-        done
+      run: node "$GITHUB_ACTION_PATH/configure-sources.js"
+      env:
+        INPUT_NAMES: ${{ steps.validate.outputs.names }}
+        INPUT_USERNAMES: ${{ steps.validate.outputs.usernames }}
+        INPUT_PASSWORDS: ${{ steps.validate.outputs.passwords }}
+        INPUT_URLS: ${{ steps.validate.outputs.urls }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}

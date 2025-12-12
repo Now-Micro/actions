@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  direct-configure:
+  demo-nuget-configure-source:
     name: Direct configure-sources usage
     runs-on: ubuntu-latest
     steps:
@@ -14,37 +14,117 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: "8.0.x"
 
       - name: Configure multiple NuGet sources (direct)
         uses: ./nuget/configure-sources
         with:
-          names: 'DemoSource1, DemoSource2'
-          usernames: 'demo-user-1, demo-user-2'
-          passwords: 'demo-pass-1, demo-pass-2'
-          urls: 'https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json'
+          debug-mode: "true"
+          names: "DemoSource1, DemoSource2"
+          usernames: "demo-user-1, demo-user-2"
+          passwords: "demo-pass-1, demo-pass-2"
+          urls: "https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json"
 
       - name: List configured NuGet sources
         run: dotnet nuget list source
-
-  skips-configure:
-    name: Skips configure-sources
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
 
       - name: Configure multiple NuGet sources (direct)
         uses: ./nuget/configure-sources
         with:
-          usernames: 'demo-user-1, demo-user-2'
-          passwords: 'demo-pass-1, demo-pass-2'
-          urls: 'https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json'
+          debug-mode: "true"
+          usernames: "demo-user-1, demo-user-2"
+          passwords: "demo-pass-1, demo-pass-2"
+          urls: "https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json"
+
+      - name: Configure multiple NuGet sources (initial)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: "true"
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: "CodeBits"
+          urls: "https://nuget.pkg.github.com/Now-Micro/index.json"
+
+      - name: Configure multiple NuGet sources (second time)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: "true"
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: "CodeBits"
+          urls: "https://nuget.pkg.github.com/Now-Micro/index.json"
 
       - name: List configured NuGet sources
         run: dotnet nuget list source
+
+      - name: Configure multiple NuGet sources (initial)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: "true"
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: "CodeBits"
+          urls: "https://incorrecturl.com/index.json"
+
+      - name: Should Update codebits url
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: "true"
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: "codebIts"
+          urls: "https://nuget.pkg.github.com/Now-Micro/index.json"
+
+      - name: List configured NuGet sources
+        id: list-sources
+        run: |
+          dotnet nuget list source | tee nuget-sources.txt
+          printf 'list<<EOF\n' >> "$GITHUB_OUTPUT"
+          cat nuget-sources.txt >> "$GITHUB_OUTPUT"
+          if [ -n "$(tail -c1 nuget-sources.txt)" ]; then printf '\n' >> "$GITHUB_OUTPUT"; fi
+          printf 'EOF\n' >> "$GITHUB_OUTPUT"
+
+      - name: Assert Url is updated to match the correct one
+        uses: ./src/testing/assert
+        with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-url.txt
+          test-name: nuget-codebits-url
+          mode: regex
+          expected: 'CodeBits[\s\S]*https://nuget.pkg.github.com/Now-Micro/index.json'
+          actual: ${{ steps.list-sources.outputs.list }}
+
+      - name: Should remove Code-Bits and add Now-Micro instead
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: "true"
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: "Now-Micro"
+          urls: "https://nuget.pkg.github.com/Now-Micro/index.json"
+
+      - name: List configured NuGet sources (after rename)
+        id: list-sources-final
+        run: |
+          dotnet nuget list source | tee nuget-sources-final.txt
+          printf 'final_list<<EOF\n' >> "$GITHUB_OUTPUT"
+          cat nuget-sources-final.txt >> "$GITHUB_OUTPUT"
+          if [ -n "$(tail -c1 nuget-sources-final.txt)" ]; then printf '\n' >> "$GITHUB_OUTPUT"; fi
+          printf 'EOF\n' >> "$GITHUB_OUTPUT"
+
+      - name: Assert Now-Micro is present
+        uses: ./src/testing/assert
+        with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-now-micro-url.txt
+          test-name: nuget-now-micro-url
+          mode: regex
+          expected: 'Now-Micro[\s\S]*https://nuget.pkg.github.com/Now-Micro/index.json'
+          actual: ${{ steps.list-sources-final.outputs.final_list }}
+
+      - name: Assert CodeBits is gone
+        uses: ./src/testing/assert
+        with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-absent.txt
+          test-name: nuget-codebits-absent
+          mode: regex
+          expected: '^(?![\s\S]*CodeBits)'
+          actual: ${{ steps.list-sources-final.outputs.final_list }}

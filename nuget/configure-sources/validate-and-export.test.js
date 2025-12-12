@@ -149,7 +149,7 @@ test('valid multi with spaces and empty items filtered', () => {
 });
 
 test('debug mode logs raw inputs and emits empties when missing', () => {
-    const r = runWith({ INPUT_DEGUG_MODE: 'true', INPUT_NAMES: '', INPUT_USERNAMES: 'u', INPUT_PASSWORDS: 'p', INPUT_URLS: 'x' });
+    const r = runWith({ INPUT_DEBUG_MODE: 'true', INPUT_NAMES: '', INPUT_USERNAMES: 'u', INPUT_PASSWORDS: 'p', INPUT_URLS: 'x' });
     assert.match(r.out, /Raw inputs:/);
     assert.match(r.outputs, /count=0/);
     assert.match(r.outputs, /names=/);
@@ -159,7 +159,7 @@ test('debug mode logs raw inputs and emits empties when missing', () => {
 });
 
 test('no usable entries after filtering empties results in zeros', () => {
-    const r = runWith({ INPUT_NAMES: 'A,B', INPUT_USERNAMES: ',,', INPUT_PASSWORDS: ',,', INPUT_URLS: ',,', INPUT_DEGUG_MODE: 'true' });
+    const r = runWith({ INPUT_NAMES: 'A,B', INPUT_USERNAMES: ',,', INPUT_PASSWORDS: ',,', INPUT_URLS: ',,', INPUT_DEBUG_MODE: 'true' });
     assert.match(r.out, /No usable non-name entries/);
     assert.match(r.outputs, /count=0/);
     assert.match(r.outputs, /names=/);
