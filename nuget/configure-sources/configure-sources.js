@@ -82,6 +82,8 @@ function configureSources(env = process.env, options = {}) {
                 '--password',
                 entry.password,
                 '--store-password-in-clear-text',
+                '--source',
+                entry.url,
             ], { encoding: 'utf8' });
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);

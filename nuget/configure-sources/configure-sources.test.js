@@ -115,6 +115,8 @@ test('updates a source when the name already exists', () => {
                 '--password',
                 'pass',
                 '--store-password-in-clear-text',
+                '--source',
+                'https://nuget.pkg.github.com/owner/index.json',
             ],
             opts: { encoding: 'utf8' },
         },
