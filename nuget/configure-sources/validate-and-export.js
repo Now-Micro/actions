@@ -21,7 +21,7 @@ try {
     const usersRaw = get('INPUT_USERNAMES');
     const pwdsRaw = get('INPUT_PASSWORDS');
     const urlsRaw = get('INPUT_URLS');
-    const debugRaw = get('INPUT_DEGUG_MODE');
+    const debugRaw = get('INPUT_DEBUG_MODE');
     const DEBUG = /^true$/i.test(String(debugRaw).trim());
 
     if (DEBUG) {
@@ -30,7 +30,7 @@ try {
         log(`  usernames='${usersRaw}'`);
         log(`  passwords='${pwdsRaw}'`);
         log(`  urls='${urlsRaw}'`);
-        log(`  degug-mode='${debugRaw}'`);
+        log(`  debug-mode='${debugRaw}'`);
     }
 
     // If any input is missing or blank, emit empty outputs for all and succeed

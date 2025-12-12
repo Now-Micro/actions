@@ -33,7 +33,7 @@ runs:
         INPUT_USERNAMES: ${{ inputs.usernames }}
         INPUT_PASSWORDS: ${{ inputs.passwords }}
         INPUT_URLS: ${{ inputs.urls }}
-        INPUT_DEGUG_MODE: ${{ inputs.degug-mode }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
 
     - name: Configure NuGet authentication for each source
       if: steps.validate.outputs.count != '0'
