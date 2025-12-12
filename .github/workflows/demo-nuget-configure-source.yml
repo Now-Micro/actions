@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  direct-configure:
+  demo-nuget-configure-source:
     name: Direct configure-sources usage
     runs-on: ubuntu-latest
     steps:
@@ -28,18 +28,6 @@ jobs:
       - name: List configured NuGet sources
         run: dotnet nuget list source
 
-  skips-configure:
-    name: Skips configuring due to missing value
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
       - name: Configure multiple NuGet sources (direct)
         uses: ./nuget/configure-sources
         with:
@@ -47,21 +35,6 @@ jobs:
           usernames: "demo-user-1, demo-user-2"
           passwords: "demo-pass-1, demo-pass-2"
           urls: "https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json"
-
-      - name: List configured NuGet sources
-        run: dotnet nuget list source
-
-  skips-configure-due-to-already-existing:
-    name: Skips due to already existing
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
 
       - name: Configure multiple NuGet sources (initial)
         uses: ./nuget/configure-sources
@@ -83,18 +56,6 @@ jobs:
 
       - name: List configured NuGet sources
         run: dotnet nuget list source
-
-  skips-even-if-casing-different:
-    name: Skips even if casing is different
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
 
       - name: Configure multiple NuGet sources (initial)
         uses: ./nuget/configure-sources
@@ -118,11 +79,9 @@ jobs:
         id: list-sources
         run: |
           dotnet nuget list source | tee nuget-sources.txt
-          {
-            echo "list<<'EOF'"
-            cat nuget-sources.txt
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf 'list<<EOF%n' >> "$GITHUB_OUTPUT"
+          cat nuget-sources.txt >> "$GITHUB_OUTPUT"
+          printf 'EOF%n' >> "$GITHUB_OUTPUT"
 
       - name: Assert Url is updated
         uses: ./src/testing/assert
@@ -145,11 +104,9 @@ jobs:
         id: list-sources-final
         run: |
           dotnet nuget list source | tee nuget-sources-final.txt
-          {
-            echo "final_list<<'EOF'"
-            cat nuget-sources-final.txt
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          printf 'final_list<<EOF%n' >> "$GITHUB_OUTPUT"
+          cat nuget-sources-final.txt >> "$GITHUB_OUTPUT"
+          printf 'EOF%n' >> "$GITHUB_OUTPUT"
 
       - name: Assert Now-Micro is present
         uses: ./src/testing/assert
