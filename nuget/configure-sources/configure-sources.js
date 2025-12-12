@@ -177,4 +177,5 @@ if (require.main === module) {
 module.exports = {
     configureSources,
     run,
+    parseRegisteredSources,
 };

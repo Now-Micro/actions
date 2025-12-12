@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { configureSources } = require('./configure-sources');
+const { configureSources, run, parseRegisteredSources } = require('./configure-sources');
 
 function makeListOutput(entries) {
     const lines = ['Registered Sources:'];
@@ -222,4 +222,89 @@ test('renames existing source when url matches but name differs', () => {
         'expected remove to be called for the old name');
     assert.ok(execStub.calls.some(call => call.args.includes('--name') && call.args.includes('Now-Micro')),
         'expected add command to include the new name');
+});
+
+test('run logs errors and exits when configureSources throws', () => {
+    const env = {
+        INPUT_NAMES: 'CodeBits',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/owner/index.json',
+    };
+    const execStub = () => { throw new Error('boom'); };
+    const errors = [];
+    const exitCodes = [];
+    run(env, {
+        exec: execStub,
+        log: () => { },
+        error: message => errors.push(message),
+        exit: code => exitCodes.push(code),
+    });
+
+    assert.ok(errors.length >= 1);
+    assert.deepStrictEqual(exitCodes, [1]);
+});
+
+test('parseRegisteredSources skips entries without urls', () => {
+    const lines = ['Registered Sources:', '  1.  Foo [Enabled]', '      ', '  2.  Bar [Enabled]', '      https://example.com'];
+    const parsed = parseRegisteredSources(lines.join('\n'));
+    assert.deepStrictEqual(parsed, [
+        { name: 'Foo', url: '' },
+        { name: 'Bar', url: 'https://example.com' },
+    ]);
+});
+
+test('default logger is used when no log override supplied', () => {
+    const execStub = createExecStub(makeListOutput(['Default']));
+    const env = {
+        INPUT_NAMES: 'Default',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://default/',
+    };
+    const writes = [];
+    const originalWrite = process.stdout.write;
+    process.stdout.write = (chunk, ...rest) => {
+        writes.push(String(chunk));
+        return true;
+    };
+    try {
+        configureSources(env, {
+            exec: execStub.exec,
+        });
+    } finally {
+        process.stdout.write = originalWrite;
+    }
+
+    assert.ok(writes.some(line => line.includes('Configuring 1 NuGet source(s)...')),
+        'expected default logger to emit configuration log');
+});
+
+test('run uses default error logger when configureSources throws', () => {
+    const env = {
+        INPUT_NAMES: 'CodeBits',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/owner/index.json',
+    };
+    const exitCodes = [];
+    const errors = [];
+    const originalStderr = process.stderr.write;
+    process.stderr.write = (chunk, ...rest) => {
+        errors.push(String(chunk));
+        return true;
+    };
+    try {
+        run(env, {
+            exec: () => {
+                throw new Error('boom');
+            },
+            exit: code => exitCodes.push(code),
+        });
+    } finally {
+        process.stderr.write = originalStderr;
+    }
+
+    assert.deepStrictEqual(exitCodes, [1]);
+    assert.ok(errors.some(line => line.includes('Error: boom')), 'expected default error logger to emit the caught stack trace');
 });
