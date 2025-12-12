@@ -202,13 +202,10 @@ test('matches existing source regardless of casing', () => {
     assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
 });
 
-test('rename fallback uses update when target already exists', () => {
+test('renames existing source when url matches but name differs', () => {
     const execStub = createExecStub(makeListOutput([
         { name: 'CodeBits', url: 'https://nuget.pkg.github.com/Now-Micro/index.json' },
-    ]), {
-        shouldThrow: args => args.includes('--name') && args.includes('Now-Micro'),
-        throwError: new Error('already exists'),
-    });
+    ]));
     const env = {
         INPUT_NAMES: 'Now-Micro',
         INPUT_USERNAMES: 'user',
@@ -221,24 +218,8 @@ test('rename fallback uses update when target already exists', () => {
         log: () => { },
     });
 
-    assert.ok(execStub.calls.some(call => call.args[0] === 'nuget' && call.args[1] === 'update' && !call.args.includes('--name')),
-        'expected fallback update to be invoked when rename fails');
-});
-
-test('renames existing source when url matches but name differs', () => {
-    const execStub = createExecStub(makeListOutput(['CodeBits']));
-    const env = {
-        INPUT_NAMES: 'Now-Micro',
-        INPUT_USERNAMES: 'user',
-        INPUT_PASSWORDS: 'pass',
-        INPUT_URLS: 'https://nuget.pkg.github.com/Now-Micro/index.json',
-    };
-
-    configureSources(env, {
-        exec: execStub.exec,
-        log: () => { },
-    });
-
-    assert.ok(execStub.calls.some(call => call.args.includes('--name')),
-        'expected update command to include --name when renaming');
+    assert.ok(execStub.calls.some(call => call.args[0] === 'nuget' && call.args[1] === 'remove' && call.args.includes('CodeBits')),
+        'expected remove to be called for the old name');
+    assert.ok(execStub.calls.some(call => call.args.includes('--name') && call.args.includes('Now-Micro')),
+        'expected add command to include the new name');
 });

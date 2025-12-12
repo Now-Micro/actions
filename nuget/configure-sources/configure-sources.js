@@ -117,44 +117,27 @@ function configureSources(env = process.env, options = {}) {
                 entry.url,
             ], logFn, debugMode);
         } else if (existingByUrl) {
-            logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Renaming to '${entry.name}'...`);
-            try {
-                runDotnet(exec, [
-                    'nuget',
-                    'update',
-                    'source',
-                    existingByUrl.name,
-                    '--name',
-                    entry.name,
-                    '--username',
-                    entry.username,
-                    '--password',
-                    entry.password,
-                    '--store-password-in-clear-text',
-                    '--source',
-                    entry.url,
-                ], logFn, debugMode);
-            } catch (err) {
-                const message = String(err?.message || '').toLowerCase();
-                if (message.includes('already exists') || message.includes('duplicate')) {
-                    logFn(`Rename failed because the target name '${entry.name}' already exists; updating the existing entry instead.`);
-                    runDotnet(exec, [
-                        'nuget',
-                        'update',
-                        'source',
-                        entry.name,
-                        '--username',
-                        entry.username,
-                        '--password',
-                        entry.password,
-                        '--store-password-in-clear-text',
-                        '--source',
-                        entry.url,
-                    ], logFn, debugMode);
-                } else {
-                    throw err;
-                }
-            }
+            logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Removing old entry before adding '${entry.name}'.`);
+            runDotnet(exec, [
+                'nuget',
+                'remove',
+                'source',
+                existingByUrl.name,
+            ], logFn, debugMode);
+            logFn(`Adding NuGet source '${entry.name}'...`);
+            runDotnet(exec, [
+                'nuget',
+                'add',
+                'source',
+                '--username',
+                entry.username,
+                '--password',
+                entry.password,
+                '--store-password-in-clear-text',
+                '--name',
+                entry.name,
+                entry.url,
+            ], logFn, debugMode);
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);
             runDotnet(exec, [
