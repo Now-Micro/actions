@@ -84,7 +84,7 @@ jobs:
           if [ -n "$(tail -c1 nuget-sources.txt)" ]; then printf '\n' >> "$GITHUB_OUTPUT"; fi
           printf 'EOF\n' >> "$GITHUB_OUTPUT"
 
-      - name: Assert Url is updated
+      - name: Assert Url is updated to match the correct one
         uses: ./src/testing/assert
         with:
           summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-url.txt
@@ -93,7 +93,7 @@ jobs:
           expected: 'CodeBits[\s\S]*https://nuget.pkg.github.com/Now-Micro/index.json'
           actual: ${{ steps.list-sources.outputs.list }}
 
-      - name: Should Add remove Code-Bits and add Now-Micro instead
+      - name: Should remove Code-Bits and add Now-Micro instead
         uses: ./nuget/configure-sources
         with:
           debug-mode: "true"
