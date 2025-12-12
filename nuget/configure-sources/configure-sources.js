@@ -45,10 +45,24 @@ function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function sourceExists(listOutput, name) {
-    if (!listOutput) return false;
-    const pattern = new RegExp(`^\\s*\\d+\\.\\s+${escapeRegex(name)}\\b`, 'mi');
-    return pattern.test(listOutput);
+function parseRegisteredSources(listOutput) {
+    const entries = [];
+    if (!listOutput) return entries;
+    const lines = listOutput.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+        const match = lines[i].match(/^\s*\d+\.\s+([^\[]+)/);
+        if (!match) continue;
+        const name = match[1].trim();
+        let url = '';
+        if (i + 1 < lines.length) {
+            const candidate = lines[i + 1].trim();
+            if (candidate.startsWith('http')) {
+                url = candidate;
+            }
+        }
+        entries.push({ name, url });
+    }
+    return entries;
 }
 
 function configureSources(env = process.env, options = {}) {
@@ -70,12 +84,32 @@ function configureSources(env = process.env, options = {}) {
             logFn('dotnet nuget list source output:');
             logFn(listOutput);
         }
-        if (sourceExists(listOutput, entry.name)) {
+        const registered = parseRegisteredSources(listOutput);
+        const existingByName = registered.find(x => x.name.toLowerCase() === entry.name.toLowerCase());
+        const existingByUrl = registered.find(x => x.url && x.url.toLowerCase() === entry.url.toLowerCase());
+        if (existingByName) {
             logFn(`NuGet source '${entry.name}' already exists. Updating...`);
             exec('dotnet', [
                 'nuget',
                 'update',
                 'source',
+                entry.name,
+                '--username',
+                entry.username,
+                '--password',
+                entry.password,
+                '--store-password-in-clear-text',
+                '--source',
+                entry.url,
+            ], { encoding: 'utf8' });
+        } else if (existingByUrl) {
+            logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Renaming to '${entry.name}'...`);
+            exec('dotnet', [
+                'nuget',
+                'update',
+                'source',
+                existingByUrl.name,
+                '--name',
                 entry.name,
                 '--username',
                 entry.username,

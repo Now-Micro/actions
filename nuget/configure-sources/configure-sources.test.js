@@ -194,3 +194,21 @@ test('matches existing source regardless of casing', () => {
 
     assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
 });
+
+test('renames existing source when url matches but name differs', () => {
+    const execStub = createExecStub(makeListOutput(['CodeBits']));
+    const env = {
+        INPUT_NAMES: 'Now-Micro',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/Now-Micro/index.json',
+    };
+
+    configureSources(env, {
+        exec: execStub.exec,
+        log: () => { },
+    });
+
+    assert.ok(execStub.calls.some(call => call.args.includes('--name')),
+        'expected update command to include --name when renaming');
+});
