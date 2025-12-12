@@ -2,19 +2,26 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { configureSources } = require('./configure-sources');
 
-function makeListOutput(names) {
+function makeListOutput(entries) {
     const lines = ['Registered Sources:'];
-    names.forEach((name, index) => {
-        lines.push(`  ${index + 1}.  ${name}`);
+    entries.forEach((entry, index) => {
+        const activeEntry = typeof entry === 'string'
+            ? { name: entry, url: `https://example.invalid/${entry}/index.json` }
+            : entry;
+        lines.push(`  ${index + 1}.  ${activeEntry.name} [Enabled]`);
+        lines.push(`      ${activeEntry.url}`);
     });
     return lines.join('\n');
 }
 
-function createExecStub(listOutput) {
+function createExecStub(listOutput, options = {}) {
     const calls = [];
     return {
         exec: (cmd, args, opts = {}) => {
             calls.push({ cmd, args, opts });
+            if (options.shouldThrow && options.shouldThrow(args)) {
+                throw options.throwError || new Error('dotnet failed');
+            }
             if (args[0] === 'nuget' && args[1] === 'list') {
                 return listOutput;
             }
@@ -193,6 +200,29 @@ test('matches existing source regardless of casing', () => {
     });
 
     assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
+});
+
+test('rename fallback uses update when target already exists', () => {
+    const execStub = createExecStub(makeListOutput([
+        { name: 'CodeBits', url: 'https://nuget.pkg.github.com/Now-Micro/index.json' },
+    ]), {
+        shouldThrow: args => args.includes('--name') && args.includes('Now-Micro'),
+        throwError: new Error('already exists'),
+    });
+    const env = {
+        INPUT_NAMES: 'Now-Micro',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/Now-Micro/index.json',
+    };
+
+    configureSources(env, {
+        exec: execStub.exec,
+        log: () => { },
+    });
+
+    assert.ok(execStub.calls.some(call => call.args[0] === 'nuget' && call.args[1] === 'update' && !call.args.includes('--name')),
+        'expected fallback update to be invoked when rename fails');
 });
 
 test('renames existing source when url matches but name differs', () => {

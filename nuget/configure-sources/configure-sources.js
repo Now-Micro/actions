@@ -41,10 +41,6 @@ function zipEntries(env) {
     return entries;
 }
 
-function escapeRegex(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function parseRegisteredSources(listOutput) {
     const entries = [];
     if (!listOutput) return entries;
@@ -75,7 +71,6 @@ function runDotnet(exec, args, logFn, debugMode) {
 function configureSources(env = process.env, options = {}) {
     const exec = options.exec ?? execFileSync;
     const logFn = options.log ?? log;
-    const errorFn = options.error ?? error;
     const debugMode = parseBool(env.INPUT_DEGUG_MODE);
 
     const entries = zipEntries(env);
@@ -123,21 +118,43 @@ function configureSources(env = process.env, options = {}) {
             ], logFn, debugMode);
         } else if (existingByUrl) {
             logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Renaming to '${entry.name}'...`);
-            runDotnet(exec, [
-                'nuget',
-                'update',
-                'source',
-                existingByUrl.name,
-                '--name',
-                entry.name,
-                '--username',
-                entry.username,
-                '--password',
-                entry.password,
-                '--store-password-in-clear-text',
-                '--source',
-                entry.url,
-            ], logFn, debugMode);
+            try {
+                runDotnet(exec, [
+                    'nuget',
+                    'update',
+                    'source',
+                    existingByUrl.name,
+                    '--name',
+                    entry.name,
+                    '--username',
+                    entry.username,
+                    '--password',
+                    entry.password,
+                    '--store-password-in-clear-text',
+                    '--source',
+                    entry.url,
+                ], logFn, debugMode);
+            } catch (err) {
+                const message = String(err?.message || '').toLowerCase();
+                if (message.includes('already exists') || message.includes('duplicate')) {
+                    logFn(`Rename failed because the target name '${entry.name}' already exists; updating the existing entry instead.`);
+                    runDotnet(exec, [
+                        'nuget',
+                        'update',
+                        'source',
+                        entry.name,
+                        '--username',
+                        entry.username,
+                        '--password',
+                        entry.password,
+                        '--store-password-in-clear-text',
+                        '--source',
+                        entry.url,
+                    ], logFn, debugMode);
+                } else {
+                    throw err;
+                }
+            }
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);
             runDotnet(exec, [

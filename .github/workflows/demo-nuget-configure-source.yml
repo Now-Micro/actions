@@ -125,3 +125,45 @@ jobs:
 
       - name: List configured NuGet sources
         run: dotnet nuget list source
+  
+  skips-even-if-casing-different-2:
+    name: Skips even if casing is different (different order)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Configure multiple NuGet sources (initial)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'CodeBits'
+          urls: 'https://incorrecturl.com/index.json'
+
+      - name: Should Add Now-Micro
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'Now-Micro'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: Should Update codebits url
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'codebIts'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: List configured NuGet sources
+        run: dotnet nuget list source
