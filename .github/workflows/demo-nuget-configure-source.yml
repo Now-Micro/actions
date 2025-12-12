@@ -19,6 +19,7 @@ jobs:
       - name: Configure multiple NuGet sources (direct)
         uses: ./nuget/configure-sources
         with:
+          debug-mode: 'true'
           names: 'DemoSource1, DemoSource2'
           usernames: 'demo-user-1, demo-user-2'
           passwords: 'demo-pass-1, demo-pass-2'
@@ -28,7 +29,7 @@ jobs:
         run: dotnet nuget list source
 
   skips-configure:
-    name: Skips configure-sources
+    name: Skips configuring due to missing value
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,6 +43,7 @@ jobs:
       - name: Configure multiple NuGet sources (direct)
         uses: ./nuget/configure-sources
         with:
+          debug-mode: 'true'
           usernames: 'demo-user-1, demo-user-2'
           passwords: 'demo-pass-1, demo-pass-2'
           urls: 'https://example.invalid/feed1/index.json, https://example.invalid/feed2/index.json'
@@ -50,7 +52,7 @@ jobs:
         run: dotnet nuget list source
 
   skips-configure-due-to-already-existing:
-    name: Skips configure-sources
+    name: Skips due to already existing
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -61,12 +63,55 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Configure multiple NuGet sources (direct)
+      - name: Configure multiple NuGet sources (initial)
         uses: ./nuget/configure-sources
         with:
+          debug-mode: 'true'
           usernames: ${{ github.actor }}
           passwords: ${{ secrets.GITHUB_TOKEN }}
           names: 'CodeBits'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: Configure multiple NuGet sources (second time)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'CodeBits'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: List configured NuGet sources
+        run: dotnet nuget list source
+
+  skips-even-if-casing-different:
+    name: Skips even if casing is different
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Configure multiple NuGet sources (initial)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'CodeBits'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: Configure multiple NuGet sources (second time)
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'codebIts'
           urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
 
       - name: List configured NuGet sources
