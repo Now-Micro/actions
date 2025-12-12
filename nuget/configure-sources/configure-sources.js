@@ -47,7 +47,7 @@ function escapeRegex(value) {
 
 function sourceExists(listOutput, name) {
     if (!listOutput) return false;
-    const pattern = new RegExp(`^\\s*\\d+\\.\\s+${escapeRegex(name)}\\b`, 'm');
+    const pattern = new RegExp(`^\\s*\\d+\\.\\s+${escapeRegex(name)}\\b`, 'mi');
     return pattern.test(listOutput);
 }
 

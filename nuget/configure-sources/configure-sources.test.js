@@ -175,3 +175,20 @@ test('special characters in name are escaped when matching', () => {
 
     assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
 });
+
+test('matches existing source regardless of casing', () => {
+    const execStub = createExecStub(makeListOutput(['CodeBits']));
+    const env = {
+        INPUT_NAMES: 'codebIts',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/Now-Micro/index.json',
+    };
+
+    configureSources(env, {
+        exec: execStub.exec,
+        log: () => { },
+    });
+
+    assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
+});
