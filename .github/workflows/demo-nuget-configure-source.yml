@@ -79,9 +79,10 @@ jobs:
         id: list-sources
         run: |
           dotnet nuget list source | tee nuget-sources.txt
-          printf 'list<<EOF%n' >> "$GITHUB_OUTPUT"
+          printf 'list<<EOF\n' >> "$GITHUB_OUTPUT"
           cat nuget-sources.txt >> "$GITHUB_OUTPUT"
-          printf 'EOF%n' >> "$GITHUB_OUTPUT"
+          if [ -n "$(tail -c1 nuget-sources.txt)" ]; then printf '\n' >> "$GITHUB_OUTPUT"; fi
+          printf 'EOF\n' >> "$GITHUB_OUTPUT"
 
       - name: Assert Url is updated
         uses: ./src/testing/assert
@@ -104,9 +105,10 @@ jobs:
         id: list-sources-final
         run: |
           dotnet nuget list source | tee nuget-sources-final.txt
-          printf 'final_list<<EOF%n' >> "$GITHUB_OUTPUT"
+          printf 'final_list<<EOF\n' >> "$GITHUB_OUTPUT"
           cat nuget-sources-final.txt >> "$GITHUB_OUTPUT"
-          printf 'EOF%n' >> "$GITHUB_OUTPUT"
+          if [ -n "$(tail -c1 nuget-sources-final.txt)" ]; then printf '\n' >> "$GITHUB_OUTPUT"; fi
+          printf 'EOF\n' >> "$GITHUB_OUTPUT"
 
       - name: Assert Now-Micro is present
         uses: ./src/testing/assert
