@@ -65,12 +65,31 @@ function parseRegisteredSources(listOutput) {
     return entries;
 }
 
+function runDotnet(exec, args, logFn, debugMode) {
+    if (debugMode) {
+        logFn(`exec: dotnet ${args.join(' ')}`);
+    }
+    return exec('dotnet', args, { encoding: 'utf8' });
+}
+
 function configureSources(env = process.env, options = {}) {
     const exec = options.exec ?? execFileSync;
     const logFn = options.log ?? log;
+    const errorFn = options.error ?? error;
     const debugMode = parseBool(env.INPUT_DEGUG_MODE);
 
     const entries = zipEntries(env);
+    if (debugMode) {
+        logFn('🔍 Inputs after validation:');
+        logFn(`  names: ${env.INPUT_NAMES}`);
+        logFn(`  usernames: ${env.INPUT_USERNAMES}`);
+        logFn(`  passwords: ${env.INPUT_PASSWORDS}`);
+        logFn(`  urls: ${env.INPUT_URLS}`);
+        logFn('🔧 Entries to configure:');
+        entries.forEach((entry, index) => {
+            logFn(`    ${index + 1}. name='${entry.name}', username='${entry.username}', url='${entry.url}'`);
+        });
+    }
     if (entries.length === 0) {
         logFn('No NuGet sources to configure; skipping.');
         return entries;
@@ -79,7 +98,7 @@ function configureSources(env = process.env, options = {}) {
     logFn(`Configuring ${entries.length} NuGet source(s)...`);
     for (const entry of entries) {
         logFn(`Processing NuGet source '${entry.name}' (${entry.url})`);
-        const listOutput = exec('dotnet', ['nuget', 'list', 'source'], { encoding: 'utf8' });
+        const listOutput = runDotnet(exec, ['nuget', 'list', 'source'], logFn, debugMode);
         if (debugMode) {
             logFn('dotnet nuget list source output:');
             logFn(listOutput);
@@ -89,7 +108,7 @@ function configureSources(env = process.env, options = {}) {
         const existingByUrl = registered.find(x => x.url && x.url.toLowerCase() === entry.url.toLowerCase());
         if (existingByName) {
             logFn(`NuGet source '${entry.name}' already exists. Updating...`);
-            exec('dotnet', [
+            runDotnet(exec, [
                 'nuget',
                 'update',
                 'source',
@@ -101,10 +120,10 @@ function configureSources(env = process.env, options = {}) {
                 '--store-password-in-clear-text',
                 '--source',
                 entry.url,
-            ], { encoding: 'utf8' });
+            ], logFn, debugMode);
         } else if (existingByUrl) {
             logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Renaming to '${entry.name}'...`);
-            exec('dotnet', [
+            runDotnet(exec, [
                 'nuget',
                 'update',
                 'source',
@@ -118,10 +137,10 @@ function configureSources(env = process.env, options = {}) {
                 '--store-password-in-clear-text',
                 '--source',
                 entry.url,
-            ], { encoding: 'utf8' });
+            ], logFn, debugMode);
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);
-            exec('dotnet', [
+            runDotnet(exec, [
                 'nuget',
                 'add',
                 'source',
@@ -133,7 +152,7 @@ function configureSources(env = process.env, options = {}) {
                 '--name',
                 entry.name,
                 entry.url,
-            ], { encoding: 'utf8' });
+            ], logFn, debugMode);
         }
     }
 

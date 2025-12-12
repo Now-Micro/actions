@@ -13,7 +13,7 @@ inputs:
   usernames:
     description: "Comma-separated usernames for source authentication"
     required: true
-  degug-mode:
+  debug-mode:
     description: "Enable verbose debug logging (true/false)"
     required: false
     default: "false"
