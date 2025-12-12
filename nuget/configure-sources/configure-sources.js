@@ -71,7 +71,7 @@ function runDotnet(exec, args, logFn, debugMode) {
 function configureSources(env = process.env, options = {}) {
     const exec = options.exec ?? execFileSync;
     const logFn = options.log ?? log;
-    const debugMode = parseBool(env.INPUT_DEGUG_MODE);
+    const debugMode = parseBool(env.INPUT_DEBUG_MODE);
 
     const entries = zipEntries(env);
     if (debugMode) {
