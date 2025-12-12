@@ -156,7 +156,7 @@ test('debug mode logs dotnet output', () => {
         INPUT_USERNAMES: 'user',
         INPUT_PASSWORDS: 'pass',
         INPUT_URLS: 'https://primary/',
-        INPUT_DEGUG_MODE: 'true',
+        INPUT_DEBUG_MODE: 'true',
     };
 
     configureSources(env, {

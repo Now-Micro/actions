@@ -44,4 +44,4 @@ runs:
         INPUT_USERNAMES: ${{ steps.validate.outputs.usernames }}
         INPUT_PASSWORDS: ${{ steps.validate.outputs.passwords }}
         INPUT_URLS: ${{ steps.validate.outputs.urls }}
-        INPUT_DEGUG_MODE: ${{ inputs.degug-mode }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
