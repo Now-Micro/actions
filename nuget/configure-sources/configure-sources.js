@@ -107,7 +107,7 @@ function configureSources(env = process.env, options = {}) {
                 'nuget',
                 'update',
                 'source',
-                entry.name,
+                existingByName.name,
                 '--username',
                 entry.username,
                 '--password',
