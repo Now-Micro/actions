@@ -87,6 +87,7 @@ jobs:
       - name: Assert Url is updated
         uses: ./src/testing/assert
         with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-url.txt
           test-name: nuget-codebits-url
           mode: regex
           expected: 'CodeBits[\s\S]*https://nuget.pkg.github.com/Now-Micro/index.json'
@@ -113,6 +114,7 @@ jobs:
       - name: Assert Now-Micro is present
         uses: ./src/testing/assert
         with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-now-micro-url.txt
           test-name: nuget-now-micro-url
           mode: regex
           expected: 'Now-Micro[\s\S]*https://nuget.pkg.github.com/Now-Micro/index.json'
@@ -121,6 +123,7 @@ jobs:
       - name: Assert CodeBits is gone
         uses: ./src/testing/assert
         with:
+          summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-absent.txt
           test-name: nuget-codebits-absent
           mode: absent
           expected: CodeBits
