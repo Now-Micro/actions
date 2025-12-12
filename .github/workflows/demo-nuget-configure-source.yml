@@ -118,9 +118,11 @@ jobs:
         id: list-sources
         run: |
           dotnet nuget list source | tee nuget-sources.txt
-          echo "list<<'EOF'" >> "$GITHUB_OUTPUT"
-          cat nuget-sources.txt >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "list<<'EOF'"
+            cat nuget-sources.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Assert Url is updated
         uses: ./src/testing/assert
@@ -143,9 +145,11 @@ jobs:
         id: list-sources-final
         run: |
           dotnet nuget list source | tee nuget-sources-final.txt
-          echo "final_list<<'EOF'" >> "$GITHUB_OUTPUT"
-          cat nuget-sources-final.txt >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "final_list<<'EOF'"
+            cat nuget-sources-final.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Assert Now-Micro is present
         uses: ./src/testing/assert
@@ -162,4 +166,3 @@ jobs:
           mode: absent
           expected: CodeBits
           actual: ${{ steps.list-sources-final.outputs.final_list }}
-          
