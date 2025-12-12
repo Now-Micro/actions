@@ -125,6 +125,6 @@ jobs:
         with:
           summary-file: ${{ github.workspace }}/artifacts/nuget-codebits-absent.txt
           test-name: nuget-codebits-absent
-          mode: absent
-          expected: CodeBits
+          mode: regex
+          expected: '^(?![\s\S]*CodeBits)'
           actual: ${{ steps.list-sources-final.outputs.final_list }}
