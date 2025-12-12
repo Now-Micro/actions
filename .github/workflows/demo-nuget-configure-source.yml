@@ -103,15 +103,24 @@ jobs:
           usernames: ${{ github.actor }}
           passwords: ${{ secrets.GITHUB_TOKEN }}
           names: 'CodeBits'
-          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+          urls: 'https://incorrecturl.com/index.json'
 
-      - name: Configure multiple NuGet sources (second time)
+      - name: Should Update codebits url
         uses: ./nuget/configure-sources
         with:
           debug-mode: 'true'
           usernames: ${{ github.actor }}
           passwords: ${{ secrets.GITHUB_TOKEN }}
           names: 'codebIts'
+          urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
+
+      - name: Should Add Now-Micro
+        uses: ./nuget/configure-sources
+        with:
+          debug-mode: 'true'
+          usernames: ${{ github.actor }}
+          passwords: ${{ secrets.GITHUB_TOKEN }}
+          names: 'Now-Micro'
           urls: 'https://nuget.pkg.github.com/Now-Micro/index.json'
 
       - name: List configured NuGet sources
