@@ -17,6 +17,7 @@ runs:
     - name: Generate HTTPS certificate
       uses: ./generate-https-cert
       with:
+        debug-mode: "true"
         cert-password: "abc1234!"
 
     - name: Assert certificate location
@@ -32,6 +33,7 @@ runs:
     - name: Generate HTTPS certificate in alternate workspace
       uses: ./generate-https-cert
       with:
+        debug-mode: "true"
         cert-path: ${{ env.CERT_PATH }}
         cert-password: "abc1234!"
         working-directory: ${{ env.WORKING_DIR }}
