@@ -47,6 +47,7 @@ runs:
         echo "Alternate certificate created at ${{ env.WORKING_DIR }}/${{ env.CERT_PATH }}"
 
     - name: Assert cert password works
+      working-directory: ${{ env.WORKING_DIR }}
       shell: bash
       run: |
         openssl pkcs12 -in "${{ env.CERT_PATH }}" \
@@ -68,8 +69,8 @@ runs:
         echo "Alternate certificate created at ${{ env.ABSOLUTE_DIR }}/${{ env.CERT_PATH }}"
 
     - name: Assert cert password works
+      working-directory: ${{ env.ABSOLUTE_DIR }}
       shell: bash
       run: |
         openssl pkcs12 -in "${{ env.CERT_PATH }}" \
-          -nokeys -info -passin pass:"abc1234!" -noout
-
+          -nokeys -info -passin pass:"abc1234555!" -noout
