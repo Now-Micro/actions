@@ -4,6 +4,14 @@ const path = require('path');
 let projectFound, solutionFound;
 let debug = false;
 
+const solutionExtensions = ['.sln', '.slnx'];
+
+function isSolutionFile(name) {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return solutionExtensions.some(ext => lower.endsWith(ext));
+}
+
 function dlog(msg) {
   if (debug) console.log(`[DEBUG] ${msg}`);
 }
@@ -25,7 +33,7 @@ function walk(dir, maxDepth, findSolution, findProject, currentDepth = 0) {
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { console.error(`Cannot read directory: ${dir} (${e.message})`); return; }
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
-    if (findSolution && entry.isFile() && entry.name.endsWith('.sln')) { solutionFound = full; console.log(`Found solution: ${solutionFound}`); }
+    if (findSolution && entry.isFile() && isSolutionFile(entry.name)) { solutionFound = full; console.log(`Found solution: ${solutionFound}`); }
     if (findProject && entry.isFile() && entry.name.endsWith('.csproj')) { projectFound = full; console.log(`Found project: ${projectFound}`); }
     if (entry.isDirectory() && !(solutionFound && projectFound)) walk(full, maxDepth, findSolution, findProject, currentDepth + 1);
     if (solutionFound && projectFound) break;
@@ -68,7 +76,7 @@ function searchBFS(startDir, maxDepth, findSolution, findProject, projectNameReg
       if (!entry.isFile()) continue;
       const full = path.join(dir, entry.name);
       if (pathHasIgnoredSegment(full, ignoredDirs)) { dlog(`(BFS) Skipping ignored file path: ${full}`); continue; }
-      if (findSolution && !solutionFound && entry.name.endsWith('.sln')) {
+      if (findSolution && !solutionFound && isSolutionFile(entry.name)) {
         const okSln = solutionNameRegex ? solutionNameRegex.test(entry.name) : true;
         if (okSln) {
           solutionFound = full;
@@ -136,10 +144,11 @@ function run() {
       catch (e) { console.error(`Invalid solution regex: ${e.message}`); process.exit(1); }
     }
 
+    const solutionTypeLabel = solutionExtensions.join(' or ');
     const types = findSolution && findProject
-      ? '.sln and .csproj'
+      ? `${solutionTypeLabel} and .csproj`
       : findSolution
-        ? '.sln'
+        ? solutionTypeLabel
         : findProject
           ? '.csproj'
           : 'no file types';
@@ -154,7 +163,7 @@ function run() {
     }
 
     if (githubOutput) {
-      if (solutionFound && solutionFound.endsWith('.sln')) {
+      if (solutionFound && isSolutionFile(solutionFound)) {
         dlog(`Writing solution-found output: ${solutionFound}`);
         fs.appendFileSync(githubOutput, `solution-found=${solutionFound}\n`);
         fs.appendFileSync(githubOutput, `solution-name=${path.basename(solutionFound)}\n`);

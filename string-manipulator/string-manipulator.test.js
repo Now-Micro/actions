@@ -395,6 +395,48 @@ test('real use case - 3', () => {
     assert.match(content, /matches_all_groups=\[\["CSI"\]\]/);
 });
 
+test('non-greedy capture stops at first slash even inside dots', () => {
+    const out = mkout();
+    const sample = 'Trafera.Warranty.Mapper/src/Trafera.Warranty.Mapper';
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: sample,
+        INPUT_REGEX: '^(.+?)\\/',
+        INPUT_OUTPUT_IS_JSON: 'true'
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    assert.match(content, /matches=\["Trafera\.Warranty\.Mapper"\]/);
+});
+
+test('non-greedy capture works with normal names', () => {
+    const out = mkout();
+    const sample = 'TraferaWarrantyMapper/src/Trafera.Warranty.Mapper';
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: sample,
+        INPUT_REGEX: '^(.+?)\\/',
+        INPUT_OUTPUT_IS_JSON: 'true'
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    assert.match(content, /matches=\["TraferaWarrantyMapper"\]/);
+});
+
+test('non-greedy capture works with dashes', () => {
+    const out = mkout();
+    const sample = 'Trafera-Warranty-Mapper/src/Trafera.Warranty.Mapper';
+    const r = withEnv({
+        GITHUB_OUTPUT: out,
+        INPUT_STRING: sample,
+        INPUT_REGEX: '^(.+?)\\/',
+        INPUT_OUTPUT_IS_JSON: 'true'
+    }, () => run());
+    assert.strictEqual(r.exitCode, 0);
+    const content = fs.readFileSync(out, 'utf8');
+    assert.match(content, /matches=\["Trafera-Warranty-Mapper"\]/);
+});
+
 test('can handle unescaped /', () => {
     const out = mkout();
     const r = withEnv({
