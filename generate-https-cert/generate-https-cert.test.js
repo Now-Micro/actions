@@ -142,24 +142,6 @@ test('falls back to WORKSPACE_DIR when no input workspace', () => {
 });
 
 test('uses INPUT_WORKSPACE_DIR path', () => {
-    test('force-new-cert triggers clean command', () => {
-        const { restore, getHistory } = makeDotnetStub();
-        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
-        restore();
-        assert.strictEqual(r.exitCode, 0);
-        const history = getHistory();
-        assert.ok(history[0].includes('dotnet dev-certs https --clean'));
-        assert.ok(history[1].includes('-ep')); // ensure export still ran
-    });
-
-    test('force-new-cert default skips clean', () => {
-        const { restore, getHistory } = makeDotnetStub();
-        const r = runWith({ CERT_PASSWORD: 'pw' });
-        restore();
-        assert.strictEqual(r.exitCode, 0);
-        const history = getHistory();
-        assert.ok(history.every(cmd => !/--clean/.test(cmd)));
-    });
     const { restore } = makeDotnetStub();
     const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'input-dir-'));
     const r = runWith({ INPUT_CERT_PASSWORD: 'pw', INPUT_WORKSPACE_DIR: customDir, INPUT_CERT_PATH: 'mycerts/out.pfx' });
@@ -167,6 +149,25 @@ test('uses INPUT_WORKSPACE_DIR path', () => {
     const certFile = path.join(customDir, 'mycerts', 'out.pfx');
     assert.ok(fs.existsSync(certFile));
     assert.match(r.outputContent, /cert-path=mycerts\/out.pfx/);
+});
+
+test('force-new-cert triggers clean command', () => {
+    const { restore, getHistory } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
+    restore();
+    assert.strictEqual(r.exitCode, 0);
+    const history = getHistory();
+    assert.ok(history[0].includes('dotnet dev-certs https --clean'));
+    assert.ok(history[1].includes('-ep')); // ensure export still ran
+});
+
+test('force-new-cert default skips clean', () => {
+    const { restore, getHistory } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw' });
+    restore();
+    assert.strictEqual(r.exitCode, 0);
+    const history = getHistory();
+    assert.ok(history.every(cmd => !/--clean/.test(cmd)));
 });
 
 test('dotnet failures exit 1', () => {
