@@ -1,0 +1,34 @@
+name: "Generate HTTPS Certificate"
+description: "Generates a self-signed HTTPS certificate for .NET deployments"
+author: "Trafera"
+
+inputs:
+  cert-path:
+    description: "The path to the certificate file (e.g., certs/aspnetapp.pfx)."
+    required: false
+    default: "certs/aspnetapp.pfx"
+  cert-password:
+    description: "Password used when exporting the certificate. Prefer passing a secret."
+    required: true
+    default: ""
+  working-directory:
+    description: "Directory to run the action in (fall back to workspace when empty)."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Generate HTTPS certificate
+      working-directory: ${{ inputs.working-directory || github.workspace }}
+      env:
+        INPUT_CERT_PATH: ${{ inputs.cert-path }}
+        INPUT_CERT_PASSWORD: ${{ inputs.cert-password || env.CERT_PASSWORD }}
+        INPUT_WORKSPACE_DIR: ${{ inputs.working-directory || github.workspace }}
+        WORKSPACE_DIR: ${{ inputs.working-directory || env.WORKSPACE_DIR || github.workspace }}
+      run: |
+        node "$GITHUB_ACTION_PATH/generate-https-cert.js"
+      shell: bash

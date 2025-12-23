@@ -1,0 +1,38 @@
+name: Demo - Generate HTTPS Certificate
+
+on:
+    workflow_dispatch:
+env:
+    CERT_PATH: certs/aspnetapp.pfx
+    WORKING_DIR: demo-workspace/data
+jobs:
+    demo:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Generate HTTPS certificate
+              uses: ./generate-https-cert
+              with:
+                  cert-password: ${{ secrets.CERT_PASSWORD }}
+
+            - name: Assert certificate location
+              run: |
+                  test -f ${{ env.CERT_PATH }} || (ls $(dirname ${{ env.CERT_PATH }}) && false)
+
+            - name: Prepare alternate workspace
+              run: |
+                  mkdir -p ${{ env.WORKING_DIR }}
+
+            - name: Generate HTTPS certificate in alternate workspace
+              uses: ./generate-https-cert
+              with:
+                cert-path: ${{ env.CERT_PATH}}
+                cert-password: "abc1234!"
+                working-directory: ${{ env.WORKING_DIR }}
+
+            - name: Assert alternate path
+              run: |
+                  test -f ${{ env.WORKING_DIR }}/${{ env.CERT_PATH}}
+                  echo "Alternate certificate created"

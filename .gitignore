@@ -4,3 +4,4 @@ coverage/
 
 src/demo/coding-standards/.editorconfig
 **/node_modules/**/*
+*.pfx
