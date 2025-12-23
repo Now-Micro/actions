@@ -4,10 +4,6 @@ const childProcess = require('child_process');
 
 function writeOutput(name, value) {
     const out = process.env.GITHUB_OUTPUT;
-    if (!out) {
-        console.error('GITHUB_OUTPUT not set');
-        process.exit(1);
-    }
     fs.appendFileSync(out, `${name}=${value}\n`, { encoding: 'utf8' });
 }
 

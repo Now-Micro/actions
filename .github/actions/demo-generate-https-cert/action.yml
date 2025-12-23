@@ -8,11 +8,11 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Title - Generate Version Demo
+    - name: Title - Generate Https Cert Demo
       uses: ./.github/actions/output-demo-title
       with:
-        title: Generate Version Demo
-        path: ./.github/actions/demo-generate-version
+        title: Generate Https Cert Demo
+        path: ./.github/actions/demo-generate-https-cert
 
     - name: Generate HTTPS certificate
       uses: ./generate-https-cert
@@ -32,12 +32,12 @@ runs:
     - name: Generate HTTPS certificate in alternate workspace
       uses: ./generate-https-cert
       with:
-        cert-path: ${{ env.CERT_PATH}}
+        cert-path: ${{ env.CERT_PATH }}
         cert-password: "abc1234!"
         working-directory: ${{ env.WORKING_DIR }}
 
     - name: Assert alternate path
       shell: bash
       run: |
-        test -f ${{ env.WORKING_DIR }}/${{ env.CERT_PATH}}
+        test -f ${{ env.WORKING_DIR }}/${{ env.CERT_PATH }}
         echo "Alternate certificate created"
