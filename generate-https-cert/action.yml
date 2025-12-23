@@ -30,13 +30,31 @@ runs:
     - name: Setup Node.js
       uses: Now-Micro/actions/setup-node@v1
 
+    - name: Resolve working directory
+      shell: bash
+      run: |
+        wd="${{ inputs.working-directory }}"
+        if [ -n "$wd" ]; then
+          if [[ "$wd" == /* || "$wd" =~ ^[A-Za-z]:[\\/].* || "$wd" =~ ^\\\\.* ]]; then
+            resolved="$wd"
+          else
+            resolved="${GITHUB_WORKSPACE}/${wd}"
+          fi
+        elif [ -n "${WORKSPACE_DIR:-}" ]; then
+          resolved="$WORKSPACE_DIR"
+        else
+          resolved="$GITHUB_WORKSPACE"
+        fi
+        echo "Working Directory to use: $resolved"
+        echo "RESOLVED_WORKDIR=$resolved" >> "$GITHUB_ENV"
+
     - name: Generate HTTPS certificate
-      working-directory: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
+      working-directory: ${{ env.RESOLVED_WORKDIR }}
       env:
         INPUT_CERT_PATH: ${{ inputs.cert-path }}
         INPUT_CERT_PASSWORD: ${{ inputs.cert-password || env.CERT_PASSWORD }}
-        INPUT_WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
-        WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || env.WORKSPACE_DIR || github.workspace }}
+        INPUT_WORKSPACE_DIR: ${{ env.RESOLVED_WORKDIR }}
+        WORKSPACE_DIR: ${{ env.RESOLVED_WORKDIR }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode || env.DEBUG_MODE || 'false' }}
         INPUT_FORCE_NEW_CERT: ${{ inputs.force-new-cert || env.FORCE_NEW_CERT || 'false' }}
       run: |
