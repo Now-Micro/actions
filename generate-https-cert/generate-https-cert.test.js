@@ -35,6 +35,9 @@ function runWith(env = {}, options = {}) {
     if (options.includeDefaultCert !== false && !Object.prototype.hasOwnProperty.call(envBase, 'INPUT_CERT_PATH')) {
         envBase.INPUT_CERT_PATH = 'certs/aspnetapp.pfx';
     }
+    if (options.beforeRun) {
+        options.beforeRun(tmpDir, envBase);
+    }
     const r = withEnv(envBase, () => run());
     r.outputFile = outFile;
     r.outputContent = fs.readFileSync(outFile, 'utf8');
@@ -47,6 +50,12 @@ function stubExecSync(fn) {
     const original = cp.execSync;
     cp.execSync = fn;
     return () => { cp.execSync = original; };
+}
+
+function stubUnlinkSync(fn) {
+    const original = fs.unlinkSync;
+    fs.unlinkSync = fn;
+    return () => { fs.unlinkSync = original; };
 }
 
 function stubChmodSync(fn) {
@@ -133,23 +142,30 @@ test('falls back to WORKSPACE_DIR when no input workspace', () => {
 });
 
 test('uses INPUT_WORKSPACE_DIR path', () => {
-    test('force-new-cert triggers clean command', () => {
-        const { restore, getHistory } = makeDotnetStub();
-        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
+    test('remove-existing removes target file before export', () => {
+        const { restore } = makeDotnetStub();
+        const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'remove-dir-'));
+        const target = path.join(customDir, 'certs', 'aspnetapp.pfx');
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, 'OLD');
+        const deleted = [];
+        const restoreUnlink = stubUnlinkSync(path => deleted.push(path));
+        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_WORKSPACE_DIR: customDir, INPUT_REMOVE_EXISTING: 'true' });
         restore();
+        restoreUnlink();
         assert.strictEqual(r.exitCode, 0);
-        const history = getHistory();
-        assert.ok(history[0].includes('dotnet dev-certs https --clean'));
-        assert.ok(history[1].includes('-ep')); // ensure export still ran
+        assert.strictEqual(deleted[0], target);
     });
 
-    test('force-new-cert default skips clean', () => {
-        const { restore, getHistory } = makeDotnetStub();
-        const r = runWith({ CERT_PASSWORD: 'pw' });
+    test('remove-existing false leaves unlink untouched', () => {
+        const { restore } = makeDotnetStub();
+        const deleted = [];
+        const restoreUnlink = stubUnlinkSync(path => deleted.push(path));
+        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_REMOVE_EXISTING: 'false' });
         restore();
+        restoreUnlink();
         assert.strictEqual(r.exitCode, 0);
-        const history = getHistory();
-        assert.ok(history.every(cmd => !/--clean/.test(cmd)));
+        assert.strictEqual(deleted.length, 0);
     });
     const { restore } = makeDotnetStub();
     const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'input-dir-'));

@@ -19,7 +19,7 @@ runs:
       with:
         debug-mode: "true"
         cert-password: "abc1234!"
-        force-new-cert: "true"
+        remove-existing: "true"
 
     - name: Assert certificate location
       shell: bash
@@ -38,7 +38,7 @@ runs:
         cert-path: ${{ env.CERT_PATH }}
         cert-password: "abc1234!"
         working-directory: ${{ env.WORKING_DIR }}
-        force-new-cert: "true"
+        remove-existing: "true"
 
     - name: Assert alternate path
       shell: bash
