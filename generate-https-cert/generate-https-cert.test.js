@@ -142,30 +142,23 @@ test('falls back to WORKSPACE_DIR when no input workspace', () => {
 });
 
 test('uses INPUT_WORKSPACE_DIR path', () => {
-    test('remove-existing removes target file before export', () => {
-        const { restore } = makeDotnetStub();
-        const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'remove-dir-'));
-        const target = path.join(customDir, 'certs', 'aspnetapp.pfx');
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.writeFileSync(target, 'OLD');
-        const deleted = [];
-        const restoreUnlink = stubUnlinkSync(path => deleted.push(path));
-        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_WORKSPACE_DIR: customDir, INPUT_REMOVE_EXISTING: 'true' });
+    test('force-new-cert triggers clean command', () => {
+        const { restore, getHistory } = makeDotnetStub();
+        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
         restore();
-        restoreUnlink();
         assert.strictEqual(r.exitCode, 0);
-        assert.strictEqual(deleted[0], target);
+        const history = getHistory();
+        assert.ok(history[0].includes('dotnet dev-certs https --clean'));
+        assert.ok(history[1].includes('-ep')); // ensure export still ran
     });
 
-    test('remove-existing false leaves unlink untouched', () => {
-        const { restore } = makeDotnetStub();
-        const deleted = [];
-        const restoreUnlink = stubUnlinkSync(path => deleted.push(path));
-        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_REMOVE_EXISTING: 'false' });
+    test('force-new-cert default skips clean', () => {
+        const { restore, getHistory } = makeDotnetStub();
+        const r = runWith({ CERT_PASSWORD: 'pw' });
         restore();
-        restoreUnlink();
         assert.strictEqual(r.exitCode, 0);
-        assert.strictEqual(deleted.length, 0);
+        const history = getHistory();
+        assert.ok(history.every(cmd => !/--clean/.test(cmd)));
     });
     const { restore } = makeDotnetStub();
     const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'input-dir-'));

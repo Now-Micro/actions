@@ -15,8 +15,8 @@ inputs:
     description: "Enable verbose debugging output (true|false)."
     required: false
     default: "false"
-  remove-existing:
-    description: "Delete the target cert-path file before generating a new one (true|false)."
+  force-new-cert:
+    description: "Force clearing the dev cert store before exporting a new cert (true|false)."
     required: false
     default: "false"
   working-directory:
@@ -38,7 +38,7 @@ runs:
         INPUT_WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
         WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || env.WORKSPACE_DIR || github.workspace }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode || env.DEBUG_MODE || 'false' }}
-        INPUT_REMOVE_EXISTING: ${{ inputs.remove-existing || env.REMOVE_EXISTING || 'false' }}
+        INPUT_FORCE_NEW_CERT: ${{ inputs.force-new-cert || env.FORCE_NEW_CERT || 'false' }}
       run: |
         node "$GITHUB_ACTION_PATH/generate-https-cert.js"
       shell: bash
