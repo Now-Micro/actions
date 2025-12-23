@@ -23,12 +23,12 @@ runs:
       uses: Now-Micro/actions/setup-node@v1
 
     - name: Generate HTTPS certificate
-      working-directory: ${{ inputs.working-directory || github.workspace }}
+      working-directory: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
       env:
         INPUT_CERT_PATH: ${{ inputs.cert-path }}
         INPUT_CERT_PASSWORD: ${{ inputs.cert-password || env.CERT_PASSWORD }}
-        INPUT_WORKSPACE_DIR: ${{ inputs.working-directory || github.workspace }}
-        WORKSPACE_DIR: ${{ inputs.working-directory || env.WORKSPACE_DIR || github.workspace }}
+        INPUT_WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
+        WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || env.WORKSPACE_DIR || github.workspace }}
       run: |
         node "$GITHUB_ACTION_PATH/generate-https-cert.js"
       shell: bash
