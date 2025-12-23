@@ -59,3 +59,6 @@ runs:
 
     - name: Demo - docker-clean-up
       uses: ./.github/actions/demo-docker-clean-up
+
+    - name: Demo - generate-https-cert
+      uses: ./.github/actions/demo-generate-https-cert

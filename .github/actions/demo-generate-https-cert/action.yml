@@ -17,7 +17,7 @@ runs:
     - name: Generate HTTPS certificate
       uses: ./generate-https-cert
       with:
-        cert-password: ${{ secrets.CERT_PASSWORD }}
+        cert-password: "abc1234!"
 
     - name: Assert certificate location
       shell: bash
