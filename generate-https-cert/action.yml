@@ -11,6 +11,10 @@ inputs:
     description: "Password used when exporting the certificate. Prefer passing a secret."
     required: true
     default: ""
+  debug-mode:
+    description: "Enable verbose debugging output (true|false)."
+    required: false
+    default: "false"
   working-directory:
     description: "Directory to run the action in (fall back to workspace when empty)."
     required: false
@@ -29,6 +33,7 @@ runs:
         INPUT_CERT_PASSWORD: ${{ inputs.cert-password || env.CERT_PASSWORD }}
         INPUT_WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || github.workspace }}
         WORKSPACE_DIR: ${{ inputs.working-directory && format('{0}/{1}', github.workspace, inputs.working-directory) || env.WORKSPACE_DIR || github.workspace }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode || env.DEBUG_MODE || 'false' }}
       run: |
         node "$GITHUB_ACTION_PATH/generate-https-cert.js"
       shell: bash

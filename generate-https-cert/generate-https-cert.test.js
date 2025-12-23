@@ -157,3 +157,21 @@ test('ignores chmod errors', () => {
     restoreChmod();
     assert.strictEqual(r.exitCode, 0);
 });
+
+test('debug mode logs verbose details', () => {
+    const { restore } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_DEBUG_MODE: 'true' });
+    restore();
+    assert.match(r.out, /Debug: certPath=/);
+    assert.match(r.out, /Debug: resolved path=/);
+    assert.match(r.out, /Debug: working directory=/);
+    assert.match(r.out, /Debug: will run dotnet dev-certs https -ep/);
+    assert.match(r.out, /Debug: outputs appended to/);
+});
+
+test('debug mode off keeps logs quiet', () => {
+    const { restore } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_DEBUG_MODE: 'false' });
+    restore();
+    assert.ok(!/Debug:/.test(r.out));
+});
