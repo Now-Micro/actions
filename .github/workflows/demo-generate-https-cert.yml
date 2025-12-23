@@ -1,16 +1,14 @@
 name: Demo - Generate HTTPS Certificate
 
 on:
-    workflow_dispatch:
-env:
-    CERT_PATH: certs/aspnetapp.pfx
-    WORKING_DIR: demo-workspace/data
-jobs:
-    demo:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  workflow_dispatch:
 
-            - name: Run demo for dotnet actions
-              uses: ./.github/actions/demo-generate-https-cert
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run demo for dotnet actions
+        uses: ./.github/actions/demo-generate-https-cert

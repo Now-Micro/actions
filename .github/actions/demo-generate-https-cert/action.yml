@@ -2,6 +2,20 @@ name: Demo - Generate HTTPS Certificate
 description: Demonstrates the generate-https-cert action
 author: Trafera
 
+inputs:
+  absolute-dir:
+    description: "An absolute directory to use for testing."
+    required: false
+    default: "${{ github.workspace }}/demo-workspace/data"
+  cert-path:
+    description: "The path to the certificate file."
+    required: false
+    default: "certs/aspnetapp.pfx"
+  working-dir:
+    description: "A working directory to use for testing."
+    required: false
+    default: "demo-workspace/data"
+
 runs:
   using: composite
   steps:
@@ -17,27 +31,60 @@ runs:
     - name: Generate HTTPS certificate
       uses: ./generate-https-cert
       with:
-        cert-password: ${{ secrets.CERT_PASSWORD }}
+        debug-mode: "true"
+        cert-password: "abc1234!"
+        force-new-cert: "true"
 
     - name: Assert certificate location
       shell: bash
       run: |
-        test -f ${{ env.CERT_PATH }} || (ls $(dirname ${{ env.CERT_PATH }}) && false)
+        test -f ${{ inputs.cert-path }} || (ls $(dirname ${{ inputs.cert-path }}) && false)
 
     - name: Prepare alternate workspace
       shell: bash
       run: |
-        mkdir -p ${{ env.WORKING_DIR }}
+        mkdir -p ${{ inputs.working-dir }}
 
     - name: Generate HTTPS certificate in alternate workspace
       uses: ./generate-https-cert
       with:
-        cert-path: ${{ env.CERT_PATH }}
-        cert-password: "abc1234!"
-        working-directory: ${{ env.WORKING_DIR }}
+        debug-mode: "true"
+        cert-path: ${{ inputs.cert-path }}
+        cert-password: "abc!"
+        working-directory: ${{ inputs.working-dir }}
+        force-new-cert: "true"
 
     - name: Assert alternate path
       shell: bash
       run: |
-        test -f ${{ env.WORKING_DIR }}/${{ env.CERT_PATH }}
-        echo "Alternate certificate created"
+        test -f ${{ inputs.working-dir }}/${{ inputs.cert-path }}
+        echo "Alternate certificate created at ${{ inputs.working-dir }}/${{ inputs.cert-path }}"
+
+    - name: Assert cert password works
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      run: |
+        openssl pkcs12 -in "${{ inputs.cert-path }}" \
+          -nokeys -info -passin pass:"abc!" -noout
+
+    - name: Generate HTTPS certificate in alternate workspace (using absolute path)
+      uses: ./generate-https-cert
+      with:
+        debug-mode: "true"
+        cert-path: ${{ inputs.cert-path }}
+        cert-password: "abc1234!"
+        working-directory: ${{ inputs.working-dir }}
+        force-new-cert: "true"
+
+    - name: Assert alternate path
+      shell: bash
+      run: |
+        test -f ${{ inputs.absolute-dir }}/${{ inputs.cert-path }}
+        echo "Alternate certificate created at ${{ inputs.absolute-dir }}/${{ inputs.cert-path }}"
+
+    - name: Assert cert password works
+      working-directory: ${{ inputs.absolute-dir }}
+      shell: bash
+      run: |
+        openssl pkcs12 -in "${{ inputs.cert-path }}" \
+          -nokeys -info -passin pass:"abc1234!" -noout

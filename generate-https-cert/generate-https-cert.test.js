@@ -35,6 +35,9 @@ function runWith(env = {}, options = {}) {
     if (options.includeDefaultCert !== false && !Object.prototype.hasOwnProperty.call(envBase, 'INPUT_CERT_PATH')) {
         envBase.INPUT_CERT_PATH = 'certs/aspnetapp.pfx';
     }
+    if (options.beforeRun) {
+        options.beforeRun(tmpDir, envBase);
+    }
     const r = withEnv(envBase, () => run());
     r.outputFile = outFile;
     r.outputContent = fs.readFileSync(outFile, 'utf8');
@@ -49,6 +52,12 @@ function stubExecSync(fn) {
     return () => { cp.execSync = original; };
 }
 
+function stubUnlinkSync(fn) {
+    const original = fs.unlinkSync;
+    fs.unlinkSync = fn;
+    return () => { fs.unlinkSync = original; };
+}
+
 function stubChmodSync(fn) {
     const original = fs.chmodSync;
     fs.chmodSync = fn;
@@ -56,24 +65,23 @@ function stubChmodSync(fn) {
 }
 
 function makeDotnetStub({ throwError } = {}) {
-    let last = null;
+    const history = [];
     const restore = stubExecSync((cmd, opts) => {
-        last = { cmd, opts };
+        history.push(cmd);
         if (throwError) {
             throw new Error('dotnet failure');
         }
         const match = cmd.match(/-ep\s+"?([^"\s]+)"?/);
-        if (!match) {
-            throw new Error('missing cert path');
+        if (match) {
+            const certFile = match[1];
+            const cwd = (opts && opts.cwd) || process.cwd();
+            const full = path.isAbsolute(certFile) ? certFile : path.join(cwd, certFile);
+            fs.mkdirSync(path.dirname(full), { recursive: true });
+            fs.writeFileSync(full, 'FAKECERT');
         }
-        const certFile = match[1];
-        const cwd = (opts && opts.cwd) || process.cwd();
-        const full = path.isAbsolute(certFile) ? certFile : path.join(cwd, certFile);
-        fs.mkdirSync(path.dirname(full), { recursive: true });
-        fs.writeFileSync(full, 'FAKECERT');
         return Buffer.from('');
     });
-    return { restore, getLast: () => last };
+    return { restore, getHistory: () => history };
 }
 
 test('missing password exits 1', () => {
@@ -114,11 +122,13 @@ test('prefers INPUT_CERT_PASSWORD over env', () => {
 });
 
 test('captures password in dotnet command', () => {
-    const { restore, getLast } = makeDotnetStub();
+    const { restore, getHistory } = makeDotnetStub();
     const r = runWith({ INPUT_CERT_PASSWORD: 'pw123', INPUT_CERT_PATH: 'secret.pfx' });
     restore();
     assert.strictEqual(r.exitCode, 0);
-    assert.match(getLast().cmd, /-p "pw123"/);
+    const history = getHistory();
+    const exportCmd = history.find(cmd => /-ep/.test(cmd));
+    assert.match(exportCmd, /-p "pw123"/);
 });
 
 test('falls back to WORKSPACE_DIR when no input workspace', () => {
@@ -141,6 +151,25 @@ test('uses INPUT_WORKSPACE_DIR path', () => {
     assert.match(r.outputContent, /cert-path=mycerts\/out.pfx/);
 });
 
+test('force-new-cert triggers clean command', () => {
+    const { restore, getHistory } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
+    restore();
+    assert.strictEqual(r.exitCode, 0);
+    const history = getHistory();
+    assert.ok(history[0].includes('dotnet dev-certs https --clean'));
+    assert.ok(history[1].includes('-ep')); // ensure export still ran
+});
+
+test('force-new-cert default skips clean', () => {
+    const { restore, getHistory } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw' });
+    restore();
+    assert.strictEqual(r.exitCode, 0);
+    const history = getHistory();
+    assert.ok(history.every(cmd => !/--clean/.test(cmd)));
+});
+
 test('dotnet failures exit 1', () => {
     const { restore } = makeDotnetStub({ throwError: true });
     const r = runWith({ CERT_PASSWORD: 'pw' });
@@ -156,4 +185,22 @@ test('ignores chmod errors', () => {
     restore();
     restoreChmod();
     assert.strictEqual(r.exitCode, 0);
+});
+
+test('debug mode logs verbose details', () => {
+    const { restore } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_DEBUG_MODE: 'true' });
+    restore();
+    assert.match(r.out, /Debug: certPath=/);
+    assert.match(r.out, /Debug: resolved path=/);
+    assert.match(r.out, /Debug: working directory=/);
+    assert.match(r.out, /Debug: will run dotnet dev-certs https -ep/);
+    assert.match(r.out, /Debug: outputs appended to/);
+});
+
+test('debug mode off keeps logs quiet', () => {
+    const { restore } = makeDotnetStub();
+    const r = runWith({ CERT_PASSWORD: 'pw', INPUT_DEBUG_MODE: 'false' });
+    restore();
+    assert.ok(!/Debug:/.test(r.out));
 });
