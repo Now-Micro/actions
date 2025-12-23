@@ -2,10 +2,7 @@ name: Demo - Generate HTTPS Certificate
 
 on:
   workflow_dispatch:
-env:
-  ABSOLUTE_DIR: ${{ github.workspace }}/demo-workspace/data
-  CERT_PATH: certs/aspnetapp.pfx
-  WORKING_DIR: demo-workspace/data
+
 jobs:
   demo:
     runs-on: ubuntu-latest
