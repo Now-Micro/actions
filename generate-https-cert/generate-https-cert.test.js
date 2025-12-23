@@ -56,24 +56,23 @@ function stubChmodSync(fn) {
 }
 
 function makeDotnetStub({ throwError } = {}) {
-    let last = null;
+    const history = [];
     const restore = stubExecSync((cmd, opts) => {
-        last = { cmd, opts };
+        history.push(cmd);
         if (throwError) {
             throw new Error('dotnet failure');
         }
         const match = cmd.match(/-ep\s+"?([^"\s]+)"?/);
-        if (!match) {
-            throw new Error('missing cert path');
+        if (match) {
+            const certFile = match[1];
+            const cwd = (opts && opts.cwd) || process.cwd();
+            const full = path.isAbsolute(certFile) ? certFile : path.join(cwd, certFile);
+            fs.mkdirSync(path.dirname(full), { recursive: true });
+            fs.writeFileSync(full, 'FAKECERT');
         }
-        const certFile = match[1];
-        const cwd = (opts && opts.cwd) || process.cwd();
-        const full = path.isAbsolute(certFile) ? certFile : path.join(cwd, certFile);
-        fs.mkdirSync(path.dirname(full), { recursive: true });
-        fs.writeFileSync(full, 'FAKECERT');
         return Buffer.from('');
     });
-    return { restore, getLast: () => last };
+    return { restore, getHistory: () => history };
 }
 
 test('missing password exits 1', () => {
@@ -114,11 +113,13 @@ test('prefers INPUT_CERT_PASSWORD over env', () => {
 });
 
 test('captures password in dotnet command', () => {
-    const { restore, getLast } = makeDotnetStub();
+    const { restore, getHistory } = makeDotnetStub();
     const r = runWith({ INPUT_CERT_PASSWORD: 'pw123', INPUT_CERT_PATH: 'secret.pfx' });
     restore();
     assert.strictEqual(r.exitCode, 0);
-    assert.match(getLast().cmd, /-p "pw123"/);
+    const history = getHistory();
+    const exportCmd = history.find(cmd => /-ep/.test(cmd));
+    assert.match(exportCmd, /-p "pw123"/);
 });
 
 test('falls back to WORKSPACE_DIR when no input workspace', () => {
@@ -132,6 +133,24 @@ test('falls back to WORKSPACE_DIR when no input workspace', () => {
 });
 
 test('uses INPUT_WORKSPACE_DIR path', () => {
+    test('force-new-cert triggers clean command', () => {
+        const { restore, getHistory } = makeDotnetStub();
+        const r = runWith({ CERT_PASSWORD: 'pw', INPUT_FORCE_NEW_CERT: 'true' });
+        restore();
+        assert.strictEqual(r.exitCode, 0);
+        const history = getHistory();
+        assert.ok(history[0].includes('dotnet dev-certs https --clean'));
+        assert.ok(history[1].includes('-ep')); // ensure export still ran
+    });
+
+    test('force-new-cert default skips clean', () => {
+        const { restore, getHistory } = makeDotnetStub();
+        const r = runWith({ CERT_PASSWORD: 'pw' });
+        restore();
+        assert.strictEqual(r.exitCode, 0);
+        const history = getHistory();
+        assert.ok(history.every(cmd => !/--clean/.test(cmd)));
+    });
     const { restore } = makeDotnetStub();
     const customDir = fs.mkdtempSync(path.join(os.tmpdir(), 'input-dir-'));
     const r = runWith({ INPUT_CERT_PASSWORD: 'pw', INPUT_WORKSPACE_DIR: customDir, INPUT_CERT_PATH: 'mycerts/out.pfx' });

@@ -16,6 +16,7 @@ function run() {
         }
         const password = process.env.INPUT_CERT_PASSWORD || process.env.CERT_PASSWORD;
         const debugMode = /^(true|1|yes|on)$/i.test((process.env.INPUT_DEBUG_MODE || process.env.DEBUG_MODE || 'false').toString());
+        const forceNewCert = /^(true|1|yes|on)$/i.test((process.env.INPUT_FORCE_NEW_CERT || process.env.FORCE_NEW_CERT || 'false').toString());
 
         if (!process.env.GITHUB_OUTPUT) {
             console.error('GITHUB_OUTPUT not set');
@@ -37,6 +38,13 @@ function run() {
         }
 
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+
+        if (forceNewCert) {
+            if (debugMode) {
+                console.log('Debug: forcing clean of dev certs');
+            }
+            childProcess.execSync('dotnet dev-certs https --clean', { stdio: 'inherit', cwd });
+        }
 
         const dotnetCmd = `dotnet dev-certs https -ep "${fullPath}" -p "${password}"`;
         childProcess.execSync(dotnetCmd, { stdio: 'inherit', cwd });
