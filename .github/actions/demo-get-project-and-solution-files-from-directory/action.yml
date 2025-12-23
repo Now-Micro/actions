@@ -258,6 +258,25 @@ runs:
         test-name: Test 9 - project-regex none
         summary-file: ${{ env.SUMMARY_FILE }}
 
+    - name: Test 10 - solution-regex selects .slnx file
+      id: solution_regex_slnx
+      uses: ./get-project-and-solution-files-from-directory
+      with:
+        debug-mode: "true"
+        directory: src/demo/get-project-and-solution-files-from-directory
+        find-solution: "true"
+        find-project: "false"
+        max-depth: 2
+
+    - name: Assert 10 - Alternate.slnx selected by regex
+      uses: ./src/testing/assert
+      with:
+        expected: Alternate.slnx
+        actual: ${{ steps.solution_regex_slnx.outputs.solution-found || ' ' }}
+        mode: endswith
+        test-name: Test 10 - solution-regex Alternate.slnx
+        summary-file: ${{ env.SUMMARY_FILE }}
+
     - name: Summary
       shell: bash
       if: always()
