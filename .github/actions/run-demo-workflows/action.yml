@@ -13,6 +13,9 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Demo - generate-https-cert
+      uses: ./.github/actions/demo-generate-https-cert
+
     - name: Demo - code standards (fail)
       uses: ./.github/actions/demo-code-standards
       with:
@@ -59,6 +62,3 @@ runs:
 
     - name: Demo - docker-clean-up
       uses: ./.github/actions/demo-docker-clean-up
-
-    - name: Demo - generate-https-cert
-      uses: ./.github/actions/demo-generate-https-cert
