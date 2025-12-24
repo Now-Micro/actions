@@ -99,7 +99,7 @@ test('missing ref and inputs exits 1', () => {
 });
 
 test('missing GITHUB_OUTPUT exits 1', () => {
-    const r = withEnv({ INPUT_EVENT_NAME: 'push', INPUT_REF_NAME: 'release/Lib/1.0.0' }, () => run());
+    const r = withEnv({ INPUT_REF_NAME: 'release/Lib/1.0.0', GITHUB_OUTPUT: '' }, () => run());
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /GITHUB_OUTPUT not set/);
 });
