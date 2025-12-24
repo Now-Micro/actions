@@ -12,6 +12,9 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v4
+      
+    - name: Demo - find
+      uses: ./.github/actions/demo-find
 
     - name: Demo - nuget-release-validation
       uses: ./.github/actions/demo-validate-release
@@ -70,5 +73,3 @@ runs:
     - name: Demo - docker-clean-up
       uses: ./.github/actions/demo-docker-clean-up
 
-    - name: Demo - find
-      uses: ./.github/actions/demo-find

@@ -31,7 +31,7 @@ runs:
       uses: ./find
       with:
         regex: "\\.log$"
-        working-directory: "src/demo/find"
+        working-directory: "src/demo/find/"
         debug-mode: "true"
 
     - name: Assert log files
@@ -40,7 +40,7 @@ runs:
         test-name: "logs regex"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["root.log","nested/api.log"]'
+        expected: '["root.log","nested/api.log", "other/api.log"]'
         actual: ${{ steps.logs.outputs.matched-files || '' }}
 
     - name: Assert log directories
@@ -49,7 +49,7 @@ runs:
         test-name: "log dirs"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '[".","nested"]'
+        expected: '[".","nested", "other"]'
         actual: ${{ steps.logs.outputs.matched-dirs-relative || '' }}
 
     - name: Assert log directories absolute
