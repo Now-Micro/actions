@@ -23,7 +23,7 @@ runs:
       uses: actions/checkout@v4
 
     - name: Nuget Release Validation Demo
-      uses: ../output-demo-title
+      uses: ./../output-demo-title
       with:
         title: Nuget Release Validation Demo
         path: ./.github/actions/demo-validate-release
