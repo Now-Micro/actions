@@ -67,7 +67,10 @@ function run() {
 
         appendOutput('version', version);
         appendOutput('library_name', libraryName);
-        console.log('Release configuration validated successfully.');
+        if (debugMode) {
+            console.log('Debug: outputs appended to', process.env.GITHUB_OUTPUT);
+            console.log('Release configuration validated successfully.');
+        }
     } catch (err) {
         const message = err && err.message ? err.message : err;
         console.error(message);
