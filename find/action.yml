@@ -1,0 +1,41 @@
+name: "Find Files"
+description: "Find files matching a regex (or literal filename) within a working directory"
+
+inputs:
+  regex:
+    description: "Regex pattern (or plain filename) to match file names."
+    required: true
+  working-directory:
+    description: "Directory to search within. Defaults to repository root."
+    required: false
+    default: "."
+  debug-mode:
+    description: "Enable debug logging."
+    required: false
+    default: "false"
+
+outputs:
+  matched-files:
+    description: "JSON array of matched file paths (relative to working-directory)."
+    value: ${{ steps.find.outputs.matched-files }}
+  matched-dirs-relative:
+    description: "JSON array of directories containing matched files (relative to working-directory)."
+    value: ${{ steps.find.outputs.matched-dirs-relative }}
+  matched-dirs-absolute:
+    description: "JSON array of directories containing matched files (absolute paths)."
+    value: ${{ steps.find.outputs.matched-dirs-absolute }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Find files
+      id: find
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/find.js"
+      env:
+        INPUT_REGEX: ${{ inputs.regex }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs["working-directory"] }}
+        INPUT_DEBUG_MODE: ${{ inputs["debug-mode"] }}
