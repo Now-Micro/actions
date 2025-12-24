@@ -7,6 +7,10 @@ inputs:
     description: "Library/package name to use for workflow_dispatch scenario."
     required: false
     default: "Demo.Library"
+  ref-name:
+    description: "Ref name to use for ref name scenario."
+    required: false
+    default: "release/Demo.Library/1.2.3"
   skip-ref-scenario:
     description: "Skip the ref name scenario."
     required: false
@@ -65,14 +69,14 @@ runs:
 
     - name: Run branch scenario
       id: branch
-      if: inputs.skip-ref-scenario == 'true'
+      if: inputs.skip-ref-scenario != 'true'
       uses: ./nuget/release/validation
       with:
         debug-mode: "true"
 
     - name: Derive branch expectations
       id: branch_expected
-      if: inputs.skip-ref-scenario == 'true'
+      if: inputs.skip-ref-scenario != 'true'
       shell: bash
       run: |
         ref="${{ inputs.ref-name }}"
@@ -83,7 +87,7 @@ runs:
 
     - name: Assert branch library
       uses: ./src/testing/assert
-      if: inputs.skip-ref-scenario == 'true'
+      if: inputs.skip-ref-scenario != 'true'
       with:
         actual: ${{ steps.branch.outputs.library_name }}
         expected: ${{ steps.branch_expected.outputs.pkg }}
@@ -93,7 +97,7 @@ runs:
 
     - name: Assert branch version
       uses: ./src/testing/assert
-      if: inputs.skip-ref-scenario == 'true'
+      if: inputs.skip-ref-scenario != 'true'
       with:
         actual: ${{ steps.branch.outputs.version }}
         expected: ${{ steps.branch_expected.outputs.ver }}

@@ -11,4 +11,5 @@ jobs:
               uses: ./.github/actions/demo-validate-release
               with:
                   skip-ref-scenario: "false"
+                  ref-name: ${{ github.ref_name }}
 
