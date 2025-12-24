@@ -40,7 +40,7 @@ runs:
 
     - name: Run dispatch scenario
       id: dispatch
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       uses: ./nuget/release/validation
       with:
         package: ${{ inputs.package }}
@@ -49,23 +49,21 @@ runs:
 
     - name: Assert dispatch outputs
       uses: ./src/testing/assert
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       with:
         actual: ${{ steps.dispatch.outputs.library_name }}
         expected: ${{ inputs.package }}
         test-name: "Dispatch library name matches"
         summary-file: ${{ env.SUMMARY_FILE }}
-        summary: "Dispatch library name matches"
 
     - name: Assert dispatch version
       uses: ./src/testing/assert
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       with:
         actual: ${{ steps.dispatch.outputs.version }}
         expected: ${{ inputs.version }}
         test-name: "Dispatch version matches"
         summary-file: ${{ env.SUMMARY_FILE }}
-        summary: "Dispatch version matches"
 
     - name: Run branch scenario
       id: branch
@@ -93,7 +91,6 @@ runs:
         expected: ${{ steps.branch_expected.outputs.pkg }}
         test-name: "Branch library matches ref"
         summary-file: ${{ env.SUMMARY_FILE }}
-        summary: "Branch library matches ref"
 
     - name: Assert branch version
       uses: ./src/testing/assert
@@ -103,4 +100,3 @@ runs:
         expected: ${{ steps.branch_expected.outputs.ver }}
         test-name: "Branch version matches ref"
         summary-file: ${{ env.SUMMARY_FILE }}
-        summary: "Branch version matches ref"

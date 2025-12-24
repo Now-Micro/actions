@@ -48,10 +48,23 @@ test('manual inputs success when ref not release', () => {
     assert.match(r.outputContent, /library_name=MyLib/);
 });
 
+test('manual inputs take priority even on release branch', () => {
+    const r = runWith({
+        INPUT_PACKAGE: 'CliPkg',
+        INPUT_VERSION: '9.9.9',
+        INPUT_REF_NAME: 'release/OtherLib/1.0.0'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version=9.9.9/);
+    assert.match(r.outputContent, /library_name=CliPkg/);
+    assert.ok(!/version=1\.0\.0/.test(r.outputContent));
+    assert.ok(!/library_name=OtherLib/.test(r.outputContent));
+});
+
 test('manual inputs missing version exits 1', () => {
     const r = runWith({ INPUT_PACKAGE: 'Lib', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_VERSION is required/);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
 });
 
 test('manual inputs invalid version exits 1', () => {
@@ -63,7 +76,7 @@ test('manual inputs invalid version exits 1', () => {
 test('manual inputs missing package exits 1', () => {
     const r = runWith({ INPUT_VERSION: '1.2.3', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
 });
 
 test('branch success parses library and version', () => {
@@ -83,7 +96,7 @@ test('uses github.ref_name when input ref is absent', () => {
 test('non-release ref falls back to inputs and errors when missing', () => {
     const r = runWith({ INPUT_REF_NAME: 'main' });
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
 });
 
 test('branch invalid version exits 1', () => {
@@ -95,7 +108,7 @@ test('branch invalid version exits 1', () => {
 test('missing ref and inputs exits 1', () => {
     const r = runWith({});
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
 });
 
 test('missing GITHUB_OUTPUT exits 1', () => {
