@@ -1,5 +1,5 @@
 name: Demo - Validate NuGet Release
-description: Demonstrates the nuget/release/validation action with dispatch and branch scenarios
+description: Demonstrates the nuget/release/validation action
 author: Trafera
 
 inputs:
@@ -7,10 +7,14 @@ inputs:
     description: "Library/package name to use for workflow_dispatch scenario."
     required: false
     default: "Demo.Library"
+  ref-name:
+    description: "Git ref name to use for branch scenario."
+    required: false
+    default: "release/Demo.Library/1.2.3"
   version:
     description: "Semantic version to use for workflow_dispatch scenario."
     required: false
-    default: "1.2.3-beta.1"
+    default: "1.2.3"
 
 runs:
   using: composite
@@ -22,7 +26,6 @@ runs:
       id: dispatch
       uses: ../../nuget/release/validation
       with:
-        event-name: workflow_dispatch
         package: ${{ inputs.package }}
         version: ${{ inputs.version }}
         debug-mode: "true"
@@ -38,13 +41,14 @@ runs:
       id: branch
       uses: ../../nuget/release/validation
       with:
-        event-name: push
-        ref-name: release/Api.Something.Else/2.0.0
+        ref-name: ${{ inputs.ref-name }}
         debug-mode: "true"
 
     - name: Assert branch outputs
       shell: bash
       run: |
-        test "${{ steps.branch.outputs.library_name }}" = "Api.Something.Else"
-        test "${{ steps.branch.outputs.version }}" = "2.0.0"
+        pkg="$(echo "${{ inputs.ref-name }}" | cut -d'/' -f2)"
+        ver="$(echo "${{ inputs.ref-name }}" | cut -d'/' -f3)"
+        test "${{ steps.branch.outputs.library_name }}" = "$pkg"
+        test "${{ steps.branch.outputs.version }}" = "$ver"
         echo "Branch scenario outputs validated"

@@ -1,0 +1,14 @@
+name: Demo - Validate NuGet Release - Release Branch
+
+on:
+    workflow_dispatch:
+
+jobs:
+    demo:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Run demo
+              uses: ./.github/actions/demo-validate-release
+              with:
+                  ref-name: ${{ github.ref_name }}
+

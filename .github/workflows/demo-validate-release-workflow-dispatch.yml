@@ -1,4 +1,4 @@
-name: Demo - Validate NuGet Release
+name: Demo - Validate NuGet Release - Workflow Dispatch
 
 on:
     workflow_dispatch:

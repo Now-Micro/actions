@@ -37,64 +37,65 @@ function runWith(env = {}) {
     return r;
 }
 
-test('workflow_dispatch success uses provided package and version', () => {
+test('manual inputs success when ref not release', () => {
     const r = runWith({
-        INPUT_EVENT_NAME: 'workflow_dispatch',
         INPUT_PACKAGE: 'MyLib',
-        INPUT_VERSION: '1.2.3-beta.1'
+        INPUT_VERSION: '1.2.3-beta.1',
+        INPUT_REF_NAME: 'main'
     });
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.outputContent, /version=1.2.3-beta.1/);
     assert.match(r.outputContent, /library_name=MyLib/);
 });
 
-test('workflow_dispatch missing version exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'workflow_dispatch', INPUT_PACKAGE: 'Lib' });
+test('manual inputs missing version exits 1', () => {
+    const r = runWith({ INPUT_PACKAGE: 'Lib', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /INPUT_VERSION is required/);
 });
 
-test('workflow_dispatch invalid version exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'workflow_dispatch', INPUT_PACKAGE: 'Lib', INPUT_VERSION: '1.2' });
+test('manual inputs invalid version exits 1', () => {
+    const r = runWith({ INPUT_PACKAGE: 'Lib', INPUT_VERSION: '1.2', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /Invalid semantic version/);
 });
 
-test('workflow_dispatch missing package exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'workflow_dispatch', INPUT_VERSION: '1.2.3' });
+test('manual inputs missing package exits 1', () => {
+    const r = runWith({ INPUT_VERSION: '1.2.3', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
 });
 
 test('branch success parses library and version', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'push', INPUT_REF_NAME: 'release/Api/2.3.4' });
+    const r = runWith({ INPUT_REF_NAME: 'release/Api/2.3.4' });
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.outputContent, /version=2.3.4/);
     assert.match(r.outputContent, /library_name=Api/);
 });
 
-test('branch invalid format exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'push', INPUT_REF_NAME: 'main' });
+test('uses github.ref_name when input ref is absent', () => {
+    const r = runWith({ GITHUB_REF_NAME: 'release/FromRef/1.0.0' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version=1.0.0/);
+    assert.match(r.outputContent, /library_name=FromRef/);
+});
+
+test('non-release ref falls back to inputs and errors when missing', () => {
+    const r = runWith({ INPUT_REF_NAME: 'main' });
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /Invalid release branch name/);
+    assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
 });
 
 test('branch invalid version exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'push', INPUT_REF_NAME: 'release/Api/1.0' });
+    const r = runWith({ INPUT_REF_NAME: 'release/Api/1.0' });
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /Invalid semantic version/);
 });
 
-test('missing event name exits 1', () => {
-    const r = runWith({ INPUT_EVENT_NAME: '' });
+test('missing ref and inputs exits 1', () => {
+    const r = runWith({});
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_EVENT_NAME is required/);
-});
-
-test('missing ref name exits 1 when not workflow_dispatch', () => {
-    const r = runWith({ INPUT_EVENT_NAME: 'push', INPUT_REF_NAME: '' });
-    assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err + r.out, /INPUT_REF_NAME is required/);
+    assert.match(r.err + r.out, /INPUT_PACKAGE is required/);
 });
 
 test('missing GITHUB_OUTPUT exits 1', () => {
@@ -105,19 +106,17 @@ test('missing GITHUB_OUTPUT exits 1', () => {
 
 test('debug mode logs inputs', () => {
     const r = runWith({
-        INPUT_EVENT_NAME: 'workflow_dispatch',
         INPUT_PACKAGE: 'Pkg',
         INPUT_VERSION: '1.0.0',
-        INPUT_DEBUG_MODE: 'true'
+        INPUT_DEBUG_MODE: 'true',
+        INPUT_REF_NAME: 'feature/foo'
     });
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.out, /Debug: eventName=/);
     assert.match(r.out, /Debug: parsed from manual inputs/);
 });
 
 test('debug mode logs branch parsing', () => {
     const r = runWith({
-        INPUT_EVENT_NAME: 'push',
         INPUT_REF_NAME: 'release/Lib/3.2.1',
         INPUT_DEBUG_MODE: 'true'
     });
@@ -133,9 +132,9 @@ test('cli entrypoint works end-to-end', () => {
         env: {
             ...process.env,
             GITHUB_OUTPUT: outFile,
-            INPUT_EVENT_NAME: 'workflow_dispatch',
             INPUT_PACKAGE: 'CliPkg',
-            INPUT_VERSION: '9.9.9'
+            INPUT_VERSION: '9.9.9',
+            INPUT_REF_NAME: 'feature/cli'
         }
     });
     const contents = fs.readFileSync(outFile, 'utf8');

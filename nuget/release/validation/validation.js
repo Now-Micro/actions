@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 
 function appendOutput(name, value) {
     const outFile = process.env.GITHUB_OUTPUT;
@@ -21,35 +20,40 @@ function validateVersion(version) {
 function run() {
     try {
         const debugMode = parseBool(process.env.INPUT_DEBUG_MODE || process.env.DEBUG_MODE || 'false');
-        const eventName = (process.env.INPUT_EVENT_NAME || process.env.GITHUB_EVENT_NAME || '').trim();
         const refName = (process.env.INPUT_REF_NAME || process.env.GITHUB_REF_NAME || '').trim();
         const packageInput = (process.env.INPUT_PACKAGE || '').trim();
         const versionInput = (process.env.INPUT_VERSION || '').trim();
 
         if (debugMode) {
-            console.log('Debug: eventName=', eventName);
             console.log('Debug: refName=', refName);
             console.log('Debug: packageInput=', packageInput);
             console.log('Debug: versionInput=', versionInput);
         }
 
-        if (!eventName) {
-            console.error('INPUT_EVENT_NAME is required');
-            process.exit(1);
-        }
-
         let libraryName = '';
         let version = '';
 
-        if (eventName === 'workflow_dispatch') {
+        const branch = refName;
+        const branchMatch = branch && branch.match(/^release\/([^/]+)\/(.+)$/);
+        if (branchMatch) {
+            libraryName = branchMatch[1];
+            version = branchMatch[2];
+            if (!validateVersion(version)) {
+                console.error(`Invalid semantic version: ${version}`);
+                process.exit(1);
+            }
+            if (debugMode) {
+                console.log('Debug: parsed from branch name');
+            }
+        } else {
             libraryName = packageInput;
             version = versionInput;
             if (!libraryName) {
-                console.error('INPUT_PACKAGE is required for workflow_dispatch');
+                console.error('INPUT_PACKAGE is required when ref does not match release/*');
                 process.exit(1);
             }
             if (!version) {
-                console.error('INPUT_VERSION is required for workflow_dispatch');
+                console.error('INPUT_VERSION is required when ref does not match release/*');
                 process.exit(1);
             }
             if (!validateVersion(version)) {
@@ -58,27 +62,6 @@ function run() {
             }
             if (debugMode) {
                 console.log('Debug: parsed from manual inputs');
-            }
-        } else {
-            const branch = refName;
-            if (!branch) {
-                console.error('INPUT_REF_NAME is required for branch parsing');
-                process.exit(1);
-            }
-            const match = branch.match(/^release\/([^/]+)\/(.+)$/);
-            if (!match) {
-                console.error(`Invalid release branch name: ${branch}`);
-                console.error('Expected format: release/LibraryName/X.Y.Z');
-                process.exit(1);
-            }
-            libraryName = match[1];
-            version = match[2];
-            if (!validateVersion(version)) {
-                console.error(`Invalid semantic version: ${version}`);
-                process.exit(1);
-            }
-            if (debugMode) {
-                console.log('Debug: parsed from branch name');
             }
         }
 

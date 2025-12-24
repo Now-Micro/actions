@@ -3,26 +3,18 @@ description: "Parses release inputs or branch names to extract library name and 
 author: "Trafera"
 
 inputs:
-  package:
-    description: "Library/package name (required for workflow_dispatch)."
-    required: false
-    default: ""
-  version:
-    description: "Semantic version (X.Y.Z or prerelease). Required for workflow_dispatch."
-    required: false
-    default: ""
-  event-name:
-    description: "GitHub event name (workflow_dispatch, push, etc.). Defaults to github.event_name."
-    required: false
-    default: ""
-  ref-name:
-    description: "Git ref name (e.g., release/Package/1.2.3). Defaults to github.ref_name."
-    required: false
-    default: ""
   debug-mode:
     description: "Enable verbose debug logging."
     required: false
     default: "false"
+  package:
+    description: "Library/package name.  This is only required when you are using workflow_dispatch."
+    required: false
+    default: ""
+  version:
+    description: "Semantic version (X.Y.Z or prerelease). This is only required when you are using workflow_dispatch."
+    required: false
+    default: ""
 
 outputs:
   version:
@@ -43,8 +35,7 @@ runs:
       env:
         INPUT_PACKAGE: ${{ inputs.package }}
         INPUT_VERSION: ${{ inputs.version }}
-        INPUT_EVENT_NAME: ${{ inputs.event-name || github.event_name }}
-        INPUT_REF_NAME: ${{ inputs.ref-name || github.ref_name }}
+        INPUT_REF_NAME: ${{ github.ref_name }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode || 'false' }}
       run: |
         node "$GITHUB_ACTION_PATH/validation.js"
