@@ -33,35 +33,33 @@ function run() {
         let libraryName = '';
         let version = '';
 
-        const branch = refName;
-        const branchMatch = branch && branch.match(/^release\/([^/]+)\/(.+)$/);
-        if (branchMatch) {
-            libraryName = branchMatch[1];
-            version = branchMatch[2];
-            if (!validateVersion(version)) {
-                console.error(`Invalid semantic version: ${version}`);
-                process.exit(1);
-            }
-            if (debugMode) {
-                console.log('Debug: parsed from branch name');
-            }
-        } else {
+        const hasManualInputs = !!(packageInput && versionInput);
+
+        if (hasManualInputs) {
             libraryName = packageInput;
             version = versionInput;
-            if (!libraryName) {
-                console.error('INPUT_PACKAGE is required when ref does not match release/*');
-                process.exit(1);
-            }
-            if (!version) {
-                console.error('INPUT_VERSION is required when ref does not match release/*');
-                process.exit(1);
-            }
             if (!validateVersion(version)) {
                 console.error(`Invalid semantic version: ${version}`);
                 process.exit(1);
             }
             if (debugMode) {
                 console.log('Debug: parsed from manual inputs');
+            }
+        } else {
+            const branchMatch = refName && refName.match(/^release\/([^/]+)\/(.+)$/);
+            if (branchMatch) {
+                libraryName = branchMatch[1];
+                version = branchMatch[2];
+                if (!validateVersion(version)) {
+                    console.error(`Invalid semantic version: ${version}`);
+                    process.exit(1);
+                }
+                if (debugMode) {
+                    console.log('Debug: parsed from branch name');
+                }
+            } else {
+                console.error('Ref does not match release/* and package/version inputs are missing or incomplete');
+                process.exit(1);
             }
         }
 
