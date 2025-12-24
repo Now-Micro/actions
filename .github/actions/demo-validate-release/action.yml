@@ -22,11 +22,12 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Nuget Release Validation Demo
-      uses: ./../output-demo-title
+    - name: Title - Nuget Release Validation Demo
+      uses: ./.github/actions/output-demo-title
       with:
         title: Nuget Release Validation Demo
         path: ./.github/actions/demo-validate-release
+        
     - name: Run dispatch scenario
       id: dispatch
       uses: ./../../nuget/release/validation
