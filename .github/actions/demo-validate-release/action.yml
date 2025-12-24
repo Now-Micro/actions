@@ -40,7 +40,7 @@ runs:
 
     - name: Run dispatch scenario
       id: dispatch
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       uses: ./nuget/release/validation
       with:
         package: ${{ inputs.package }}
@@ -49,7 +49,7 @@ runs:
 
     - name: Assert dispatch outputs
       uses: ./src/testing/assert
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       with:
         actual: ${{ steps.dispatch.outputs.library_name }}
         expected: ${{ inputs.package }}
@@ -59,7 +59,7 @@ runs:
 
     - name: Assert dispatch version
       uses: ./src/testing/assert
-      if: inputs.package != '' && inputs.version != ''
+      if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
       with:
         actual: ${{ steps.dispatch.outputs.version }}
         expected: ${{ inputs.version }}
