@@ -2,6 +2,10 @@ name: "Find Files"
 description: "Find files matching a regex (or literal filename) within a working directory"
 
 inputs:
+  debug-mode:
+    description: "Enable debug logging."
+    required: false
+    default: "false"
   regex:
     description: "Regex pattern (or plain filename) to match file names."
     required: true
@@ -9,10 +13,6 @@ inputs:
     description: "Directory to search within. Defaults to repository root."
     required: false
     default: "."
-  debug-mode:
-    description: "Enable debug logging."
-    required: false
-    default: "false"
 
 outputs:
   matched-files:
@@ -37,5 +37,5 @@ runs:
       run: node "$GITHUB_ACTION_PATH/find.js"
       env:
         INPUT_REGEX: ${{ inputs.regex }}
-        INPUT_WORKING_DIRECTORY: ${{ inputs["working-directory"] }}
-        INPUT_DEBUG_MODE: ${{ inputs["debug-mode"] }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
