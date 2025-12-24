@@ -48,6 +48,19 @@ test('manual inputs success when ref not release', () => {
     assert.match(r.outputContent, /library_name=MyLib/);
 });
 
+test('manual inputs take priority even on release branch', () => {
+    const r = runWith({
+        INPUT_PACKAGE: 'CliPkg',
+        INPUT_VERSION: '9.9.9',
+        INPUT_REF_NAME: 'release/OtherLib/1.0.0'
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version=9.9.9/);
+    assert.match(r.outputContent, /library_name=CliPkg/);
+    assert.ok(!/version=1\.0\.0/.test(r.outputContent));
+    assert.ok(!/library_name=OtherLib/.test(r.outputContent));
+});
+
 test('manual inputs missing version exits 1', () => {
     const r = runWith({ INPUT_PACKAGE: 'Lib', INPUT_REF_NAME: 'feature/foo' });
     assert.strictEqual(r.exitCode, 1);
