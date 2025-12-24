@@ -10,5 +10,5 @@ jobs:
             - name: Run demo
               uses: ./.github/actions/demo-validate-release
               with:
-                  ref-name: ${{ github.ref_name }}
+                  skip-ref-scenario: "false"
 

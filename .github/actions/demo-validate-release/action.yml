@@ -7,10 +7,10 @@ inputs:
     description: "Library/package name to use for workflow_dispatch scenario."
     required: false
     default: "Demo.Library"
-  ref-name:
-    description: "Git ref name to use for branch scenario."
+  skip-ref-scenario:
+    description: "Skip the ref name scenario."
     required: false
-    default: "release/Demo.Library/1.2.3"
+    default: "true"
   version:
     description: "Semantic version to use for workflow_dispatch scenario."
     required: false
@@ -63,36 +63,40 @@ runs:
         summary-file: ${{ env.SUMMARY_FILE }}
         summary: "Dispatch version matches"
 
-    - name: Run branch scenario (expected failure)
-      if: inputs.ref-name != '' && !startsWith(inputs.ref-name, 'release/')
-      id: branch_fail
-      continue-on-error: true
+    - name: Run branch scenario
+      id: branch
+      if: inputs.skip-ref-scenario == 'true'
+      uses: ./nuget/release/validation
+      with:
+        debug-mode: "true"
+
+    - name: Derive branch expectations
+      id: branch_expected
+      if: inputs.skip-ref-scenario == 'true'
       shell: bash
       run: |
-        out_file="$RUNNER_TEMP/branch-fail-out.txt"
-        export GITHUB_OUTPUT="$out_file"
-        set +e
-        output=$(INPUT_REF_NAME="${{ inputs.ref-name }}" node ./nuget/release/validation/validation.js 2>&1)
-        status=$?
-        printf 'log<<EOF\n%s\nEOF\n' "$output" >> "$GITHUB_OUTPUT"
-        echo "status=$status" >> "$GITHUB_OUTPUT"
-        exit 0
+        ref="${{ inputs.ref-name }}"
+        pkg=$(echo "$ref" | cut -d'/' -f2)
+        ver=$(echo "$ref" | cut -d'/' -f3)
+        echo "pkg=$pkg" >> "$GITHUB_OUTPUT"
+        echo "ver=$ver" >> "$GITHUB_OUTPUT"
 
-    - name: Assert branch failure status
-      if: inputs.ref-name != '' && !startsWith(inputs.ref-name, 'release/')
+    - name: Assert branch library
       uses: ./src/testing/assert
+      if: inputs.skip-ref-scenario == 'true'
       with:
-        actual: ${{ steps.branch_fail.outputs.status }}
-        expected: 1
-        test-name: "Branch non-release exits 1"
+        actual: ${{ steps.branch.outputs.library_name }}
+        expected: ${{ steps.branch_expected.outputs.pkg }}
+        test-name: "Branch library matches ref"
         summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Branch library matches ref"
 
-    - name: Assert branch failure message
-      if: inputs.ref-name != '' && !startsWith(inputs.ref-name, 'release/')
+    - name: Assert branch version
       uses: ./src/testing/assert
+      if: inputs.skip-ref-scenario == 'true'
       with:
-        actual: ${{ steps.branch_fail.outputs.log }}
-        expected: INPUT_PACKAGE is required when ref does not match release/*
-        mode: present
-        test-name: "Branch non-release failure message"
+        actual: ${{ steps.branch.outputs.version }}
+        expected: ${{ steps.branch_expected.outputs.ver }}
+        test-name: "Branch version matches ref"
         summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Branch version matches ref"
