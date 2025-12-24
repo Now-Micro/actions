@@ -1,0 +1,50 @@
+name: Demo - Validate NuGet Release
+description: Demonstrates the nuget/release/validation action with dispatch and branch scenarios
+author: Trafera
+
+inputs:
+  package:
+    description: "Library/package name to use for workflow_dispatch scenario."
+    required: false
+    default: "Demo.Library"
+  version:
+    description: "Semantic version to use for workflow_dispatch scenario."
+    required: false
+    default: "1.2.3-beta.1"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Run dispatch scenario
+      id: dispatch
+      uses: ../../nuget/release/validation
+      with:
+        event-name: workflow_dispatch
+        package: ${{ inputs.package }}
+        version: ${{ inputs.version }}
+        debug-mode: "true"
+
+    - name: Assert dispatch outputs
+      shell: bash
+      run: |
+        test "${{ steps.dispatch.outputs.library_name }}" = "${{ inputs.package }}"
+        test "${{ steps.dispatch.outputs.version }}" = "${{ inputs.version }}"
+        echo "Dispatch scenario outputs validated"
+
+    - name: Run branch scenario
+      id: branch
+      uses: ../../nuget/release/validation
+      with:
+        event-name: push
+        ref-name: release/Api.Something.Else/2.0.0
+        debug-mode: "true"
+
+    - name: Assert branch outputs
+      shell: bash
+      run: |
+        test "${{ steps.branch.outputs.library_name }}" = "Api.Something.Else"
+        test "${{ steps.branch.outputs.version }}" = "2.0.0"
+        echo "Branch scenario outputs validated"
