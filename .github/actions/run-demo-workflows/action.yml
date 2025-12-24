@@ -12,7 +12,10 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v4
-
+    
+    - name: Demo - nuget-release-validation
+      uses: ./.github/actions/demo-validate-release
+      
     - name: Demo - generate-https-cert
       uses: ./.github/actions/demo-generate-https-cert
 
@@ -63,5 +66,3 @@ runs:
     - name: Demo - docker-clean-up
       uses: ./.github/actions/demo-docker-clean-up
     
-    - name: Demo - nuget-release-validation
-      uses: ./.github/actions/demo-validate-release

@@ -23,27 +23,27 @@ runs:
       uses: actions/checkout@v4
 
     - name: Nuget Release Validation Demo
-      uses: ./.github/actions/output-demo-title
+      uses: ../output-demo-title
       with:
         title: Nuget Release Validation Demo
         path: ./.github/actions/demo-validate-release
     - name: Run dispatch scenario
       id: dispatch
-      uses: ../../nuget/release/validation
+      uses: ./../../nuget/release/validation
       with:
         package: ${{ inputs.package }}
         version: ${{ inputs.version }}
         debug-mode: "true"
 
     - name: Assert dispatch outputs
-      uses: ../../src/testing/assert
+      uses: ./../../src/testing/assert
       with:
         actual: ${{ steps.dispatch.outputs.library_name }}
         expected: ${{ inputs.package }}
         summary: "Dispatch library name matches"
 
     - name: Assert dispatch version
-      uses: ../../src/testing/assert
+      uses: ./../../src/testing/assert
       with:
         actual: ${{ steps.dispatch.outputs.version }}
         expected: ${{ inputs.version }}
@@ -51,21 +51,31 @@ runs:
 
     - name: Run branch scenario
       id: branch
-      uses: ../../nuget/release/validation
+      uses: ./../../nuget/release/validation
       with:
         ref-name: ${{ inputs.ref-name }}
         debug-mode: "true"
 
+    - name: Derive branch expectations
+      id: branch_expected
+      shell: bash
+      run: |
+        ref="${{ inputs.ref-name }}"
+        pkg=$(echo "$ref" | cut -d'/' -f2)
+        ver=$(echo "$ref" | cut -d'/' -f3)
+        echo "pkg=$pkg" >> "$GITHUB_OUTPUT"
+        echo "ver=$ver" >> "$GITHUB_OUTPUT"
+
     - name: Assert branch library
-      uses: ../../src/testing/assert
+      uses: ./../../src/testing/assert
       with:
         actual: ${{ steps.branch.outputs.library_name }}
-        expected: ${{ inputs.ref-name && fromJson(format('["{0}"]', inputs.ref-name))[0].split('/')[1] || '' }}
+        expected: ${{ steps.branch_expected.outputs.pkg }}
         summary: "Branch library matches ref"
 
     - name: Assert branch version
-      uses: ../../src/testing/assert
+      uses: ./../../src/testing/assert
       with:
         actual: ${{ steps.branch.outputs.version }}
-        expected: ${{ inputs.ref-name && fromJson(format('["{0}"]', inputs.ref-name))[0].split('/')[2] || '' }}
+        expected: ${{ steps.branch_expected.outputs.ver }}
         summary: "Branch version matches ref"
