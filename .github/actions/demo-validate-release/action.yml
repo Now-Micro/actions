@@ -22,6 +22,12 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Initialize summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-validate-release-summary.txt" >> "$GITHUB_ENV"
+        : > "$GITHUB_WORKSPACE/demo-validate-release-summary.txt"
+
     - name: Title - Nuget Release Validation Demo
       uses: ./.github/actions/output-demo-title
       with:
@@ -41,6 +47,8 @@ runs:
       with:
         actual: ${{ steps.dispatch.outputs.library_name }}
         expected: ${{ inputs.package }}
+        test-name: "Dispatch library name matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
         summary: "Dispatch library name matches"
 
     - name: Assert dispatch version
@@ -48,6 +56,8 @@ runs:
       with:
         actual: ${{ steps.dispatch.outputs.version }}
         expected: ${{ inputs.version }}
+        test-name: "Dispatch version matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
         summary: "Dispatch version matches"
 
     - name: Run branch scenario
@@ -72,6 +82,8 @@ runs:
       with:
         actual: ${{ steps.branch.outputs.library_name }}
         expected: ${{ steps.branch_expected.outputs.pkg }}
+        test-name: "Branch library matches ref"
+        summary-file: ${{ env.SUMMARY_FILE }}
         summary: "Branch library matches ref"
 
     - name: Assert branch version
@@ -79,4 +91,6 @@ runs:
       with:
         actual: ${{ steps.branch.outputs.version }}
         expected: ${{ steps.branch_expected.outputs.ver }}
+        test-name: "Branch version matches ref"
+        summary-file: ${{ env.SUMMARY_FILE }}
         summary: "Branch version matches ref"
