@@ -1,0 +1,106 @@
+name: Demo - Validate NuGet Release
+description: Demonstrates the nuget/release/validation action
+author: Trafera
+
+inputs:
+  package:
+    description: "Library/package name to use for workflow_dispatch scenario."
+    required: false
+    default: "Demo.Library"
+  ref-name:
+    description: "Ref name to use for ref name scenario."
+    required: false
+    default: "release/Demo.Library/1.2.3"
+  skip-ref-scenario:
+    description: "Skip the ref name scenario."
+    required: false
+    default: "true"
+  version:
+    description: "Semantic version to use for workflow_dispatch scenario."
+    required: false
+    default: "1.2.3"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Initialize summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-validate-release-summary.txt" >> "$GITHUB_ENV"
+        : > "$GITHUB_WORKSPACE/demo-validate-release-summary.txt"
+
+    - name: Title - Nuget Release Validation Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Nuget Release Validation Demo
+        path: ./.github/actions/demo-validate-release
+
+    - name: Run dispatch scenario
+      id: dispatch
+      if: inputs.package != '' && inputs.version != ''
+      uses: ./nuget/release/validation
+      with:
+        package: ${{ inputs.package }}
+        version: ${{ inputs.version }}
+        debug-mode: "true"
+
+    - name: Assert dispatch outputs
+      uses: ./src/testing/assert
+      if: inputs.package != '' && inputs.version != ''
+      with:
+        actual: ${{ steps.dispatch.outputs.library_name }}
+        expected: ${{ inputs.package }}
+        test-name: "Dispatch library name matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Dispatch library name matches"
+
+    - name: Assert dispatch version
+      uses: ./src/testing/assert
+      if: inputs.package != '' && inputs.version != ''
+      with:
+        actual: ${{ steps.dispatch.outputs.version }}
+        expected: ${{ inputs.version }}
+        test-name: "Dispatch version matches"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Dispatch version matches"
+
+    - name: Run branch scenario
+      id: branch
+      if: inputs.skip-ref-scenario != 'true'
+      uses: ./nuget/release/validation
+      with:
+        debug-mode: "true"
+
+    - name: Derive branch expectations
+      id: branch_expected
+      if: inputs.skip-ref-scenario != 'true'
+      shell: bash
+      run: |
+        ref="${{ inputs.ref-name }}"
+        pkg=$(echo "$ref" | cut -d'/' -f2)
+        ver=$(echo "$ref" | cut -d'/' -f3)
+        echo "pkg=$pkg" >> "$GITHUB_OUTPUT"
+        echo "ver=$ver" >> "$GITHUB_OUTPUT"
+
+    - name: Assert branch library
+      uses: ./src/testing/assert
+      if: inputs.skip-ref-scenario != 'true'
+      with:
+        actual: ${{ steps.branch.outputs.library_name }}
+        expected: ${{ steps.branch_expected.outputs.pkg }}
+        test-name: "Branch library matches ref"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Branch library matches ref"
+
+    - name: Assert branch version
+      uses: ./src/testing/assert
+      if: inputs.skip-ref-scenario != 'true'
+      with:
+        actual: ${{ steps.branch.outputs.version }}
+        expected: ${{ steps.branch_expected.outputs.ver }}
+        test-name: "Branch version matches ref"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        summary: "Branch version matches ref"

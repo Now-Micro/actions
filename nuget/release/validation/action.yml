@@ -1,0 +1,42 @@
+name: "Validate NuGet release configuration"
+description: "Parses release inputs or branch names to extract library name and semantic version."
+author: "Trafera"
+
+inputs:
+  debug-mode:
+    description: "Enable verbose debug logging."
+    required: false
+    default: "false"
+  package:
+    description: "Library/package name.  This is only required when you are using workflow_dispatch."
+    required: false
+    default: ""
+  version:
+    description: "Semantic version (X.Y.Z or prerelease). This is only required when you are using workflow_dispatch."
+    required: false
+    default: ""
+
+outputs:
+  version:
+    description: "Parsed semantic version"
+    value: ${{ steps.validate.outputs.version }}
+  library_name:
+    description: "Parsed library/package name"
+    value: ${{ steps.validate.outputs.library_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Validate release configuration
+      id: validate
+      env:
+        INPUT_PACKAGE: ${{ inputs.package }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_REF_NAME: ${{ github.ref_name }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode || 'false' }}
+      run: |
+        node "$GITHUB_ACTION_PATH/validation.js"
+      shell: bash

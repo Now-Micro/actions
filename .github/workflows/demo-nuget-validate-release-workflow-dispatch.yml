@@ -1,0 +1,40 @@
+name: Demo - Validate NuGet Release - Workflow Dispatch
+
+on:
+    workflow_dispatch:
+        inputs:
+            package:
+                description: "Package name to release"
+                required: true
+                type: choice
+                options:
+                    - ImageRepository
+                    - SnmpUtilities
+                    - Trafera.Aspire.ServiceDefaults
+                    - Trafera.ChannelOnline
+                    - Trafera.CSI
+                    - Trafera.DataTransformer
+                    - Trafera.Document
+                    - Trafera.HubSpot
+                    - Trafera.HybridCache
+                    - Trafera.MassTransit
+                    - Trafera.MediatR
+                    - Trafera.Observability
+                    - Trafera.TestingDataConstants
+                    - Trafera.Warranty.Mapper
+            version:
+                description: "Version to package"
+                required: true
+
+jobs:
+    demo:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout 
+              uses: actions/checkout@v6
+
+            - name: Run demo
+              uses: ./.github/actions/demo-validate-release
+              with:
+                  package: ${{ github.event.inputs.package }}
+                  version: ${{ github.event.inputs.version }}
