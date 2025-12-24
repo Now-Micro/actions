@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const childProcess = require('child_process');
 
 const { run } = require('./validation');
 
@@ -122,4 +123,22 @@ test('debug mode logs branch parsing', () => {
     });
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.out, /Debug: parsed from branch name/);
+});
+
+test('cli entrypoint works end-to-end', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nrv-cli-'));
+    const outFile = path.join(tmpDir, 'output.txt');
+    fs.writeFileSync(outFile, '');
+    childProcess.execFileSync(process.execPath, [path.join(__dirname, 'validation.js')], {
+        env: {
+            ...process.env,
+            GITHUB_OUTPUT: outFile,
+            INPUT_EVENT_NAME: 'workflow_dispatch',
+            INPUT_PACKAGE: 'CliPkg',
+            INPUT_VERSION: '9.9.9'
+        }
+    });
+    const contents = fs.readFileSync(outFile, 'utf8');
+    assert.match(contents, /version=9.9.9/);
+    assert.match(contents, /library_name=CliPkg/);
 });
