@@ -36,6 +36,7 @@ runs:
 
     - name: Run dispatch scenario
       id: dispatch
+      if: inputs.package != '' && inputs.version != ''
       uses: ./nuget/release/validation
       with:
         package: ${{ inputs.package }}
@@ -44,6 +45,7 @@ runs:
 
     - name: Assert dispatch outputs
       uses: ./src/testing/assert
+      if: inputs.package != '' && inputs.version != ''
       with:
         actual: ${{ steps.dispatch.outputs.library_name }}
         expected: ${{ inputs.package }}
@@ -53,6 +55,7 @@ runs:
 
     - name: Assert dispatch version
       uses: ./src/testing/assert
+      if: inputs.package != '' && inputs.version != ''
       with:
         actual: ${{ steps.dispatch.outputs.version }}
         expected: ${{ inputs.version }}
@@ -62,6 +65,7 @@ runs:
 
     - name: Run branch scenario
       id: branch
+      if: inputs.ref-name != ''
       uses: ./nuget/release/validation
       with:
         ref-name: ${{ inputs.ref-name }}
@@ -69,6 +73,7 @@ runs:
 
     - name: Derive branch expectations
       id: branch_expected
+      if: inputs.ref-name != ''
       shell: bash
       run: |
         ref="${{ inputs.ref-name }}"
@@ -79,6 +84,7 @@ runs:
 
     - name: Assert branch library
       uses: ./src/testing/assert
+      if: inputs.ref-name != ''
       with:
         actual: ${{ steps.branch.outputs.library_name }}
         expected: ${{ steps.branch_expected.outputs.pkg }}
@@ -88,6 +94,7 @@ runs:
 
     - name: Assert branch version
       uses: ./src/testing/assert
+      if: inputs.ref-name != ''
       with:
         actual: ${{ steps.branch.outputs.version }}
         expected: ${{ steps.branch_expected.outputs.ver }}

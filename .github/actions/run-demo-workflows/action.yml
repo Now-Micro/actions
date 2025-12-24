@@ -15,7 +15,11 @@ runs:
     
     - name: Demo - nuget-release-validation
       uses: ./.github/actions/demo-validate-release
-      
+      with:
+        ref-name: "release/Demo.Library/1.2.3"
+        package: "Demo.Library"
+        version: "1.2.3"
+
     - name: Demo - generate-https-cert
       uses: ./.github/actions/demo-generate-https-cert
 
