@@ -1,0 +1,87 @@
+name: "Demo - GitHub Release"
+description: "Demonstrates the github/release action in dry-run mode"
+author: "Trafera"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Title - GitHub Release Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: GitHub Release Demo
+        path: ./.github/actions/demo-github-release
+
+    - name: Prepare summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/github-release-demo-summary.txt" >> $GITHUB_ENV
+        : > $GITHUB_WORKSPACE/github-release-demo-summary.txt
+
+    - name: Create fake artifacts
+      shell: bash
+      run: |
+        mkdir -p demo-artifacts/nested
+        echo "pkg1" > demo-artifacts/one.nupkg
+        echo "pkg2" > demo-artifacts/nested/two.snupkg
+        echo "notes" > demo-artifacts/CHANGELOG.md
+
+    - name: Run github/release (dry-run)
+      id: release
+      uses: ./github/release
+      with:
+        library-name: Demo.Library
+        release-version: 1.2.3
+        artifacts-path: demo-artifacts
+        packages-path: demo-packages
+        changelog-path: demo-artifacts/CHANGELOG.md
+        skip-download: true
+        dry-run: true
+        body-filename: DEMO_NOTES.md
+
+    - name: Assert tag name
+      uses: ./src/testing/assert
+      with:
+        test-name: "tag name"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: "Demo.Library-v1.2.3"
+        actual: ${{ steps.release.outputs.tag-name || '' }}
+
+    - name: Assert release name
+      uses: ./src/testing/assert
+      with:
+        test-name: "release name"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: "Demo.Library v1.2.3"
+        actual: ${{ steps.release.outputs.release-name || '' }}
+
+    - name: Assert packages copied
+      uses: ./src/testing/assert
+      with:
+        test-name: "has packages"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.release.outputs.has-packages || '' }}
+
+    - name: Assert packages json
+      uses: ./src/testing/assert
+      with:
+        test-name: "packages json"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["one.nupkg","two.snupkg"]'
+        actual: ${{ steps.release.outputs.packages-json || '' }}
+
+    - name: Assert release notes path exists
+      shell: bash
+      run: |
+        if [ ! -f "${{ steps.release.outputs.release-notes-path }}" ]; then
+          echo "release notes missing" && exit 1
+        fi
+
+    - name: Assert changelog content
+      shell: bash
+      run: |
+        grep -q "changelog content" "${{ steps.release.outputs.release-notes-path }}"
