@@ -134,6 +134,37 @@ test('debug mode logs matched arrays', () => {
     assert.match(r.out, /Debug: matched dirs \(absolute\) =/);
 });
 
+test('unreadable subdirectory is logged and skipped', () => {
+    const dir = makeTempDir();
+    const goodDir = path.join(dir, 'good');
+    const badDir = path.join(dir, 'bad');
+    fs.mkdirSync(goodDir);
+    fs.mkdirSync(badDir);
+    fs.writeFileSync(path.join(goodDir, 'keep.log'), 'keep');
+    fs.writeFileSync(path.join(badDir, 'skip.log'), 'skip');
+
+    const origReadDir = fs.readdirSync;
+    fs.readdirSync = (p, options) => {
+        if (p === badDir) {
+            throw new Error('boom');
+        }
+        return origReadDir(p, options);
+    };
+
+    try {
+        const r = runWithEnv({ INPUT_REGEX: '\\.(log)$', INPUT_WORKING_DIRECTORY: dir });
+        assert.strictEqual(r.exitCode, 0);
+        const { files, rel, abs } = parseOutputs(r.outputContent);
+        const expectedAbs = goodDir.split(path.sep).join('/');
+        assert.deepStrictEqual(files, ['keep.log']);
+        assert.deepStrictEqual(rel, ['./good']);
+        assert.deepStrictEqual(abs, [expectedAbs]);
+        assert.match(r.err + r.out, new RegExp(`Cannot read directory: ${badDir.replace(/\\/g, '\\\\')}`));
+    } finally {
+        fs.readdirSync = origReadDir;
+    }
+});
+
 test('invalid regex exits 1', () => {
     const r = runWithEnv({ INPUT_REGEX: '[unclosed', INPUT_WORKING_DIRECTORY: makeTempDir() });
     assert.strictEqual(r.exitCode, 1);
