@@ -1,0 +1,88 @@
+name: "Demo - Find Files"
+description: "Demonstrates the find action with regex and literal filename matching"
+author: "Trafera"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Title - Find Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Find Files Demo
+        path: ./.github/actions/demo-find
+
+    - name: Prepare summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/find-demo-summary.txt" >> $GITHUB_ENV
+        : > $GITHUB_WORKSPACE/find-demo-summary.txt
+
+    - name: Match log files with regex
+      id: logs
+      uses: ./find
+      with:
+        regex: "\\.log$"
+        working-directory: "src/demo/find/"
+        debug-mode: "true"
+
+    - name: Assert log files
+      uses: ./src/testing/assert
+      with:
+        test-name: "logs regex"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["root.log","api.log","api.log"]'
+        actual: ${{ steps.logs.outputs.matched-files || '' }}
+
+    - name: Assert log directories
+      uses: ./src/testing/assert
+      with:
+        test-name: "log dirs"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["./","./nested","./other"]'
+        actual: ${{ steps.logs.outputs.matched-dirs-relative || '' }}
+
+    - name: Assert log directories absolute
+      uses: ./src/testing/assert
+      with:
+        test-name: "log dirs absolute"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["${{ github.workspace }}/src/demo/find","${{ github.workspace }}/src/demo/find/nested","${{ github.workspace }}/src/demo/find/other"]'
+        actual: ${{ steps.logs.outputs.matched-dirs-absolute || '' }}
+
+    - name: Match literal file name
+      id: literal
+      uses: ./find
+      with:
+        regex: "readme.md"
+        working-directory: "src/demo/find"
+        debug-mode: "true"
+
+    - name: Assert literal match
+      uses: ./src/testing/assert
+      with:
+        test-name: "literal match"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["readme.md","readme.md"]'
+        actual: ${{ steps.literal.outputs.matched-files || '' }}
+
+    - name: Assert literal dir
+      uses: ./src/testing/assert
+      with:
+        test-name: "literal dir"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["./nested","./other"]'
+        actual: ${{ steps.literal.outputs.matched-dirs-relative || '' }}
+
+    - name: Assert literal dir absolute
+      uses: ./src/testing/assert
+      with:
+        test-name: "literal dir absolute"
+        summary-file: ${{ env.SUMMARY_FILE }}
+        mode: exact
+        expected: '["${{ github.workspace }}/src/demo/find/nested","${{ github.workspace }}/src/demo/find/other"]'
+        actual: ${{ steps.literal.outputs.matched-dirs-absolute || '' }}
