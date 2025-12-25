@@ -23,7 +23,8 @@ runs:
       run: |
         abs_root="$(pwd)/src/demo/find"
         abs_nested="$abs_root/nested"
-        echo "expected_abs_logs=[\"$abs_root\",\"$abs_nested\"]" >> $GITHUB_OUTPUT
+        abs_other="$abs_root/other"
+        echo "expected_abs_logs=[\"$abs_root\",\"$abs_nested\",\"$abs_other\"]" >> $GITHUB_OUTPUT
         echo "expected_abs_literal=[\"$abs_nested\"]" >> $GITHUB_OUTPUT
 
     - name: Match log files with regex
@@ -40,7 +41,7 @@ runs:
         test-name: "logs regex"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["root.log","nested/api.log", "other/api.log"]'
+        expected: '["./root.log","./nested/api.log","./other/api.log"]'
         actual: ${{ steps.logs.outputs.matched-files || '' }}
 
     - name: Assert log directories
@@ -49,7 +50,7 @@ runs:
         test-name: "log dirs"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '[".","nested", "other"]'
+        expected: '["./","./nested","./other"]'
         actual: ${{ steps.logs.outputs.matched-dirs-relative || '' }}
 
     - name: Assert log directories absolute
@@ -84,7 +85,7 @@ runs:
         test-name: "literal dir"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["nested"]'
+        expected: '["./nested"]'
         actual: ${{ steps.literal.outputs.matched-dirs-relative || '' }}
 
     - name: Assert literal dir absolute

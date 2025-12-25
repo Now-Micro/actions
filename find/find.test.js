@@ -59,7 +59,7 @@ test('matches literal filename and returns relative dirs', () => {
     assert.strictEqual(r.exitCode, 0);
     const { files, rel, abs } = parseOutputs(r.outputContent);
     assert.deepStrictEqual(files, ['target.txt']);
-    assert.deepStrictEqual(rel, ['.']);
+    assert.deepStrictEqual(rel, ['./']);
     const expectedAbs = dir.split(path.sep).join('/');
     assert.deepStrictEqual(abs, [expectedAbs]);
 });
@@ -80,7 +80,7 @@ test('regex matches multiple files across directories in order', () => {
     assert.strictEqual(r.exitCode, 0);
     const { files, rel } = parseOutputs(r.outputContent);
     assert.deepStrictEqual(files, ['root.log', 'a/one.log', 'a/sub/two.log']);
-    assert.deepStrictEqual(rel, ['.', 'a', 'a/sub']);
+    assert.deepStrictEqual(rel, ['./', './a', './a/sub']);
 });
 
 test('working-directory restricts search scope', () => {
@@ -109,7 +109,7 @@ test('absolute directories are emitted and align with relative', () => {
     const { files, rel, abs } = parseOutputs(r.outputContent);
     const expectedAbs = path.join(sub).split(path.sep).join('/');
     assert.deepStrictEqual(files, ['sub/note.md']);
-    assert.deepStrictEqual(rel, ['sub']);
+    assert.deepStrictEqual(rel, ['./sub']);
     assert.deepStrictEqual(abs, [expectedAbs]);
 });
 

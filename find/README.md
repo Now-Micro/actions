@@ -8,10 +8,12 @@ Find files within a working directory using either a regular expression or a lit
 - `working-directory` (optional): Directory to search. Defaults to the repository root.
 - `debug-mode` (optional): Set to `true` for verbose logging.
 
+> Note: The action auto-detects regex input by checking for regex metacharacters (brackets, braces, parentheses, pipes, `*`, `+`, `?`, `^`, `$`, `\`). If your literal filename contains any of these characters (e.g., `file[1].txt`), you must escape them or provide a fully escaped regex (e.g., `file\[1\]\.txt`) to match exactly.
+
 ## Outputs
 
 - `matched-files`: JSON array of matched file paths relative to the working directory.
-- `matched-dirs-relative`: JSON array of directories (relative) containing each matched file. Indexes correspond to `matched-files`.
+- `matched-dirs-relative`: JSON array of directories (relative) containing each matched file, prefixed with `./`. Indexes correspond to `matched-files`.
 - `matched-dirs-absolute`: JSON array of absolute directories containing each matched file. Indexes correspond to `matched-files`.
 
 ## Usage
