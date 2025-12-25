@@ -27,6 +27,10 @@ inputs:
     description: "If true, skip git tag creation and GitHub release publishing."
     required: false
     default: "false"
+  github-token:
+    description: "GitHub token used for creating releases (pass secrets.GITHUB_TOKEN from the workflow)."
+    required: false
+    default: ""
   library-name:
     description: "Library/package name to include in release metadata."
     required: true
@@ -117,4 +121,4 @@ runs:
         draft: false
         prerelease: ${{ contains(inputs.release-version, '-') }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
