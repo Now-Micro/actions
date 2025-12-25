@@ -25,7 +25,7 @@ runs:
         abs_nested="$abs_root/nested"
         abs_other="$abs_root/other"
         echo "expected_abs_logs=[\"$abs_root\",\"$abs_nested\",\"$abs_other\"]" >> $GITHUB_OUTPUT
-        echo "expected_abs_literal=[\"$abs_nested\"]" >> $GITHUB_OUTPUT
+        echo "expected_abs_literal=[\"$abs_nested\",\"$abs_other\"]" >> $GITHUB_OUTPUT
 
     - name: Match log files with regex
       id: logs
