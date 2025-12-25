@@ -29,7 +29,6 @@ runs:
       id: release
       uses: ./github/release
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         library-name: Demo.Library
         release-version: 1.2.3
         artifacts-path: demo-artifacts
