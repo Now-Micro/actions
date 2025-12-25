@@ -41,7 +41,7 @@ runs:
         test-name: "logs regex"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["./root.log","./nested/api.log","./other/api.log"]'
+        expected: '["root.log","api.log","api.log"]'
         actual: ${{ steps.logs.outputs.matched-files || '' }}
 
     - name: Assert log directories
@@ -76,7 +76,7 @@ runs:
         test-name: "literal match"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["nested/readme.md"]'
+        expected: '["readme.md"]'
         actual: ${{ steps.literal.outputs.matched-files || '' }}
 
     - name: Assert literal dir

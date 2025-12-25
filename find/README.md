@@ -12,7 +12,7 @@ Find files within a working directory using either a regular expression or a lit
 
 ## Outputs
 
-- `matched-files`: JSON array of matched file paths relative to the working directory.
+- `matched-files`: JSON array of matched file names (no directory prefix). Note: duplicate names across different directories are possible; use `matched-dirs-*` alongside this output to disambiguate.
 - `matched-dirs-relative`: JSON array of directories (relative) containing each matched file, prefixed with `./`. Indexes correspond to `matched-files`.
 - `matched-dirs-absolute`: JSON array of absolute directories containing each matched file. Indexes correspond to `matched-files`.
 

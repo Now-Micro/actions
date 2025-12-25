@@ -79,7 +79,7 @@ test('regex matches multiple files across directories in order', () => {
     const r = runWithEnv({ INPUT_REGEX: '\\.(log)$', INPUT_WORKING_DIRECTORY: dir });
     assert.strictEqual(r.exitCode, 0);
     const { files, rel } = parseOutputs(r.outputContent);
-    assert.deepStrictEqual(files, ['root.log', 'a/one.log', 'a/sub/two.log']);
+    assert.deepStrictEqual(files, ['root.log', 'one.log', 'two.log']);
     assert.deepStrictEqual(rel, ['./', './a', './a/sub']);
 });
 
@@ -108,7 +108,7 @@ test('absolute directories are emitted and align with relative', () => {
     assert.strictEqual(r.exitCode, 0);
     const { files, rel, abs } = parseOutputs(r.outputContent);
     const expectedAbs = path.join(sub).split(path.sep).join('/');
-    assert.deepStrictEqual(files, ['sub/note.md']);
+    assert.deepStrictEqual(files, ['note.md']);
     assert.deepStrictEqual(rel, ['./sub']);
     assert.deepStrictEqual(abs, [expectedAbs]);
 });

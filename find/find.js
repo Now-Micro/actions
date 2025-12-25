@@ -114,7 +114,7 @@ function run() {
 
         const { matches, dirs } = findMatches(workingDir, pattern, debugMode);
 
-        const matchedFiles = matches.map(p => normalizeRelative(workingDir, p));
+        const matchedFiles = matches.map(p => path.basename(p));
         const matchedDirsRelativeRaw = dirs.map(d => normalizeRelative(workingDir, d));
         const matchedDirsRelative = matchedDirsRelativeRaw.map(d => d === '.' ? './' : `./${d}`);
         const matchedDirsAbsolute = dirs.map(d => normalizeAbsolute(d));
