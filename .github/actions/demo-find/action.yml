@@ -76,7 +76,7 @@ runs:
         test-name: "literal match"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["readme.md", "readme.md"]'
+        expected: '["readme.md","readme.md"]'
         actual: ${{ steps.literal.outputs.matched-files || '' }}
 
     - name: Assert literal dir
@@ -85,7 +85,7 @@ runs:
         test-name: "literal dir"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: '["./nested", "./other"]'
+        expected: '["./nested","./other"]'
         actual: ${{ steps.literal.outputs.matched-dirs-relative || '' }}
 
     - name: Assert literal dir absolute
