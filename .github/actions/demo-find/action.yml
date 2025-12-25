@@ -24,6 +24,9 @@ runs:
         abs_root="$(pwd)/src/demo/find"
         abs_nested="$abs_root/nested"
         abs_other="$abs_root/other"
+        echo "abs_root=$abs_root" >> $GITHUB_OUTPUT
+        echo "abs_nested=$abs_nested" >> $GITHUB_OUTPUT
+        echo "abs_other=$abs_other" >> $GITHUB_OUTPUT
         echo "expected_abs_logs=[\"$abs_root\",\"$abs_nested\",\"$abs_other\"]" >> $GITHUB_OUTPUT
         echo "expected_abs_literal=[\"$abs_nested\",\"$abs_other\"]" >> $GITHUB_OUTPUT
 
@@ -69,7 +72,7 @@ runs:
         regex: "readme.md"
         working-directory: "src/demo/find"
         debug-mode: "true"
-  
+
     - name: Assert literal match
       uses: ./src/testing/assert
       with:
@@ -94,5 +97,5 @@ runs:
         test-name: "literal dir absolute"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: ${{ steps.expected.outputs.expected_abs_literal }}
+        expected: ${{ format('["{0}","{1}"]', steps.expected.outputs.abs_nested, steps.expected.outputs.abs_other) }}
         actual: ${{ steps.literal.outputs.matched-dirs-absolute || '' }}
