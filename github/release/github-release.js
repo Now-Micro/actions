@@ -58,6 +58,7 @@ function escapeRegex(str) {
 }
 
 function extractChangelogSection(content, releaseVersion, debugMode = false) {
+    console.log(`Debug: extractChangelogSection called with releaseVersion='${releaseVersion}'`);
     if (!content || !releaseVersion) return content || '';
     const patternSource = `^\\s*##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`;
     const pattern = new RegExp(patternSource, 'mi');
@@ -141,6 +142,7 @@ function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPat
     }
     if (absChange && fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
         const changelogContent = fs.readFileSync(absChange, 'utf8').trim();
+        console.log(`Debug: changelog content=${changelogContent}`);
         const versionSection = extractChangelogSection(changelogContent, releaseVersion, debugMode).trim();
         if (versionSection) {
             lines.push(versionSection);
