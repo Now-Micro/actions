@@ -23,7 +23,20 @@ runs:
         mkdir -p demo-artifacts/nested
         echo "pkg1" > demo-artifacts/one.nupkg
         echo "pkg2" > demo-artifacts/nested/two.snupkg
-        echo "changelog content" > demo-artifacts/CHANGELOG.md
+        cat <<'EOF' > demo-artifacts/CHANGELOG.md
+        # Changelog
+
+        All notable changes to this project will be documented in this file.
+
+        The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+        and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+        ## [1.2.3] - 2025-07-29
+
+        ### Added
+
+        - Initial release of the library
+        EOF
 
     - name: Run github/release (dry-run)
       id: release
@@ -37,6 +50,7 @@ runs:
         skip-download: true
         dry-run: true
         body-filename: DEMO_NOTES.md
+        debug-mode: true
 
     - name: Assert tag name
       uses: ./src/testing/assert
@@ -84,6 +98,6 @@ runs:
     - name: Assert changelog content
       shell: bash
       run: |
-        grep -q "changelog content" "${{ steps.release.outputs.release-notes-path }}"
+        grep -q "Initial release of the library" "${{ steps.release.outputs.release-notes-path }}"
         grep -q "one.nupkg" "${{ steps.release.outputs.release-notes-path }}"
         grep -q "two.snupkg" "${{ steps.release.outputs.release-notes-path }}"
