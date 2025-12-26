@@ -135,7 +135,7 @@ jobs:
 
             - name: Assert changelog content in notes
               run: |
-                  grep -q "Initial release of the library" "${{ steps.release.outputs.release-notes-path }}"
+                  grep -q "Some new stuff" "${{ steps.release.outputs.release-notes-path }}"
 
             - name: Fetch created release
               id: api
