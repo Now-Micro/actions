@@ -70,7 +70,7 @@ function extractChangelogSection(content, releaseVersion, debugMode = false) {
         if (debugMode) {
             console.log('Debug: no changelog match found; returning empty section');
         }
-        return '';
+        return content.trim();
     }
     const start = match.index;
     const remainder = content.slice(start);
