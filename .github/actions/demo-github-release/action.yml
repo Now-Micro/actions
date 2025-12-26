@@ -35,6 +35,12 @@ runs:
 
         ### Added
 
+        - Something new
+
+        ## [1.0.0] - 2025-07-21
+
+        ### Added
+
         - Initial release of the library
         EOF
 
