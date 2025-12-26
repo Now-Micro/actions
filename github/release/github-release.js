@@ -53,6 +53,49 @@ function listFilesRecursive(root) {
     return files;
 }
 
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractChangelogSection(content, releaseVersion, debugMode = false) {
+    if (!content || !releaseVersion) return '';
+
+    const headingRegex = new RegExp(`^\\s*##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?\\s*(?:-|\\]|$)`, 'mi');
+    const lines = content.split(/\r?\n/);
+
+    let start = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (headingRegex.test(lines[i])) {
+            start = i;
+            break;
+        }
+    }
+
+    if (start === -1) {
+        if (debugMode) console.log('Debug: no changelog match found; returning empty section');
+        return '';
+    }
+
+    let end = lines.length;
+    const nextHeadingRegex = /^\s*##\s*\[/;
+    for (let j = start + 1; j < lines.length; j++) {
+        if (nextHeadingRegex.test(lines[j])) {
+            end = j;
+            break;
+        }
+    }
+
+    const sliceLines = lines.slice(start + 1, end);
+    const section = sliceLines.join('\n').trim();
+
+    if (debugMode) {
+        console.log(`Debug: changelog section startLine=${start} endLine=${end} lengthLines=${sliceLines.length}`);
+        console.log(`Debug: matched heading='${lines[start].trim()}'`);
+    }
+
+    return section;
+}
+
 function copyPackages(artifactsPath, packagesPath) {
     const allFiles = fs.existsSync(artifactsPath) && fs.statSync(artifactsPath).isDirectory()
         ? listFilesRecursive(artifactsPath)
@@ -68,30 +111,60 @@ function copyPackages(artifactsPath, packagesPath) {
     return copied;
 }
 
-function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename }) {
+function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename, debugMode = false }) {
     const notesPath = path.resolve(bodyFilename || 'RELEASE_NOTES.md');
+    const repo = process.env.GITHUB_REPOSITORY || '';
+    const owner = repo.includes('/') ? repo.split('/')[0] : (repo || 'your-org');
+    const nugetFeed = `https://nuget.pkg.github.com/${owner}/index.json`;
+
     const lines = [];
     lines.push(`# ${libraryName} v${releaseVersion}`);
     lines.push('');
-    lines.push('## Packages');
+
+    lines.push('## Library Release');
+    lines.push(`This is a targeted release for ${libraryName} version ${releaseVersion}.`);
+    lines.push('');
+
+    lines.push('## Installation');
+    lines.push('```');
+    lines.push(`dotnet add package ${libraryName} --version ${releaseVersion}`);
+    lines.push('```');
+    lines.push('');
+
+    lines.push('## Package Details');
     if (packages.length === 0) {
-        lines.push('- _No packages found_');
+        lines.push('- No packages found');
     } else {
         for (const pkg of packages) {
             lines.push(`- ${pkg}`);
         }
     }
+    lines.push('');
 
-    if (changelogPath) {
-        lines.push('');
-        lines.push('## Changelog');
-        const absChange = path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath);
-        if (fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
-            lines.push(fs.readFileSync(absChange, 'utf8'));
-        } else {
-            lines.push('_No changelog content found_');
-        }
+    lines.push('## Updates');
+    const absChange = changelogPath && (path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath));
+    if (debugMode) {
+        console.log(`Debug: changelog resolved path=${absChange || '(none)'}`);
     }
+    if (absChange && fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
+        const changelogContent = fs.readFileSync(absChange, 'utf8').trim();
+        console.log(`Debug: changelog content=${changelogContent}`);
+        const versionSection = extractChangelogSection(changelogContent, releaseVersion, debugMode).trim();
+        if (versionSection) {
+            lines.push(versionSection);
+        } else {
+            lines.push('No changelog content found');
+        }
+    } else {
+        lines.push('No changelog content found');
+    }
+    lines.push('');
+
+    lines.push('## Installation via GitHub Packages');
+    lines.push('Configure your NuGet source:');
+    lines.push('```');
+    lines.push('dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "' + nugetFeed + '"');
+    lines.push('```');
 
     fs.writeFileSync(notesPath, lines.join('\n') + '\n', 'utf8');
     return notesPath;
@@ -124,6 +197,7 @@ function run() {
             console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
             console.log(`Debug: tagName=${tagName}`);
             console.log(`Debug: releaseName=${releaseName}`);
+            console.log(`Debug: bodyFilename=${bodyFilename}`);
         }
 
         const copied = copyPackages(artifactsPath, packagesPath);
@@ -142,10 +216,12 @@ function run() {
             packages: copied,
             changelogPath,
             bodyFilename,
+            debugMode,
         });
 
         if (debugMode) {
             console.log(`Debug: release notes path = ${notesPath}`);
+            console.log(`Debug: has_packages=${hasPackages} tag=${tagName} release=${releaseName}`);
         }
 
         const outFile = ensureOutputFile();
@@ -155,6 +231,10 @@ function run() {
         appendOutput('release_name', releaseName, outFile);
         appendOutput('release_notes_path', notesPath, outFile);
         appendOutput('packages_path', packagesPath, outFile);
+
+        if (debugMode) {
+            console.log(`Debug: outputs written to ${outFile}`);
+        }
     } catch (err) {
         const message = err && err.message ? err.message : String(err);
         console.error(message);
