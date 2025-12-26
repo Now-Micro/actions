@@ -1,0 +1,129 @@
+name: "GitHub Release"
+description: "Download artifacts, build release notes, tag, and create a GitHub Release"
+author: "Trafera"
+
+inputs:
+  artifact-name:
+    description: "Optional artifact name to download. If empty, download all artifacts."
+    required: false
+    default: ""
+  artifacts-path:
+    description: "Directory containing downloaded artifacts."
+    required: false
+    default: "release-artifacts"
+  body-filename:
+    description: "Filename for generated release notes."
+    required: false
+    default: "RELEASE_NOTES.md"
+  packages-path:
+    description: "Directory to copy package assets into."
+    required: false
+    default: "release-packages"
+  changelog-path:
+    description: "Optional path to changelog content to append to release notes."
+    required: false
+    default: ""
+  debug-mode:
+    description: "Enable verbose debug logging."
+    required: false
+    default: "false"
+  dry-run:
+    description: "If true, skip git tag creation and GitHub release publishing."
+    required: false
+    default: "false"
+  github-token:
+    description: "GitHub token used for creating releases (pass secrets.GITHUB_TOKEN from the workflow)."
+    required: true
+    default: ""
+  library-name:
+    description: "Library/package name to include in release metadata."
+    required: true
+  release-name-template:
+    description: "Template for release name. Supports {library-name} and {release-version}."
+    required: false
+    default: "{library-name} v{release-version}"
+  release-version:
+    description: "Version string used for tag and release name."
+    required: true
+  skip-download:
+    description: "If true, do not run actions/download-artifact (assumes artifacts already present)."
+    required: false
+    default: "false"
+  tag-prefix:
+    description: "Prefix used when building the git tag (prefix + version). Defaults to <library-name>-v."
+    required: false
+    default: ""
+
+outputs:
+  has-packages:
+    description: "Number of packages copied into the release packages directory."
+    value: ${{ steps.prepare.outputs.has_packages }}
+  packages-json:
+    description: "JSON array of copied package filenames."
+    value: ${{ steps.prepare.outputs.packages_json }}
+  release-name:
+    description: "Release name computed from template."
+    value: ${{ steps.prepare.outputs.release_name }}
+  release-notes-path:
+    description: "Absolute path to generated release notes file."
+    value: ${{ steps.prepare.outputs.release_notes_path }}
+  tag-name:
+    description: "Tag name computed for the release."
+    value: ${{ steps.prepare.outputs.tag_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Download artifacts
+      if: ${{ inputs.skip-download != 'true' }}
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ inputs.artifacts-path }}
+        name: ${{ inputs.artifact-name }}
+
+    - name: Prepare assets and release notes
+      id: prepare
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/github-release.js"
+      env:
+        INPUT_LIBRARY_NAME: ${{ inputs.library-name }}
+        INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_ARTIFACTS_PATH: ${{ inputs.artifacts-path }}
+        INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
+        INPUT_CHANGELOG_PATH: ${{ inputs.changelog-path }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
+        INPUT_RELEASE_NAME_TEMPLATE: ${{ inputs.release-name-template }}
+        INPUT_BODY_FILENAME: ${{ inputs.body-filename }}
+
+    - name: Create git tag
+      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        tag_name="${{ steps.prepare.outputs.tag_name }}"
+        tag_message="Release ${{ inputs.library-name }} v${{ inputs.release-version }}"
+        if git tag | grep -q "^${tag_name}$"; then
+          echo "Tag ${tag_name} already exists, skipping creation"
+        else
+          git tag -a "${tag_name}" -m "${tag_message}"
+          git push origin "${tag_name}"
+          echo "Created and pushed tag: ${tag_name}"
+        fi
+
+    - name: Create GitHub Release
+      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.prepare.outputs.tag_name }}
+        name: ${{ steps.prepare.outputs.release_name }}
+        body_path: ${{ steps.prepare.outputs.release_notes_path }}
+        files: ${{ format('{0}/*', inputs.packages-path) }}
+        draft: false
+        prerelease: ${{ contains(inputs.release-version, '-') }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}

@@ -13,6 +13,9 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
       
+    - name: Demo - github release
+      uses: ./.github/actions/demo-github-release
+
     - name: Demo - find
       uses: ./.github/actions/demo-find
 
@@ -72,4 +75,3 @@ runs:
 
     - name: Demo - docker-clean-up
       uses: ./.github/actions/demo-docker-clean-up
-
