@@ -1,5 +1,8 @@
 # TODOS
 
+## Prompt for changelog extraction logic
+The logic for extracting the relevant sections from the changelog has to be fleshed out.  Basically it needs to figure on what line the relevant version specification starts.  THen it needs to figure the line from the next version specification is.  When that is done, it should only add the lines between those two lines
+
 ## Promp for e2e workflow
 
 I want you to create a workflow that can be manually dispatched and uses the ./github/release composite action. The idea is that when this workflow runs, it will be an e2e test of the ./github/release composite action by actually creating a mock release in the repo (complete with tags, summary, etc)

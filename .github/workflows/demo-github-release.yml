@@ -43,7 +43,7 @@ jobs:
                   mkdir -p "$ARTIFACTS_DIR/nested"
                   echo "pkg1" > "$ARTIFACTS_DIR/one.nupkg"
                   echo "pkg2" > "$ARTIFACTS_DIR/nested/two.snupkg"
-                  cat <<'EOF' > "$ARTIFACTS_DIR/CHANGELOG.md"
+                  cat <<EOF > "$ARTIFACTS_DIR/CHANGELOG.md"
                   # Changelog
   
                   All notable changes to this project will be documented in this file.

@@ -58,36 +58,42 @@ function escapeRegex(str) {
 }
 
 function extractChangelogSection(content, releaseVersion, debugMode = false) {
-    console.log(`Debug: extractChangelogSection called with releaseVersion='${releaseVersion}'`);
-    if (!content || !releaseVersion) return content || '';
-    const patternSource = `^\\s*##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`;
-    const pattern = new RegExp(patternSource, 'mi');
-    if (debugMode) {
-        console.log(`Debug: extractChangelogSection version=${releaseVersion}`);
-        console.log(`Debug: pattern=${patternSource}`);
-    }
-    const match = content.match(pattern);
-    if (!match || match.index === undefined) {
-        if (debugMode) {
-            console.log('Debug: no changelog match found; returning empty section');
-        }
-        return content.trim();
-    }
-    const start = match.index;
-    const remainder = content.slice(start);
-    const afterCurrent = remainder.slice(match[0].length);
-    const nextHeadingRel = afterCurrent.search(/^\s*##\s*\[/m);
-    const slice = nextHeadingRel >= 0 ? remainder.slice(0, match[0].length + nextHeadingRel) : remainder;
-    if (debugMode) {
-        console.log(`Debug: changelog section start=${start} length=${slice.length}`);
-        console.log(`Debug: matched heading='${match[0].trim()}'`);
-        if (nextHeadingRel >= 0) {
-            console.log(`Debug: next heading relative offset=${nextHeadingRel}`);
-        } else {
-            console.log('Debug: no subsequent heading found; using remainder');
+    if (!content || !releaseVersion) return '';
+
+    const headingRegex = new RegExp(`^\\s*##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?\\s*(?:-|\\]|$)`, 'mi');
+    const lines = content.split(/\r?\n/);
+
+    let start = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (headingRegex.test(lines[i])) {
+            start = i;
+            break;
         }
     }
-    return slice.trim();
+
+    if (start === -1) {
+        if (debugMode) console.log('Debug: no changelog match found; returning empty section');
+        return '';
+    }
+
+    let end = lines.length;
+    const nextHeadingRegex = /^\s*##\s*\[/;
+    for (let j = start + 1; j < lines.length; j++) {
+        if (nextHeadingRegex.test(lines[j])) {
+            end = j;
+            break;
+        }
+    }
+
+    const sliceLines = lines.slice(start, end);
+    const section = sliceLines.join('\n').trim();
+
+    if (debugMode) {
+        console.log(`Debug: changelog section startLine=${start} endLine=${end} lengthLines=${sliceLines.length}`);
+        console.log(`Debug: matched heading='${lines[start].trim()}'`);
+    }
+
+    return section;
 }
 
 function copyPackages(artifactsPath, packagesPath) {
