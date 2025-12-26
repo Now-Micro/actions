@@ -124,6 +124,7 @@ test('copies packages, builds notes, and emits outputs', () => {
     assert.match(notes, /one\.nupkg/);
     assert.match(notes, /two\.snupkg/);
     assert.match(notes, /Initial release of the library/);
+    assert.ok(!/## \[1\.2\.3\]/.test(notes));
     assert.ok(!/Prior fixes/.test(notes));
     assert.ok(fs.existsSync(path.join(packagesPath, 'one.nupkg')));
     assert.ok(fs.existsSync(path.join(packagesPath, 'two.snupkg')));
