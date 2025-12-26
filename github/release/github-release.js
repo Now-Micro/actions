@@ -57,16 +57,35 @@ function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function extractChangelogSection(content, releaseVersion) {
+function extractChangelogSection(content, releaseVersion, debugMode = false) {
     if (!content || !releaseVersion) return content || '';
-    const pattern = new RegExp(`^##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`, 'mi');
+    const patternSource = `^##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`;
+    const pattern = new RegExp(patternSource, 'mi');
+    if (debugMode) {
+        console.log(`Debug: extractChangelogSection version=${releaseVersion}`);
+        console.log(`Debug: pattern=${patternSource}`);
+    }
     const match = content.match(pattern);
-    if (!match || match.index === undefined) return content.trim();
+    if (!match || match.index === undefined) {
+        if (debugMode) {
+            console.log('Debug: no changelog match found; returning full content');
+        }
+        return content.trim();
+    }
     const start = match.index;
     const remainder = content.slice(start);
     const afterCurrent = remainder.slice(match[0].length);
     const nextHeadingRel = afterCurrent.search(/^##\s*\[/m);
     const slice = nextHeadingRel >= 0 ? remainder.slice(0, match[0].length + nextHeadingRel) : remainder;
+    if (debugMode) {
+        console.log(`Debug: changelog section start=${start} length=${slice.length}`);
+        console.log(`Debug: matched heading='${match[0].trim()}'`);
+        if (nextHeadingRel >= 0) {
+            console.log(`Debug: next heading relative offset=${nextHeadingRel}`);
+        } else {
+            console.log('Debug: no subsequent heading found; using remainder');
+        }
+    }
     return slice.trim();
 }
 
@@ -85,7 +104,7 @@ function copyPackages(artifactsPath, packagesPath) {
     return copied;
 }
 
-function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename }) {
+function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename, debugMode = false }) {
     const notesPath = path.resolve(bodyFilename || 'RELEASE_NOTES.md');
     const repo = process.env.GITHUB_REPOSITORY || '';
     const owner = repo.includes('/') ? repo.split('/')[0] : (repo || 'your-org');
@@ -117,11 +136,13 @@ function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPat
 
     lines.push('## Updates');
     const absChange = changelogPath && (path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath));
+    if (debugMode) {
+        console.log(`Debug: changelog resolved path=${absChange || '(none)'}`);
+    }
     if (absChange && fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
         const changelogContent = fs.readFileSync(absChange, 'utf8').trim();
-        const versionSection = extractChangelogSection(changelogContent, releaseVersion).trim();
+        const versionSection = extractChangelogSection(changelogContent, releaseVersion, debugMode).trim();
         if (versionSection) {
-            lines.push('### Changelog');
             lines.push(versionSection);
         } else {
             lines.push('No changelog content found');
@@ -168,6 +189,7 @@ function run() {
             console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
             console.log(`Debug: tagName=${tagName}`);
             console.log(`Debug: releaseName=${releaseName}`);
+            console.log(`Debug: bodyFilename=${bodyFilename}`);
         }
 
         const copied = copyPackages(artifactsPath, packagesPath);
@@ -186,10 +208,12 @@ function run() {
             packages: copied,
             changelogPath,
             bodyFilename,
+            debugMode,
         });
 
         if (debugMode) {
             console.log(`Debug: release notes path = ${notesPath}`);
+            console.log(`Debug: has_packages=${hasPackages} tag=${tagName} release=${releaseName}`);
         }
 
         const outFile = ensureOutputFile();
@@ -199,6 +223,10 @@ function run() {
         appendOutput('release_name', releaseName, outFile);
         appendOutput('release_notes_path', notesPath, outFile);
         appendOutput('packages_path', packagesPath, outFile);
+
+        if (debugMode) {
+            console.log(`Debug: outputs written to ${outFile}`);
+        }
     } catch (err) {
         const message = err && err.message ? err.message : String(err);
         console.error(message);
