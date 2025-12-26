@@ -85,7 +85,7 @@ function extractChangelogSection(content, releaseVersion, debugMode = false) {
         }
     }
 
-    const sliceLines = lines.slice(start, end);
+    const sliceLines = lines.slice(start + 1, end);
     const section = sliceLines.join('\n').trim();
 
     if (debugMode) {
