@@ -68,9 +68,9 @@ function extractChangelogSection(content, releaseVersion, debugMode = false) {
     const match = content.match(pattern);
     if (!match || match.index === undefined) {
         if (debugMode) {
-            console.log('Debug: no changelog match found; returning full content');
+            console.log('Debug: no changelog match found; returning empty section');
         }
-        return content.trim();
+        return '';
     }
     const start = match.index;
     const remainder = content.slice(start);
