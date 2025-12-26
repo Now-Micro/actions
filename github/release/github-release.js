@@ -107,6 +107,7 @@ function run() {
         const tagPrefixInput = (process.env.INPUT_TAG_PREFIX || '').trim();
         const releaseNameTemplate = (process.env.INPUT_RELEASE_NAME_TEMPLATE || '{library-name} v{release-version}');
         const bodyFilename = (process.env.INPUT_BODY_FILENAME || 'RELEASE_NOTES.md').trim();
+        const debugMode = parseBool(process.env.INPUT_DEBUG_MODE || 'false');
 
         const tagPrefix = tagPrefixInput || `${libraryName}-v`;
         const tagName = `${tagPrefix}${releaseVersion}`;
@@ -114,8 +115,21 @@ function run() {
             .replace('{library-name}', libraryName)
             .replace('{release-version}', releaseVersion);
 
+        if (debugMode) {
+            console.log(`Debug: library=${libraryName} version=${releaseVersion}`);
+            console.log(`Debug: artifactsPath=${artifactsPath}`);
+            console.log(`Debug: packagesPath=${packagesPath}`);
+            console.log(`Debug: changelogPath=${changelogPath || '(none)'}`);
+            console.log(`Debug: tagPrefix=${tagPrefix}`);
+            console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
+        }
+
         const copied = copyPackages(artifactsPath, packagesPath);
         const hasPackages = copied.length;
+
+        if (debugMode) {
+            console.log(`Debug: copied packages (${hasPackages}) = ${JSON.stringify(copied)}`);
+        }
 
         const notesPath = buildReleaseNotes({
             libraryName,
@@ -124,6 +138,10 @@ function run() {
             changelogPath,
             bodyFilename,
         });
+
+        if (debugMode) {
+            console.log(`Debug: release notes path = ${notesPath}`);
+        }
 
         const outFile = ensureOutputFile();
         appendOutput('has_packages', String(hasPackages), outFile);

@@ -23,13 +23,17 @@ inputs:
     description: "Optional path to changelog content to append to release notes."
     required: false
     default: ""
+  debug-mode:
+    description: "Enable verbose debug logging."
+    required: false
+    default: "false"
   dry-run:
     description: "If true, skip git tag creation and GitHub release publishing."
     required: false
     default: "false"
   github-token:
     description: "GitHub token used for creating releases (pass secrets.GITHUB_TOKEN from the workflow)."
-    required: false
+    required: true
     default: ""
   library-name:
     description: "Library/package name to include in release metadata."
@@ -90,6 +94,7 @@ runs:
         INPUT_ARTIFACTS_PATH: ${{ inputs.artifacts-path }}
         INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
         INPUT_CHANGELOG_PATH: ${{ inputs.changelog-path }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
         INPUT_RELEASE_NAME_TEMPLATE: ${{ inputs.release-name-template }}
         INPUT_BODY_FILENAME: ${{ inputs.body-filename }}

@@ -136,3 +136,115 @@ test('buildReleaseNotes handles missing changelog', () => {
     assert.match(notes, /No packages found/);
     assert.match(notes, /No changelog content found/);
 });
+
+
+test('run honors custom tag prefix and release name template', () => {
+    const root = makeTempDir('gh-rel-custom-');
+    const artifacts = path.join(root, 'artifacts');
+    const packagesPath = path.join(root, 'packages');
+    fs.mkdirSync(artifacts);
+    fs.writeFileSync(path.join(artifacts, 'only.nupkg'), 'x');
+
+    const r = runWithEnv({
+        INPUT_LIBRARY_NAME: 'LibX',
+        INPUT_RELEASE_VERSION: '9.9.9',
+        INPUT_ARTIFACTS_PATH: artifacts,
+        INPUT_PACKAGES_PATH: packagesPath,
+        INPUT_TAG_PREFIX: 'v',
+        INPUT_RELEASE_NAME_TEMPLATE: '{release-version} - {library-name}',
+    });
+
+    assert.strictEqual(r.exitCode, 0);
+    const outputs = parseOutput(r.outputContent);
+    assert.strictEqual(outputs.tag_name, 'v9.9.9');
+    assert.strictEqual(outputs.release_name, '9.9.9 - LibX');
+});
+
+
+test('run exits when GITHUB_OUTPUT is missing', () => {
+    const prev = { ...process.env };
+    Object.assign(process.env, {
+        INPUT_LIBRARY_NAME: 'Lib',
+        INPUT_RELEASE_VERSION: '1.0.0',
+    });
+    delete process.env.GITHUB_OUTPUT;
+    let exitCode = 0;
+    const origExit = process.exit;
+    process.exit = c => { exitCode = c || 0; throw new Error(`__EXIT_${exitCode}__`); };
+    let out = '', err = '';
+    const so = process.stdout.write, se = process.stderr.write;
+    process.stdout.write = (c, e, cb) => { out += c; return true; };
+    process.stderr.write = (c, e, cb) => { err += c; return true; };
+    try {
+        try { run(); } catch (e) { if (!/^__EXIT_/.test(e.message)) throw e; }
+    } finally {
+        process.env = prev;
+        process.exit = origExit;
+        process.stdout.write = so;
+        process.stderr.write = se;
+    }
+    assert.strictEqual(exitCode, 1);
+    assert.match(err + out, /GITHUB_OUTPUT not set/);
+});
+
+
+test('run exits when release version is missing', () => {
+    const r = runWithEnv({ INPUT_LIBRARY_NAME: 'Demo.Lib' });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /INPUT_RELEASE_VERSION is required/);
+});
+
+
+test('listFilesRecursive logs and skips unreadable directory', () => {
+    const root = makeTempDir('gh-rel-list-');
+    const good = path.join(root, 'good');
+    const bad = path.join(root, 'bad');
+    fs.mkdirSync(good, { recursive: true });
+    fs.mkdirSync(bad, { recursive: true });
+    fs.writeFileSync(path.join(good, 'ok.txt'), 'x');
+
+    const origReaddir = fs.readdirSync;
+    const logs = [];
+    const origError = console.error;
+    console.error = msg => logs.push(msg);
+    fs.readdirSync = (p, opts) => {
+        if (p === bad) {
+            throw new Error('boom');
+        }
+        return origReaddir(p, opts);
+    };
+    try {
+        const files = require('./github-release').listFilesRecursive(root);
+        const norm = files.map(f => f.split(path.sep).pop());
+        assert.deepStrictEqual(norm, ['ok.txt']);
+        assert.ok(logs.some(l => l.includes('Cannot read directory')));
+    } finally {
+        fs.readdirSync = origReaddir;
+        console.error = origError;
+    }
+});
+
+
+test('debug mode emits config and package logs', () => {
+    const root = makeTempDir('gh-rel-debug-');
+    const artifacts = path.join(root, 'artifacts');
+    const packagesPath = path.join(root, 'packages');
+    fs.mkdirSync(artifacts);
+    fs.writeFileSync(path.join(artifacts, 'dbg.nupkg'), 'x');
+
+    const r = runWithEnv({
+        INPUT_LIBRARY_NAME: 'Dbg',
+        INPUT_RELEASE_VERSION: '0.0.1',
+        INPUT_ARTIFACTS_PATH: artifacts,
+        INPUT_PACKAGES_PATH: packagesPath,
+        INPUT_DEBUG_MODE: 'true',
+    });
+
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Debug: library=Dbg version=0.0.1/);
+    assert.match(r.out, /Debug: artifactsPath=/);
+    assert.match(r.out, /Debug: packagesPath=/);
+    assert.match(r.out, /Debug: copied packages/);
+    assert.match(r.out, /dbg\.nupkg/);
+    assert.match(r.out, /Debug: release notes path/);
+});
