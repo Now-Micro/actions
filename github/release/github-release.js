@@ -122,6 +122,8 @@ function run() {
             console.log(`Debug: changelogPath=${changelogPath || '(none)'}`);
             console.log(`Debug: tagPrefix=${tagPrefix}`);
             console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
+            console.log(`Debug: tagName=${tagName}`);
+            console.log(`Debug: releaseName=${releaseName}`);
         }
 
         const copied = copyPackages(artifactsPath, packagesPath);
@@ -129,6 +131,9 @@ function run() {
 
         if (debugMode) {
             console.log(`Debug: copied packages (${hasPackages}) = ${JSON.stringify(copied)}`);
+            if (hasPackages === 0) {
+                console.log('Debug: no packages found to include in the release');
+            }
         }
 
         const notesPath = buildReleaseNotes({

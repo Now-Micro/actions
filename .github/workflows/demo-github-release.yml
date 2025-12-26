@@ -1,0 +1,150 @@
+name: Demo GitHub Release
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    demo-release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set demo variables
+              run: |
+                  echo "LIB_NAME=Demo.Library" >> $GITHUB_ENV
+                  echo "RELEASE_VERSION=0.0.0-demo-${GITHUB_RUN_ID}" >> $GITHUB_ENV
+                  echo "ARTIFACTS_DIR=demo-artifacts" >> $GITHUB_ENV
+                  echo "PACKAGES_DIR=demo-packages" >> $GITHUB_ENV
+                  echo "BODY_FILE=DEMO_NOTES_${GITHUB_RUN_ID}.md" >> $GITHUB_ENV
+                  echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-github-release-summary.txt" >> $GITHUB_ENV
+
+            - name: Prepare summary file
+              run: |
+                  : > "$SUMMARY_FILE"
+
+            - name: Clean existing demo release (best-effort)
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  gh release delete "${LIB_NAME}-v${RELEASE_VERSION}" -y >/dev/null 2>&1 || true
+                  git push origin ":refs/tags/${LIB_NAME}-v${RELEASE_VERSION}" >/dev/null 2>&1 || true
+
+            - name: Create fake artifacts
+              run: |
+                  mkdir -p "$ARTIFACTS_DIR/nested"
+                  echo "pkg1" > "$ARTIFACTS_DIR/one.nupkg"
+                  echo "pkg2" > "$ARTIFACTS_DIR/nested/two.snupkg"
+                  echo "changelog content" > "$ARTIFACTS_DIR/CHANGELOG.md"
+
+            - name: Run github/release (creates real release)
+              id: release
+              uses: ./github/release
+              with:
+                  library-name: ${{ env.LIB_NAME }}
+                  release-version: ${{ env.RELEASE_VERSION }}
+                  artifacts-path: ${{ env.ARTIFACTS_DIR }}
+                  packages-path: ${{ env.PACKAGES_DIR }}
+                  changelog-path: ${{ env.ARTIFACTS_DIR }}/CHANGELOG.md
+                  skip-download: true
+                  dry-run: false
+                  body-filename: ${{ env.BODY_FILE }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Assert tag name
+              uses: ./src/testing/assert
+              with:
+                  test-name: "tag name"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: ${{ env.LIB_NAME }}-v${{ env.RELEASE_VERSION }}
+                  actual: ${{ steps.release.outputs.tag-name || '' }}
+
+            - name: Assert release name
+              uses: ./src/testing/assert
+              with:
+                  test-name: "release name"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: ${{ env.LIB_NAME }} v${{ env.RELEASE_VERSION }}
+                  actual: ${{ steps.release.outputs.release-name || '' }}
+
+            - name: Assert packages copied
+              uses: ./src/testing/assert
+              with:
+                  test-name: "has packages"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: "2"
+                  actual: ${{ steps.release.outputs.has-packages || '' }}
+
+            - name: Assert packages json
+              uses: ./src/testing/assert
+              with:
+                  test-name: "packages json"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: '["one.nupkg","two.snupkg"]'
+                  actual: ${{ steps.release.outputs.packages-json || '' }}
+
+            - name: Fetch created release
+              id: api
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  gh api "repos/${{ github.repository }}/releases/tags/${{ steps.release.outputs.tag-name }}" > release.json
+                  echo "api_release_name=$(jq -r '.name' release.json)" >> "$GITHUB_OUTPUT"
+                  echo "api_tag_name=$(jq -r '.tag_name' release.json)" >> "$GITHUB_OUTPUT"
+                  echo "api_assets=$(jq -r '.assets | length' release.json)" >> "$GITHUB_OUTPUT"
+                  jq -r '.assets[].name' release.json | sort > asset_names_sorted.txt
+                  echo "api_asset_names=$(paste -sd ',' asset_names_sorted.txt)" >> "$GITHUB_OUTPUT"
+                  jq -r "\"tag=\(.tag_name)\nname=\(.name)\nassets=\(.assets[].name)\"" release.json >> "$SUMMARY_FILE"
+
+            - name: Assert API tag matches
+              uses: ./src/testing/assert
+              with:
+                  test-name: "api tag"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: ${{ steps.release.outputs.tag-name || '' }}
+                  actual: ${{ steps.api.outputs.api_tag_name || '' }}
+
+            - name: Assert API release name matches
+              uses: ./src/testing/assert
+              with:
+                  test-name: "api release name"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: ${{ steps.release.outputs.release-name || '' }}
+                  actual: ${{ steps.api.outputs.api_release_name || '' }}
+
+            - name: Assert API asset count
+              uses: ./src/testing/assert
+              with:
+                  test-name: "api assets count"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: "2"
+                  actual: ${{ steps.api.outputs.api_assets || '' }}
+
+            - name: Assert API asset names
+              uses: ./src/testing/assert
+              with:
+                  test-name: "api asset names"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: "one.nupkg,two.snupkg"
+                  actual: ${{ steps.api.outputs.api_asset_names || '' }}
+
+            - name: Publish summary
+              run: |
+                  cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"

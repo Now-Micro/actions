@@ -6,17 +6,33 @@ const path = require('path');
 
 const { run, copyPackages, buildReleaseNotes } = require('./github-release');
 
+const ROOT_RELEASE_NOTES = path.join(process.cwd(), 'RELEASE_NOTES.md');
+
+function cleanupRootReleaseNotes() {
+    if (fs.existsSync(ROOT_RELEASE_NOTES)) {
+        try {
+            fs.rmSync(ROOT_RELEASE_NOTES);
+        } catch (_) {
+            // Best-effort cleanup; ignore errors.
+        }
+    }
+}
+
 function makeTempDir(prefix = 'gh-rel-') {
     return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
 function runWithEnv(env) {
+    cleanupRootReleaseNotes();
     const tmp = makeTempDir('gh-rel-out-');
     const outFile = path.join(tmp, 'out.txt');
     fs.writeFileSync(outFile, '');
     const prev = { ...process.env };
+    const prevCwd = process.cwd();
     Object.keys(process.env).filter(k => k.startsWith('INPUT_')).forEach(k => delete process.env[k]);
-    Object.assign(process.env, env, { GITHUB_OUTPUT: outFile });
+    const bodyPath = env.INPUT_BODY_FILENAME || path.join(tmp, 'RELEASE_NOTES.md');
+    Object.assign(process.env, env, { GITHUB_OUTPUT: outFile, INPUT_BODY_FILENAME: bodyPath });
+    process.chdir(tmp);
 
     let exitCode = 0;
     const origExit = process.exit;
@@ -30,9 +46,11 @@ function runWithEnv(env) {
         try { run(); } catch (e) { if (!/^__EXIT_/.test(e.message)) throw e; }
     } finally {
         process.env = prev;
+        process.chdir(prevCwd);
         process.exit = origExit;
         process.stdout.write = so;
         process.stderr.write = se;
+        cleanupRootReleaseNotes();
     }
 
     const outputContent = fs.readFileSync(outFile, 'utf8');
@@ -40,8 +58,20 @@ function runWithEnv(env) {
 }
 
 function parseOutput(content) {
-    const lines = Object.fromEntries(content.split(/\n/).filter(Boolean).map(l => l.split('=')));
-    return lines;
+    const entries = content
+        .split(/\n/)
+        .filter(Boolean)
+        .map(l => {
+            const idx = l.indexOf('=');
+            if (idx === -1) {
+                // No separator found; treat whole line as key with empty value.
+                return [l, ''];
+            }
+            const key = l.slice(0, idx);
+            const value = l.slice(idx + 1);
+            return [key, value];
+        });
+    return Object.fromEntries(entries);
 }
 
 test('copies packages, builds notes, and emits outputs', () => {
@@ -247,4 +277,6 @@ test('debug mode emits config and package logs', () => {
     assert.match(r.out, /Debug: copied packages/);
     assert.match(r.out, /dbg\.nupkg/);
     assert.match(r.out, /Debug: release notes path/);
+    assert.match(r.out, /Debug: tagName=Dbg-v0\.0\.1/);
+    assert.match(r.out, /Debug: releaseName=/);
 });

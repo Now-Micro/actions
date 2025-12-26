@@ -34,7 +34,7 @@ Composite action that prepares release assets, builds release notes, and (option
 
 ```yaml
 - name: GitHub Release
-  uses: ./.github/actions/github-release
+  uses: Now-Micro/actions/github/release@v1
   with:
     library-name: Demo.Library
     release-version: 1.2.3

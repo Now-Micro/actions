@@ -55,21 +55,21 @@ inputs:
     default: ""
 
 outputs:
-  tag-name:
-    description: "Tag name computed for the release."
-    value: ${{ steps.prepare.outputs.tag_name }}
-  release-name:
-    description: "Release name computed from template."
-    value: ${{ steps.prepare.outputs.release_name }}
-  release-notes-path:
-    description: "Absolute path to generated release notes file."
-    value: ${{ steps.prepare.outputs.release_notes_path }}
   has-packages:
     description: "Number of packages copied into the release packages directory."
     value: ${{ steps.prepare.outputs.has_packages }}
   packages-json:
     description: "JSON array of copied package filenames."
     value: ${{ steps.prepare.outputs.packages_json }}
+  release-name:
+    description: "Release name computed from template."
+    value: ${{ steps.prepare.outputs.release_name }}
+  release-notes-path:
+    description: "Absolute path to generated release notes file."
+    value: ${{ steps.prepare.outputs.release_notes_path }}
+  tag-name:
+    description: "Tag name computed for the release."
+    value: ${{ steps.prepare.outputs.tag_name }}
 
 runs:
   using: "composite"

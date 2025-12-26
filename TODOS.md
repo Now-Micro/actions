@@ -1,6 +1,10 @@
 # TODOS
 
-## Prompt
+## Promp for e2e workflow
+
+I want you to create a workflow that can be manually dispatched and uses the ./github/release composite action. The idea is that when this workflow runs, it will be an e2e test of the ./github/release composite action by actually creating a mock release in the repo (complete with tags, summary, etc)
+
+## Prompt initial
 
 I want to create a new composite action called "github/release" that automates the process of creating a GitHub release. Below is the list of steps that i want you to generalize (i.e. make it reusable for different repositories and scenarios by using inputs and outputs):
 
