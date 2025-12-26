@@ -45,20 +45,20 @@ jobs:
                   echo "pkg2" > "$ARTIFACTS_DIR/nested/two.snupkg"
                   cat <<EOF > "$ARTIFACTS_DIR/CHANGELOG.md"
                   # Changelog
-  
+
                   All notable changes to this project will be documented in this file.
-  
+
                   The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
                   and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-  
+
                   ## [${RELEASE_VERSION}] - 2025-07-29
-  
+
                   ### Added
-  
+
                   - Some new stuff
 
                   ### Changed
-                  
+
                   - Some old stuff
 
                   ### Updated 
@@ -68,17 +68,17 @@ jobs:
                   ### Random Thing
 
                   - Another thing
-  
+
                   ## [1.2.0] - 2025-07-21
-  
+
                   ### Added
-  
+
                   - Older feature (not used)
-  
+
                   ## [1.0.0] - 2025-07-21
-  
+
                   ### Added
-  
+
                   - Legacy entry (not used)
                   EOF
 
@@ -149,7 +149,7 @@ jobs:
                   echo "api_assets=$(jq -r '.assets | length' release.json)" >> "$GITHUB_OUTPUT"
                   jq -r '.assets[].name' release.json | sort > asset_names_sorted.txt
                   echo "api_asset_names=$(paste -sd ',' asset_names_sorted.txt)" >> "$GITHUB_OUTPUT"
-                  if jq -r '.body' release.json | grep -qi "Initial release of the library"; then
+                  if jq -r '.body' release.json | grep -qi "Some new stuff"; then
                     echo "api_body_has_changelog=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "api_body_has_changelog=false" >> "$GITHUB_OUTPUT"
