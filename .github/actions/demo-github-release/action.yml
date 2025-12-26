@@ -37,6 +37,14 @@ runs:
 
         - Something new
 
+        ### Changed
+
+        - Something Old
+
+        ### Updated
+
+        - Something else
+
         ## [1.0.0] - 2025-07-21
 
         ### Added
@@ -104,6 +112,6 @@ runs:
     - name: Assert changelog content
       shell: bash
       run: |
-        grep -q "Initial release of the library" "${{ steps.release.outputs.release-notes-path }}"
+        grep -q "Something else" "${{ steps.release.outputs.release-notes-path }}"
         grep -q "one.nupkg" "${{ steps.release.outputs.release-notes-path }}"
         grep -q "two.snupkg" "${{ steps.release.outputs.release-notes-path }}"
