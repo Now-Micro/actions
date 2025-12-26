@@ -59,7 +59,7 @@ function escapeRegex(str) {
 
 function extractChangelogSection(content, releaseVersion) {
     if (!content || !releaseVersion) return content || '';
-    const pattern = new RegExp(`^##\s*\[?v?${escapeRegex(releaseVersion)}\]?[^\n]*$`, 'mi');
+    const pattern = new RegExp(`^##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`, 'mi');
     const match = content.match(pattern);
     if (!match || match.index === undefined) return content.trim();
     const start = match.index;
