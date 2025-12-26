@@ -53,6 +53,23 @@ function listFilesRecursive(root) {
     return files;
 }
 
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractChangelogSection(content, releaseVersion) {
+    if (!content || !releaseVersion) return content || '';
+    const pattern = new RegExp(`^##\s*\[?v?${escapeRegex(releaseVersion)}\]?[^\n]*$`, 'mi');
+    const match = content.match(pattern);
+    if (!match || match.index === undefined) return content.trim();
+    const start = match.index;
+    const remainder = content.slice(start);
+    const afterCurrent = remainder.slice(match[0].length);
+    const nextHeadingRel = afterCurrent.search(/^##\s*\[/m);
+    const slice = nextHeadingRel >= 0 ? remainder.slice(0, match[0].length + nextHeadingRel) : remainder;
+    return slice.trim();
+}
+
 function copyPackages(artifactsPath, packagesPath) {
     const allFiles = fs.existsSync(artifactsPath) && fs.statSync(artifactsPath).isDirectory()
         ? listFilesRecursive(artifactsPath)
@@ -102,8 +119,10 @@ function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPat
     const absChange = changelogPath && (path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath));
     if (absChange && fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
         const changelogContent = fs.readFileSync(absChange, 'utf8').trim();
-        if (changelogContent) {
-            lines.push(changelogContent);
+        const versionSection = extractChangelogSection(changelogContent, releaseVersion).trim();
+        if (versionSection) {
+            lines.push('### Changelog');
+            lines.push(versionSection);
         } else {
             lines.push('No changelog content found');
         }

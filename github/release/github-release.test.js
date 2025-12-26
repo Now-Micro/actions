@@ -84,7 +84,25 @@ test('copies packages, builds notes, and emits outputs', () => {
     fs.writeFileSync(path.join(sub, 'two.snupkg'), 'b');
     fs.writeFileSync(path.join(sub, 'ignore.txt'), 'x');
     const changelog = path.join(artifacts, 'CHANGELOG.md');
-    fs.writeFileSync(changelog, 'changelog content');
+    const changelogBody = [
+        '# Changelog',
+        '',
+        'All notable changes to this project will be documented in this file.',
+        '',
+        '## [1.2.3] - 2025-07-29',
+        '',
+        '### Added',
+        '',
+        '- Initial release of the library',
+        '',
+        '## [1.2.2] - 2025-06-01',
+        '',
+        '### Fixed',
+        '',
+        '- Prior fixes',
+        '',
+    ].join('\n');
+    fs.writeFileSync(changelog, changelogBody);
 
     const r = runWithEnv({
         INPUT_LIBRARY_NAME: 'Demo.Lib',
@@ -105,7 +123,8 @@ test('copies packages, builds notes, and emits outputs', () => {
     const notes = fs.readFileSync(outputs.release_notes_path, 'utf8');
     assert.match(notes, /one\.nupkg/);
     assert.match(notes, /two\.snupkg/);
-    assert.match(notes, /changelog content/);
+    assert.match(notes, /Initial release of the library/);
+    assert.ok(!/Prior fixes/.test(notes));
     assert.ok(fs.existsSync(path.join(packagesPath, 'one.nupkg')));
     assert.ok(fs.existsSync(path.join(packagesPath, 'two.snupkg')));
 });
