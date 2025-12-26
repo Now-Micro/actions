@@ -23,7 +23,7 @@ runs:
         mkdir -p demo-artifacts/nested
         echo "pkg1" > demo-artifacts/one.nupkg
         echo "pkg2" > demo-artifacts/nested/two.snupkg
-        echo "notes" > demo-artifacts/CHANGELOG.md
+        echo "changelog content" > demo-artifacts/CHANGELOG.md
 
     - name: Run github/release (dry-run)
       id: release
@@ -85,3 +85,5 @@ runs:
       shell: bash
       run: |
         grep -q "changelog content" "${{ steps.release.outputs.release-notes-path }}"
+        grep -q "one.nupkg" "${{ steps.release.outputs.release-notes-path }}"
+        grep -q "two.snupkg" "${{ steps.release.outputs.release-notes-path }}"
