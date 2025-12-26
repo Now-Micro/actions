@@ -70,28 +70,53 @@ function copyPackages(artifactsPath, packagesPath) {
 
 function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename }) {
     const notesPath = path.resolve(bodyFilename || 'RELEASE_NOTES.md');
+    const repo = process.env.GITHUB_REPOSITORY || '';
+    const owner = repo.includes('/') ? repo.split('/')[0] : (repo || 'your-org');
+    const nugetFeed = `https://nuget.pkg.github.com/${owner}/index.json`;
+
     const lines = [];
     lines.push(`# ${libraryName} v${releaseVersion}`);
     lines.push('');
-    lines.push('## Packages');
+
+    lines.push('## Library Release');
+    lines.push(`This is a targeted release for ${libraryName} version ${releaseVersion}.`);
+    lines.push('');
+
+    lines.push('## Installation');
+    lines.push('```');
+    lines.push(`dotnet add package ${libraryName} --version ${releaseVersion}`);
+    lines.push('```');
+    lines.push('');
+
+    lines.push('## Package Details');
     if (packages.length === 0) {
-        lines.push('- _No packages found_');
+        lines.push('- No packages found');
     } else {
         for (const pkg of packages) {
             lines.push(`- ${pkg}`);
         }
     }
+    lines.push('');
 
-    if (changelogPath) {
-        lines.push('');
-        lines.push('## Changelog');
-        const absChange = path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath);
-        if (fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
-            lines.push(fs.readFileSync(absChange, 'utf8'));
+    lines.push('## Updates');
+    const absChange = changelogPath && (path.isAbsolute(changelogPath) ? changelogPath : path.resolve(changelogPath));
+    if (absChange && fs.existsSync(absChange) && fs.statSync(absChange).isFile()) {
+        const changelogContent = fs.readFileSync(absChange, 'utf8').trim();
+        if (changelogContent) {
+            lines.push(changelogContent);
         } else {
-            lines.push('_No changelog content found_');
+            lines.push('No changelog content found');
         }
+    } else {
+        lines.push('No changelog content found');
     }
+    lines.push('');
+
+    lines.push('## Installation via GitHub Packages');
+    lines.push('Configure your NuGet source:');
+    lines.push('```');
+    lines.push('dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "' + nugetFeed + '"');
+    lines.push('```');
 
     fs.writeFileSync(notesPath, lines.join('\n') + '\n', 'utf8');
     return notesPath;

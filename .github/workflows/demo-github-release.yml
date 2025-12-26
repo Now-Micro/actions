@@ -43,7 +43,15 @@ jobs:
                   mkdir -p "$ARTIFACTS_DIR/nested"
                   echo "pkg1" > "$ARTIFACTS_DIR/one.nupkg"
                   echo "pkg2" > "$ARTIFACTS_DIR/nested/two.snupkg"
-                  echo "changelog content" > "$ARTIFACTS_DIR/CHANGELOG.md"
+                  cat <<'EOF' > "$ARTIFACTS_DIR/CHANGELOG.md"
+                  # Changelog
+                  All notable changes to this project will be documented in this file.
+                  The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+                  and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+                  ## [1.0.0] - 2025-07-29
+                  ### Added
+                  - Initial release of the library
+                  EOF
 
             - name: Run github/release (creates real release)
               id: release
@@ -95,6 +103,10 @@ jobs:
                   expected: '["one.nupkg","two.snupkg"]'
                   actual: ${{ steps.release.outputs.packages-json || '' }}
 
+            - name: Assert changelog content in notes
+              run: |
+                  grep -q "Initial release of the library" "${{ steps.release.outputs.release-notes-path }}"
+
             - name: Fetch created release
               id: api
               env:
@@ -107,6 +119,11 @@ jobs:
                   echo "api_assets=$(jq -r '.assets | length' release.json)" >> "$GITHUB_OUTPUT"
                   jq -r '.assets[].name' release.json | sort > asset_names_sorted.txt
                   echo "api_asset_names=$(paste -sd ',' asset_names_sorted.txt)" >> "$GITHUB_OUTPUT"
+                  if jq -r '.body' release.json | grep -qi "Initial release of the library"; then
+                    echo "api_body_has_changelog=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "api_body_has_changelog=false" >> "$GITHUB_OUTPUT"
+                  fi
                   jq -r "\"tag=\(.tag_name)\nname=\(.name)\nassets=\(.assets[].name)\"" release.json >> "$SUMMARY_FILE"
 
             - name: Assert API tag matches
@@ -144,6 +161,15 @@ jobs:
                   mode: exact
                   expected: "one.nupkg,two.snupkg"
                   actual: ${{ steps.api.outputs.api_asset_names || '' }}
+
+            - name: Assert API body has changelog
+              uses: ./src/testing/assert
+              with:
+                  test-name: "api body changelog"
+                  summary-file: ${{ env.SUMMARY_FILE }}
+                  mode: exact
+                  expected: "true"
+                  actual: ${{ steps.api.outputs.api_body_has_changelog || '' }}
 
             - name: Publish summary
               run: |
