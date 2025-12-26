@@ -59,7 +59,7 @@ function escapeRegex(str) {
 
 function extractChangelogSection(content, releaseVersion, debugMode = false) {
     if (!content || !releaseVersion) return content || '';
-    const patternSource = `^##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`;
+    const patternSource = `^\\s*##\\s*\\[?v?${escapeRegex(releaseVersion)}\\]?[^\\n]*$`;
     const pattern = new RegExp(patternSource, 'mi');
     if (debugMode) {
         console.log(`Debug: extractChangelogSection version=${releaseVersion}`);
@@ -75,7 +75,7 @@ function extractChangelogSection(content, releaseVersion, debugMode = false) {
     const start = match.index;
     const remainder = content.slice(start);
     const afterCurrent = remainder.slice(match[0].length);
-    const nextHeadingRel = afterCurrent.search(/^##\s*\[/m);
+    const nextHeadingRel = afterCurrent.search(/^\s*##\s*\[/m);
     const slice = nextHeadingRel >= 0 ? remainder.slice(0, match[0].length + nextHeadingRel) : remainder;
     if (debugMode) {
         console.log(`Debug: changelog section start=${start} length=${slice.length}`);
