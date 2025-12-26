@@ -41,7 +41,7 @@ runs:
 
         ### Added
 
-        - Initial release of the library
+        - Initial release of the library (not really)
         EOF
 
     - name: Run github/release (dry-run)
