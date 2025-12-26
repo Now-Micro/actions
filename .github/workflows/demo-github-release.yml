@@ -43,14 +43,31 @@ jobs:
                   mkdir -p "$ARTIFACTS_DIR/nested"
                   echo "pkg1" > "$ARTIFACTS_DIR/one.nupkg"
                   echo "pkg2" > "$ARTIFACTS_DIR/nested/two.snupkg"
-                  cat <<'EOF' > "$ARTIFACTS_DIR/CHANGELOG.md"
+                  cat <<EOF > "$ARTIFACTS_DIR/CHANGELOG.md"
                   # Changelog
+      
                   All notable changes to this project will be documented in this file.
+      
                   The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
                   and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-                  ## [1.0.0] - 2025-07-29
+      
+                  ## [${RELEASE_VERSION}] - 2025-07-29
+      
                   ### Added
-                  - Initial release of the library
+      
+                  - Something new
+
+                  ## [1.2.0] - 2025-07-21
+
+                  ### Added
+
+                  - Initial release of the library (not really)
+
+                  ## [1.0.0] - 2025-07-21
+
+                  ### Added
+
+                  - Initial release of the library (not really)
                   EOF
 
             - name: Run github/release (creates real release)
@@ -64,6 +81,7 @@ jobs:
                   changelog-path: ${{ env.ARTIFACTS_DIR }}/CHANGELOG.md
                   skip-download: true
                   dry-run: false
+                  debug-mode: true
                   body-filename: ${{ env.BODY_FILE }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
