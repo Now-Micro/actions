@@ -97,6 +97,28 @@ test('returns original path when no csproj exists anywhere', () => {
     });
 });
 
+test('fallback regex extracts root when no csproj exists', () => {
+    withTmpTree(() => {
+        touch('RootA/Sub/README.md');
+    }, () => {
+        const paths = 'RootA/Sub/README.md';
+        const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^([^/]+)' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\["RootA"\]/);
+    });
+});
+
+test('fallback regex non-match keeps directory', () => {
+    withTmpTree(() => {
+        touch('RootB/Sub/README.md');
+    }, () => {
+        const paths = 'RootB/Sub/README.md';
+        const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^ZZZ' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\["RootB\/Sub"\]/);
+    });
+});
+
 test('debug mode prints detailed logs', () => {
     withTmpTree(() => {
         touch('Proj/src/Proj.csproj');
@@ -127,6 +149,12 @@ test('invalid regex exits 1', () => {
     const r = runWith({ INPUT_PATTERN: '([bad', INPUT_PATHS: 'file.cs' });
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err + r.out, /Invalid regex/);
+});
+
+test('invalid fallback regex exits 1', () => {
+    const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: 'file.cs', INPUT_FALLBACK_REGEX: '([bad' });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /Invalid fallback regex/);
 });
 
 test('missing pattern exits 1', () => {

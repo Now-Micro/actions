@@ -10,6 +10,10 @@ inputs:
     description: 'When true, outputs parent projects as a JSON array string (e.g. ["path/to/proj.csproj"]). Otherwise, outputs a comma-separated string.'
     required: false
     default: "true"
+  fallback-regex:
+    description: "Optional regex applied when no .csproj is found; if it matches, the first capture group (or full match) is used before directory flattening."
+    required: false
+    default: ""
   pattern:
     description: "Regular expression used to decide which file paths should be considered when searching for parent .csproj files."
     required: true
@@ -35,5 +39,6 @@ runs:
       env:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         INPUT_OUTPUT_IS_JSON: ${{ inputs.output-is-json }}
+        INPUT_FALLBACK_REGEX: ${{ inputs.fallback-regex }}
         INPUT_PATHS: ${{ inputs.paths }}
         INPUT_PATTERN: ${{ inputs.pattern }}

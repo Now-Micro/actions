@@ -23,6 +23,7 @@ function normalizePath(input) {
 function toDirectoryOnly(value) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
+    if (!normalized.includes('/')) return normalized;
     const dir = path.posix.dirname(normalized);
     return normalizePath(dir);
 }
@@ -61,6 +62,7 @@ function run() {
     const pattern = process.env.INPUT_PATTERN;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
+    const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
     const raw = process.env.INPUT_PATHS || '';
     const paths = raw
         .split(',')
@@ -72,6 +74,7 @@ function run() {
         console.log(`🔍 INPUT_PATTERN: ${pattern}`);
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
+        if (fallbackRegexPattern) console.log(`🔍 FALLBACK_REGEX: ${fallbackRegexPattern}`);
     }
 
     if (!pattern) {
@@ -87,6 +90,16 @@ function run() {
         process.exit(1);
     }
 
+    let fallbackRe = null;
+    if (fallbackRegexPattern) {
+        try {
+            fallbackRe = new RegExp(fallbackRegexPattern);
+        } catch (e) {
+            console.error(`Invalid fallback regex: ${e.message}`);
+            process.exit(1);
+        }
+    }
+
     const results = [];
     for (const p of paths) {
         const matches = re.test(p);
@@ -97,7 +110,18 @@ function run() {
             continue;
         }
         const resolved = findNearestCsproj(p);
-        const finalValue = toDirectoryOnly(resolved);
+        let candidate = resolved;
+        if (!resolved.toLowerCase().endsWith(CS_PROJ_EXTENSION) && fallbackRe) {
+            const match = fallbackRe.exec(resolved);
+            if (match) {
+                candidate = match[1] !== undefined ? match[1] : match[0];
+                if (debugMode) console.log(`🔍 Fallback regex matched '${candidate}' for '${resolved}'.`);
+            } else if (debugMode) {
+                console.log(`🔍 Fallback regex did not match '${resolved}', using directory.`);
+            }
+            fallbackRe.lastIndex = 0;
+        }
+        const finalValue = toDirectoryOnly(candidate);
         results.push(finalValue);
         if (debugMode) console.log(`🔍 Path '${p}' resolved to '${finalValue}'.`);
     }
