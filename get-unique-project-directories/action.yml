@@ -1,5 +1,5 @@
-name: "Get Parent Project"
-description: "Find the nearest .csproj for each input path by walking up parent directories"
+name: "Get Unique Project Directories"
+description: "Find the nearest .csproj for each input path (or just the parent directory when requested)"
 author: "Trafera"
 inputs:
   debug-mode:
@@ -35,7 +35,7 @@ runs:
     - name: Find parent projects
       id: find-parent
       shell: bash
-      run: node "$GITHUB_ACTION_PATH/get-parent-project.js"
+      run: node "$GITHUB_ACTION_PATH/get-unique-project-directories.js"
       env:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         INPUT_OUTPUT_IS_JSON: ${{ inputs.output-is-json }}

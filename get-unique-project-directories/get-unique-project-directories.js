@@ -91,7 +91,7 @@ function run() {
     const results = [];
     for (const p of paths) {
         const matches = re.test(p);
-        if (re.global) re.lastIndex = 0;
+        re.lastIndex = 0;
         if (!matches) {
             results.push('');
             if (debugMode) console.log(`🔍 Path '${p}' skipped; does not match pattern.`);
@@ -116,4 +116,4 @@ function run() {
 }
 
 if (require.main === module) run();
-module.exports = { run, findNearestCsproj, normalizePath };
+module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly };

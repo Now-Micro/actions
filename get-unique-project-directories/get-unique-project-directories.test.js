@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { run } = require('./get-unique-project-directories');
+const { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly } = require('./get-unique-project-directories');
 
 function withEnv(env, fn) {
     const prev = { ...process.env };
@@ -132,6 +132,21 @@ test('return-dir-only returns directory when no csproj exists', () => {
     });
 });
 
+test('debug mode prints detailed logs', () => {
+    withTmpTree(() => {
+        touch('Proj/src/Proj.csproj');
+        touch('Proj/src/File.cs');
+    }, () => {
+        const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: 'Proj/src/File.cs', INPUT_DEBUG_MODE: 'true', INPUT_RETURN_DIR_ONLY: 'true' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.out, /Debug mode is ON/);
+        assert.match(r.out, /INPUT_PATTERN/);
+        assert.match(r.out, /INPUT_PATHS/);
+        assert.match(r.out, /RETURN_DIR_ONLY/);
+        assert.match(r.out, /resolved to 'Proj\/src'/);
+    });
+});
+
 test('non-matching pattern returns empty string for that entry', () => {
     withTmpTree(() => {
         touch('Messaging/Trafera.Messaging.Project2/tests/Trafera.Messaging.Project2.Tests.csproj');
@@ -182,4 +197,18 @@ test('output-is-json false emits comma-separated list', () => {
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /parent_projects=Messaging\/Trafera\.Messaging\.Project2\/tests\/Trafera\.Messaging\.Project2\.Tests\.csproj,Messaging\/Trafera\.Messaging\.Project2\/tests\/Trafera\.Messaging\.Project2\.Tests\.csproj/);
     });
+});
+
+test('helpers cover parseBool and normalizePath edge cases', () => {
+    assert.strictEqual(parseBool(true, false), true);
+    assert.strictEqual(parseBool(false, true), false);
+    assert.strictEqual(parseBool(null, true), true);
+    assert.strictEqual(parseBool('maybe', true), true);
+    assert.strictEqual(normalizePath('  "C\\\\Temp\\Proj\\File.cs"  '), 'C/Temp/Proj/File.cs');
+    assert.strictEqual(toDirectoryOnly(''), '');
+});
+
+test('findNearestCsproj tolerates missing directories', () => {
+    const result = findNearestCsproj('no/such/dir/file.cs');
+    assert.match(result, /no\/such\/dir\/file\.cs$/);
 });
