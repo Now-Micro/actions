@@ -1,0 +1,78 @@
+name: "Demo - Get Parent Project"
+description: "Demonstrates resolving parent projects and parent directories"
+author: "Trafera"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Title - Get Parent Project Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Get Parent Project Demo
+        path: ./.github/actions/demo-get-parent-project
+
+    - name: Prepare summary file
+      shell: bash
+      id: pre
+      run: echo "summary_file=$(pwd)/get-parent-project-summary.txt" >> $GITHUB_OUTPUT
+
+    - name: Resolve csproj paths (default)
+      id: t1
+      uses: ./get-parent-project
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        debug-mode: "true"
+
+    - name: Assert csproj paths
+      uses: ./src/testing/assert
+      with:
+        test-name: "returns csproj paths"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet/src/Api/Api.csproj","src/demo/dotnet/tests/Api.Tests/Api.Tests.csproj"]'
+        actual: ${{ steps.t1.outputs.parent_projects }}
+
+    - name: Resolve parent directories (return-dir-only)
+      id: t2
+      uses: ./get-parent-project
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        return-dir-only: "true"
+        debug-mode: "true"
+
+    - name: Assert parent directories
+      uses: ./src/testing/assert
+      with:
+        test-name: "returns parent directories"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet/src/Api","src/demo/dotnet/tests/Api.Tests"]'
+        actual: ${{ steps.t2.outputs.parent_projects }}
+
+    - name: Resolve parent directories as csv
+      id: t3
+      uses: ./get-parent-project
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        return-dir-only: true
+        output-is-json: false
+        debug-mode: "true"
+
+    - name: Assert csv parent directories
+      uses: ./src/testing/assert
+      with:
+        test-name: "parent directories csv"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
+        actual: ${{ steps.t3.outputs.parent_projects }}
+
+    - name: Summarize
+      shell: bash
+      if: always()
+      run: |
+        echo '=== Get Parent Project Demo Summary ===' >> $GITHUB_STEP_SUMMARY
+        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY
