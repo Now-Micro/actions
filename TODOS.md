@@ -1,6 +1,6 @@
 # Todos
 
-I want to change how the composite action "get-unique-root-directories" works.  Currently, the implementation assumes that the root directories are always single project directories.  This is not always the case, and it can lead to incorrect results.  I want to change the implementation to be more flexible and to handle cases where there are multiple project directories.  Consider the following directory structure:
+I want to change how the composite action "get-unique-root-directories" works.  Currently, the implementation assumes that the root directories are always single project directories.  This is not always the case, and it can lead to incorrect results.  I want to change the implementation to be more flexible and to alos handle cases where there are multiple project directories.  Consider the following directory structure:
 
 ```
 Messaging
@@ -18,4 +18,4 @@ Messaging
 |   └── tests
 ```
 
-In this case, the current implementation of "get-unique-root-directories" would return "Messaging" as the root directory, which is not correct.  Instead, I want to change the implementation to return "Trafera.Messaging.Abstractions", "Trafera.Messaging.Project2", and "Trafera.Messaging.Project3" as the root directories in such cases.  This will allow the action to work correctly in cases where there are multiple project directories.  I think the best way to implement this change is to check the current output for the presence of multiple projects and then return the parent directory for each project as the new output.  
+In this case, the current implementation of "get-unique-root-directories" would return "Messaging" as the root directory, but it should return three "Messaging/Trafera.Messaging.Abstractions", "Messaging/Trafera.Messaging.Project2", and "Messaging/Trafera.Messaging.Project3" directories.  I think the best way to implement this change is to check the current output for the presence of multiple projects and then use the parent directory for each project as an intermediary step to determine (based on the file path inputs) which root directories to return.  If none of the input file paths are located within the parent directory of a project, then that project should be excluded from the output.  This way, we can ensure that we are only returning the root directories that are relevant to the input file paths.
