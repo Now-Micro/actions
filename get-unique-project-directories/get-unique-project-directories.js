@@ -53,6 +53,7 @@ function findNearestCsproj(inputPath) {
         currentDir = parent;
     }
 
+    // No csproj found; return the original normalized path so caller can derive its directory
     return normalized;
 }
 
@@ -60,7 +61,6 @@ function run() {
     const pattern = process.env.INPUT_PATTERN;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
-    const returnDirOnly = parseBool(process.env.INPUT_RETURN_DIR_ONLY, false);
     const raw = process.env.INPUT_PATHS || '';
     const paths = raw
         .split(',')
@@ -72,7 +72,6 @@ function run() {
         console.log(`🔍 INPUT_PATTERN: ${pattern}`);
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
-        console.log(`🔍 RETURN_DIR_ONLY: ${returnDirOnly}`);
     }
 
     if (!pattern) {
@@ -98,7 +97,7 @@ function run() {
             continue;
         }
         const resolved = findNearestCsproj(p);
-        const finalValue = returnDirOnly ? toDirectoryOnly(resolved) : resolved;
+        const finalValue = toDirectoryOnly(resolved);
         results.push(finalValue);
         if (debugMode) console.log(`🔍 Path '${p}' resolved to '${finalValue}'.`);
     }
