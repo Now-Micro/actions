@@ -1,6 +1,6 @@
-# get-parent-project
+# get-unique-parent-directories
 
-Resolves the closest `.csproj` for each provided file path that matches the supplied regex pattern, walking up parent directories and stopping at the first directory containing a `.csproj`. Paths that do not match the pattern return an empty string; matching paths with no `.csproj` found return the original path. The `output-is-json` input toggles between JSON array output and a comma-separated string.
+This action takes a list of file paths and returns the unique parent project directories for each path based on a specified file pattern (e.g. `.*\.cs$`). It searches up the directory tree for each path to find the nearest parent project file (e.g. `.csproj`) that matches the pattern. If no parent project is found, nothing is returned for that path. Optionally, a fallback regex can be applied to extract a project name from the path when no parent project file is found, which can be useful for non-standard project structures.
 
 ```yaml
 with:

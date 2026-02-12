@@ -86,14 +86,37 @@ test('finds csproj in parent directory when nested', () => {
     });
 });
 
-test('returns original path when no csproj exists anywhere', () => {
+test('returns no entry when no csproj exists anywhere', () => {
     withTmpTree(() => {
         touch('Messaging/Trafera.Messaging.Project3/README.md');
     }, () => {
         const paths = 'Messaging/Trafera.Messaging.Project3/README.md';
         const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /parent_projects=\["Messaging\/Trafera\.Messaging\.Project3"\]/);
+        assert.match(r.outputContent, /parent_projects=\[\]/);
+    });
+});
+
+test('root-level README produces no entry', () => {
+    withTmpTree(() => {
+        touch('README.md');
+    }, () => {
+        const paths = 'README.md';
+        const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\[\]/);
+    });
+});
+
+test('root-level csproj resolves to empty directory', () => {
+    withTmpTree(() => {
+        touch('App.csproj');
+        touch('Program.cs');
+    }, () => {
+        const paths = 'Program.cs';
+        const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\[\]/);
     });
 });
 
@@ -115,7 +138,7 @@ test('fallback regex non-match keeps directory', () => {
         const paths = 'RootB/Sub/README.md';
         const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^ZZZ' });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /parent_projects=\["RootB\/Sub"\]/);
+        assert.match(r.outputContent, /parent_projects=\[\]/);
     });
 });
 
@@ -133,7 +156,7 @@ test('debug mode prints detailed logs', () => {
     });
 });
 
-test('non-matching pattern returns empty string for that entry', () => {
+test('non-matching pattern returns no entry', () => {
     withTmpTree(() => {
         touch('Messaging/Trafera.Messaging.Project2/tests/Trafera.Messaging.Project2.Tests.csproj');
         touch('Messaging/Trafera.Messaging.Project2/tests/SomeTestFile.md');
@@ -141,7 +164,7 @@ test('non-matching pattern returns empty string for that entry', () => {
         const paths = 'Messaging/Trafera.Messaging.Project2/tests/SomeTestFile.md';
         const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /parent_projects=\[""\]/);
+        assert.match(r.outputContent, /parent_projects=\[\]/);
     });
 });
 
@@ -187,7 +210,21 @@ test('output-is-json false emits comma-separated list', () => {
         const paths = 'Messaging/Trafera.Messaging.Project2/tests/One.cs,Messaging/Trafera.Messaging.Project2/tests/Two.cs';
         const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'false' });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /parent_projects=Messaging\/Trafera\.Messaging\.Project2\/tests,Messaging\/Trafera\.Messaging\.Project2\/tests/);
+        assert.match(r.outputContent, /parent_projects=Messaging\/Trafera\.Messaging\.Project2\/tests/);
+        assert.doesNotMatch(r.outputContent, /parent_projects=Messaging\/Trafera\.Messaging\.Project2\/tests,Messaging\/Trafera\.Messaging\.Project2\/tests/);
+    });
+});
+
+test('json output is de-duplicated', () => {
+    withTmpTree(() => {
+        touch('Messaging/Trafera.Messaging.Project2/tests/Trafera.Messaging.Project2.Tests.csproj');
+        touch('Messaging/Trafera.Messaging.Project2/tests/One.cs');
+        touch('Messaging/Trafera.Messaging.Project2/tests/Two.cs');
+    }, () => {
+        const paths = 'Messaging/Trafera.Messaging.Project2/tests/One.cs,Messaging/Trafera.Messaging.Project2/tests/Two.cs';
+        const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths, INPUT_OUTPUT_IS_JSON: 'true' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\["Messaging\/Trafera\.Messaging\.Project2\/tests"\]/);
     });
 });
 
@@ -198,9 +235,12 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     assert.strictEqual(parseBool('maybe', true), true);
     assert.strictEqual(normalizePath('  "C\\\\Temp\\Proj\\File.cs"  '), 'C/Temp/Proj/File.cs');
     assert.strictEqual(toDirectoryOnly(''), '');
+    assert.strictEqual(toDirectoryOnly('App.csproj'), '');
+    assert.strictEqual(toDirectoryOnly('README.md'), '');
+    assert.strictEqual(toDirectoryOnly('src'), 'src');
 });
 
 test('findNearestCsproj tolerates missing directories', () => {
     const result = findNearestCsproj('no/such/dir/file.cs');
-    assert.strictEqual(toDirectoryOnly(result), 'no/such/dir');
+    assert.strictEqual(result, '');
 });

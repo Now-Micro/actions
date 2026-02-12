@@ -3,11 +3,11 @@ on:
     workflow_dispatch: {}
 
 jobs:
-    demo-get-unique-project-directories:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  demo-get-unique-project-directories:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Run demo for get-unique-project-directories
-              uses: ./.github/actions/demo-get-unique-project-directories
+      - name: Run demo for get-unique-project-directories
+        uses: ./.github/actions/demo-get-unique-project-directories

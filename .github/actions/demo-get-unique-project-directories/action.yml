@@ -47,7 +47,7 @@ runs:
         test-name: "non-matching path yields empty entry"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["","src/demo/dotnet/src/Api"]'
+        expected: '["src/demo/dotnet/src/Api"]'
         actual: ${{ steps.t2.outputs.parent_projects }}
 
     - name: Fallback regex captures root segment
@@ -83,7 +83,7 @@ runs:
         test-name: "fallback miss keeps original directory"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["src/demo/dotnet"]'
+        expected: "[]"
         actual: ${{ steps.t4.outputs.parent_projects }}
 
     - name: Resolve directories as csv (string false)
@@ -121,6 +121,41 @@ runs:
         mode: exact
         expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
         actual: ${{ steps.t6.outputs.parent_projects }}
+
+    - name: De-duplicate default JSON output
+      id: t7
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        debug-mode: "true"
+
+    - name: Assert de-duplicated JSON output
+      uses: ./src/testing/assert
+      with:
+        test-name: "deduplicates JSON output"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet/src/Api"]'
+        actual: ${{ steps.t7.outputs.parent_projects }}
+
+    - name: De-duplicate csv output
+      id: t8
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        output-is-json: "false"
+        debug-mode: "true"
+
+    - name: Assert de-duplicated csv output
+      uses: ./src/testing/assert
+      with:
+        test-name: "deduplicates csv output"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "src/demo/dotnet/src/Api"
+        actual: ${{ steps.t8.outputs.parent_projects }}
 
     - name: Summarize
       shell: bash
