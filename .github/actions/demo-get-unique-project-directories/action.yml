@@ -184,6 +184,10 @@ runs:
         expected: '["."]'
         actual: ${{ steps.t9.outputs.parent_projects }}
 
+    - name: Remove root-level project fixture
+      shell: bash
+      run: rm -f Demo.Root.csproj Demo.Root.cs
+
     - name: Create dotted root directory fixture
       shell: bash
       run: |
