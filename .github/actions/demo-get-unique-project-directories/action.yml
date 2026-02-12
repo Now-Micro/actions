@@ -47,7 +47,7 @@ runs:
         test-name: "non-matching path yields empty entry"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["","src/demo/dotnet/src/Api"]'
+        expected: '["src/demo/dotnet/src/Api"]'
         actual: ${{ steps.t2.outputs.parent_projects }}
 
     - name: Fallback regex captures root segment
@@ -80,10 +80,10 @@ runs:
     - name: Assert fallback non-match output
       uses: ./src/testing/assert
       with:
-        test-name: "fallback miss keeps original directory"
+        test-name: "fallback miss return empty"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["src/demo/dotnet"]'
+        expected: "[]"
         actual: ${{ steps.t4.outputs.parent_projects }}
 
     - name: Resolve directories as csv (string false)
@@ -121,6 +121,103 @@ runs:
         mode: exact
         expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
         actual: ${{ steps.t6.outputs.parent_projects }}
+
+    - name: De-duplicate default JSON output
+      id: t7
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        debug-mode: "true"
+
+    - name: Assert de-duplicated JSON output
+      uses: ./src/testing/assert
+      with:
+        test-name: "deduplicates JSON output"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet/src/Api"]'
+        actual: ${{ steps.t7.outputs.parent_projects }}
+
+    - name: De-duplicate csv output
+      id: t8
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        output-is-json: "false"
+        debug-mode: "true"
+
+    - name: Assert de-duplicated csv output
+      uses: ./src/testing/assert
+      with:
+        test-name: "deduplicates csv output"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "src/demo/dotnet/src/Api"
+        actual: ${{ steps.t8.outputs.parent_projects }}
+
+    - name: Create root-level demo project files
+      shell: bash
+      run: |
+        cat > Demo.Root.csproj <<'EOF'
+        <Project Sdk="Microsoft.NET.Sdk"></Project>
+        EOF
+        cat > Demo.Root.cs <<'EOF'
+        public static class DemoRoot {}
+        EOF
+
+    - name: Resolve root-level project directory
+      id: t9
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "Demo.Root.cs"
+        debug-mode: "true"
+
+    - name: Assert root-level project directory is dot
+      uses: ./src/testing/assert
+      with:
+        test-name: "root-level csproj returns dot directory"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["."]'
+        actual: ${{ steps.t9.outputs.parent_projects }}
+
+    - name: Remove root-level project fixture
+      shell: bash
+      run: rm -f Demo.Root.csproj Demo.Root.cs
+
+    - name: Create dotted root directory fixture
+      shell: bash
+      run: |
+        mkdir -p My.Project/Sub
+        cat > My.Project/Sub/README.md <<'EOF'
+        demo
+        EOF
+
+    - name: Resolve dotted root directory via fallback
+      id: t10
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.md$"
+        paths: "My.Project/Sub/README.md"
+        fallback-regex: "^([^/]+)"
+        debug-mode: "true"
+
+    - name: Assert dotted root directory is preserved
+      uses: ./src/testing/assert
+      with:
+        test-name: "dotted root directory preserved"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["My.Project"]'
+        actual: ${{ steps.t10.outputs.parent_projects }}
+
+    - name: Clean demo fixtures
+      shell: bash
+      if: always()
+      run: rm -rf Demo.Root.csproj Demo.Root.cs My.Project
 
     - name: Summarize
       shell: bash

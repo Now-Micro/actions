@@ -16,7 +16,7 @@ runs:
     - name: Demo - github release
       uses: ./.github/actions/demo-github-release
 
-    - name: Demo - get-parent-project
+    - name: Demo - get-unique-project-directories
       uses: ./.github/actions/demo-get-unique-project-directories
 
     - name: Demo - find

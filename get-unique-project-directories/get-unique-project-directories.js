@@ -23,7 +23,20 @@ function normalizePath(input) {
 function toDirectoryOnly(value) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
-    if (!normalized.includes('/')) return normalized;
+    if (!normalized.includes('/')) {
+        const absolute = path.resolve(normalized);
+        try {
+            if (fs.existsSync(absolute)) {
+                const stat = fs.statSync(absolute);
+                if (stat.isDirectory()) return normalized;
+                if (stat.isFile()) return '.';
+            }
+        } catch (err) {
+            // Ignore filesystem probing errors and fall back to heuristics.
+        }
+        if (normalized.toLowerCase().endsWith(CS_PROJ_EXTENSION)) return '.';
+        return normalized;
+    }
     const dir = path.posix.dirname(normalized);
     return normalizePath(dir);
 }
@@ -54,8 +67,8 @@ function findNearestCsproj(inputPath) {
         currentDir = parent;
     }
 
-    // No csproj found; return the original normalized path so caller can derive its directory
-    return normalized;
+    // No csproj found.
+    return '';
 }
 
 function run() {
@@ -112,12 +125,13 @@ function run() {
         const resolved = findNearestCsproj(p);
         let candidate = resolved;
         if (!resolved.toLowerCase().endsWith(CS_PROJ_EXTENSION) && fallbackRe) {
-            const match = fallbackRe.exec(resolved);
+            const fallbackSource = resolved || p;
+            const match = fallbackRe.exec(fallbackSource);
             if (match) {
                 candidate = match[1] !== undefined ? match[1] : match[0];
-                if (debugMode) console.log(`🔍 Fallback regex matched '${candidate}' for '${resolved}'.`);
+                if (debugMode) console.log(`🔍 Fallback regex matched '${candidate}' for '${fallbackSource}'.`);
             } else if (debugMode) {
-                console.log(`🔍 Fallback regex did not match '${resolved}', using directory.`);
+                console.log(`🔍 Fallback regex did not match '${fallbackSource}', omitting entry.`);
             }
             fallbackRe.lastIndex = 0;
         }
@@ -126,7 +140,12 @@ function run() {
         if (debugMode) console.log(`🔍 Path '${p}' resolved to '${finalValue}'.`);
     }
 
-    const serialized = outputIsJson ? JSON.stringify(results) : results.join(',');
+    const uniqueResults = [...new Set(results.filter(Boolean))];
+    if (debugMode && uniqueResults.length !== results.length) {
+        console.log(`🔍 Removed ${results.length - uniqueResults.length} duplicates and/or empty values.`);
+    }
+
+    const serialized = outputIsJson ? JSON.stringify(uniqueResults) : uniqueResults.join(',');
     if (debugMode) console.log(`🔍 Parent projects: ${serialized}`);
 
     const out = process.env.GITHUB_OUTPUT;
