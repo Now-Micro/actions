@@ -116,7 +116,7 @@ test('root-level csproj resolves to empty directory', () => {
         const paths = 'Program.cs';
         const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /parent_projects=\[\]/);
+        assert.match(r.outputContent, /parent_projects=\["\."\]/);
     });
 });
 
@@ -139,6 +139,17 @@ test('fallback regex non-match keeps directory', () => {
         const r = runWith({ INPUT_PATTERN: '.*', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^ZZZ' });
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /parent_projects=\[\]/);
+    });
+});
+
+test('fallback regex preserves dotted root directory name', () => {
+    withTmpTree(() => {
+        touch('My.Project/Sub/README.md');
+    }, () => {
+        const paths = 'My.Project/Sub/README.md';
+        const r = runWith({ INPUT_PATTERN: '.*\\.md$', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^([^/]+)' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /parent_projects=\["My\.Project"\]/);
     });
 });
 
@@ -235,8 +246,8 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     assert.strictEqual(parseBool('maybe', true), true);
     assert.strictEqual(normalizePath('  "C\\\\Temp\\Proj\\File.cs"  '), 'C/Temp/Proj/File.cs');
     assert.strictEqual(toDirectoryOnly(''), '');
-    assert.strictEqual(toDirectoryOnly('App.csproj'), '');
-    assert.strictEqual(toDirectoryOnly('README.md'), '');
+    assert.strictEqual(toDirectoryOnly('App.csproj'), '.');
+    assert.strictEqual(toDirectoryOnly('README.md'), '.');
     assert.strictEqual(toDirectoryOnly('src'), 'src');
 });
 

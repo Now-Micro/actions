@@ -1,5 +1,5 @@
 name: "Get Unique Project Directories"
-description: "Returns the unique parent project directories for each input path based on a specified file pattern (e.g. .*.cs). If no parent project is found, an empty string is returned for that path. Optionally applies a fallback regex to extract a project name from the path when no parent project file is found, which can be useful for non-standard project structures."
+description: "Returns the unique parent project directories for the input paths based on a specified file pattern (e.g. .*.cs). Paths without a matching parent project file are omitted from the result. Optionally applies a fallback regex to extract a project name from the path when no parent project file is found, which can be useful for non-standard project structures."
 author: "Trafera"
 inputs:
   debug-mode:
@@ -23,7 +23,7 @@ inputs:
 
 outputs:
   parent_projects:
-    description: "Resolved parent project directories for each input path.  Matched output paths are guaranteed to be unique and have a .csproj file within them."
+    description: "Resolved parent project directories for each input path. Matched output paths are guaranteed to be unique. When matches come from actual project files, the directories will contain a .csproj; when derived via fallback-regex, they may instead reflect a regex-based project name without a corresponding .csproj."
     value: ${{ steps.find-parent.outputs.parent_projects }}
 
 runs:

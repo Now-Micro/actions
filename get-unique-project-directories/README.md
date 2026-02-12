@@ -1,4 +1,4 @@
-# get-unique-parent-directories
+# get-unique-project-directories
 
 This action takes a list of file paths and returns the unique parent project directories for each path based on a specified file pattern (e.g. `.*\.cs$`). It searches up the directory tree for each path to find the nearest parent project file (e.g. `.csproj`) that matches the pattern. If no parent project is found, nothing is returned for that path. Optionally, a fallback regex can be applied to extract a project name from the path when no parent project file is found, which can be useful for non-standard project structures.
 

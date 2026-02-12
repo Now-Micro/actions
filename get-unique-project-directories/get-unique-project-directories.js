@@ -24,8 +24,17 @@ function toDirectoryOnly(value) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
     if (!normalized.includes('/')) {
-        const ext = path.posix.extname(normalized);
-        if (ext) return '';
+        const absolute = path.resolve(normalized);
+        try {
+            if (fs.existsSync(absolute)) {
+                const stat = fs.statSync(absolute);
+                if (stat.isDirectory()) return normalized;
+                if (stat.isFile()) return '.';
+            }
+        } catch (err) {
+            // Ignore filesystem probing errors and fall back to heuristics.
+        }
+        if (normalized.toLowerCase().endsWith(CS_PROJ_EXTENSION)) return '.';
         return normalized;
     }
     const dir = path.posix.dirname(normalized);
@@ -133,7 +142,7 @@ function run() {
 
     const uniqueResults = [...new Set(results.filter(Boolean))];
     if (debugMode && uniqueResults.length !== results.length) {
-        console.log(`🔍 De-duplicated results from ${results.length} to ${uniqueResults.length}.`);
+        console.log(`🔍 Removed ${results.length - uniqueResults.length} duplicates and/or empty values.`);
     }
 
     const serialized = outputIsJson ? JSON.stringify(uniqueResults) : uniqueResults.join(',');
