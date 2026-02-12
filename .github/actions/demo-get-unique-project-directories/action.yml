@@ -1,0 +1,130 @@
+name: "Demo - Get Unique Project Directories"
+description: "Demonstrates resolving nearest project directories with pattern and fallback behavior"
+author: "Trafera"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Title - Get Unique Project Directories Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Get Unique Project Directories Demo
+        path: ./.github/actions/demo-get-unique-project-directories
+
+    - name: Prepare summary file
+      shell: bash
+      id: pre
+      run: echo "summary_file=$(pwd)/get-unique-project-directories-summary.txt" >> $GITHUB_OUTPUT
+
+    - name: Resolve nearest project directories (default JSON)
+      id: t1
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        debug-mode: "true"
+
+    - name: Assert default JSON output
+      uses: ./src/testing/assert
+      with:
+        test-name: "returns nearest project directories"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet/src/Api","src/demo/dotnet/tests/Api.Tests"]'
+        actual: ${{ steps.t1.outputs.parent_projects }}
+
+    - name: Non-matching entries remain empty
+      id: t2
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/README.md,src/demo/dotnet/src/Api/Program.cs"
+        debug-mode: "true"
+
+    - name: Assert non-matching entry output
+      uses: ./src/testing/assert
+      with:
+        test-name: "non-matching path yields empty entry"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["","src/demo/dotnet/src/Api"]'
+        actual: ${{ steps.t2.outputs.parent_projects }}
+
+    - name: Fallback regex captures root segment
+      id: t3
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.md$"
+        paths: "src/demo/dotnet/README.md"
+        fallback-regex: "^([^/]+)"
+        debug-mode: "true"
+
+    - name: Assert fallback capture output
+      uses: ./src/testing/assert
+      with:
+        test-name: "fallback capture group is applied"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src"]'
+        actual: ${{ steps.t3.outputs.parent_projects }}
+
+    - name: Fallback regex non-match keeps directory
+      id: t4
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.md$"
+        paths: "src/demo/dotnet/README.md"
+        fallback-regex: "^ZZZ"
+        debug-mode: "true"
+
+    - name: Assert fallback non-match output
+      uses: ./src/testing/assert
+      with:
+        test-name: "fallback miss keeps original directory"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/dotnet"]'
+        actual: ${{ steps.t4.outputs.parent_projects }}
+
+    - name: Resolve directories as csv (string false)
+      id: t5
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        output-is-json: "false"
+        debug-mode: "true"
+
+    - name: Assert csv output (string false)
+      uses: ./src/testing/assert
+      with:
+        test-name: "csv output when output-is-json is string false"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
+        actual: ${{ steps.t5.outputs.parent_projects }}
+
+    - name: Resolve directories as csv (boolean false)
+      id: t6
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        output-is-json: false
+        debug-mode: "true"
+
+    - name: Assert csv output (boolean false)
+      uses: ./src/testing/assert
+      with:
+        test-name: "csv output when output-is-json is boolean false"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
+        actual: ${{ steps.t6.outputs.parent_projects }}
+
+    - name: Summarize
+      shell: bash
+      if: always()
+      run: |
+        echo '=== Get Unique Project Directories Demo Summary ===' >> $GITHUB_STEP_SUMMARY
+        cat ${{ steps.pre.outputs.summary_file }} >> $GITHUB_STEP_SUMMARY

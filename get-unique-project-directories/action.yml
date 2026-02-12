@@ -1,0 +1,44 @@
+name: "Get Unique Project Directories"
+description: "Find the nearest .csproj for each input path (or just the parent directory when requested)"
+author: "Trafera"
+inputs:
+  debug-mode:
+    description: "Enable debug mode for additional logging."
+    required: false
+    default: "false"
+  fallback-regex:
+    description: "Optional regex applied when no .csproj is found; if it matches, the first capture group (or full match) is used before directory flattening."
+    required: false
+    default: ""
+  output-is-json:
+    description: 'When true, outputs parent projects as a JSON array string (e.g. ["path/to/proj.csproj"]). Otherwise, outputs a comma-separated string.'
+    required: false
+    default: "true"
+  pattern:
+    description: "Regular expression used to decide which file paths should be considered when searching for parent .csproj files."
+    required: true
+  paths:
+    description: "Comma-separated list of paths to evaluate."
+    required: true
+
+outputs:
+  parent_projects:
+    description: "Resolved parent .csproj for each input path (or empty string when not applicable)."
+    value: ${{ steps.find-parent.outputs.parent_projects }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Find parent projects
+      id: find-parent
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/get-unique-project-directories.js"
+      env:
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_OUTPUT_IS_JSON: ${{ inputs.output-is-json }}
+        INPUT_FALLBACK_REGEX: ${{ inputs.fallback-regex }}
+        INPUT_PATHS: ${{ inputs.paths }}
+        INPUT_PATTERN: ${{ inputs.pattern }}
