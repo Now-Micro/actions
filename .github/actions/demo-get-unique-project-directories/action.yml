@@ -423,7 +423,7 @@ runs:
       with:
         pattern: "^.*/src/.*\\.cs$"
         paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
-        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2.Tests#"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
         useOriginalIfMissing: "true"
         debug-mode: "true"
 
@@ -454,6 +454,25 @@ runs:
         mode: exact
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests"]'
         actual: ${{ steps.t23.outputs.unique_project_directories }}
+
+    - name: useOriginalIfMissing - uses transformed when false and missing
+      id: t24
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        useOriginalIfMissing: "false"
+        debug-mode: "true"
+
+    - name: Assert fallback to original when transformed missing
+      uses: ./src/testing/assert
+      with:
+        test-name: "useOriginalIfMissing uses transformed value when false"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions"]'
+        actual: ${{ steps.t24.outputs.unique_project_directories }}
 
     - name: Summarize
       shell: bash
