@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Trafera.Warranty.Trigger": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54945;http://localhost:54946"
+    }
+  }
+}

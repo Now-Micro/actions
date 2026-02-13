@@ -1,0 +1,20 @@
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+  <ItemGroup>
+    <ProjectReference Include="..\Trafera.Messaging.Aspire.MockConsumerOne\Trafera.Messaging.Aspire.MockConsumerOne.csproj" />
+    <ProjectReference Include="..\Trafera.Messaging.Aspire.MockConsumerTwo\Trafera.Messaging.Aspire.MockConsumerTwo.csproj" />
+    <ProjectReference Include="..\Trafera.Messaging.Aspire.MockConsumerThree\Trafera.Messaging.Aspire.MockConsumerThree.csproj" />
+    <ProjectReference Include="..\Trafera.Messaging.Aspire.Trigger\Trafera.Messaging.Aspire.Trigger.csproj" />
+    <ProjectReference Include="..\Trafera.Messaging.Aspire.DbInitializer\Trafera.Messaging.Aspire.DbInitializer.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.MongoDB" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
+  </ItemGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>052aa449-f13b-47e7-9fa1-d526ed146290</UserSecretsId>
+  </PropertyGroup>
+</Project>

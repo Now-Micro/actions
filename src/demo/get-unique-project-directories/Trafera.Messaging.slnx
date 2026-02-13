@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="samples/Trafera.Messaging.MassTransit.SampleApp/Trafera.Messaging.MassTransit.SampleApp.csproj" />
+    <Project Path="samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj" />
+  </Folder>
+  <Folder Name="/Src/">
+    <Project Path="../MassTransit/src/Trafera.MassTransit/Trafera.MassTransit.csproj" />
+    <Project Path="src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj" />
+    <Project Path="src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj" />
+    <Project Path="src/Trafera.Messaging.MediatR/Trafera.Messaging.MediatR.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Trafera.Messaging.Abstractions.Tests/Trafera.Messaging.Abstractions.Tests.csproj" />
+    <Project Path="tests/Trafera.Messaging.MassTransit.Tests/Trafera.Messaging.MassTransit.Tests.csproj" />
+    <Project Path="tests/Trafera.Messaging.MediatR.Tests/Trafera.Messaging.MediatR.Tests.csproj" />
+  </Folder>
+</Solution>
