@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-setup:
+  checks:
     runs-on: ubuntu-22.04
     if: ${{ (vars.ENABLE_TESTING || 'true') == 'true' }}
     outputs:
@@ -30,7 +30,7 @@ jobs:
           default-branch: ${{ github.event.repository.default_branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           job-names-that-must-succeed: "Node Tests,Demo Workflows"
-          main-job-name: "test-setup"
+          main-job-name: "checks"
           request-size: 50
           retry-attempts: 3
           workflow-name: "checks.yml"
@@ -57,7 +57,7 @@ jobs:
           fi
 
           echo "Should run: $SHOULD_RUN"
-          echo "should_run_tests=false" >> "$GITHUB_OUTPUT"
+          echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
 
       - name: Run Node tests
         uses: ./.github/actions/run-node-tests
