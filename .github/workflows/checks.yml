@@ -29,7 +29,6 @@ jobs:
           branch: ${{ github.head_ref }}
           default-branch: ${{ github.event.repository.default_branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          job-names-that-must-succeed: "Node Tests,Demo Workflows"
           main-job-name: "checks"
           request-size: 50
           retry-attempts: 3
@@ -49,7 +48,7 @@ jobs:
           echo "Changed files: ${{ steps.changed-files.outputs.changed_files }}"
           SHOULD_RUN=false
 
-          # Example logic: run tests if any .js or .cs files changed
+          # Example logic: run tests if any action.yml, .js or .cs files changed
           # Also run tests if any action.yml files or action folders changed (these affect actions behavior)
           CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
           if echo "$CHANGED_FILES" | grep -qE '\.js|\.cs|action\.yml|\.github/actions/'; then
