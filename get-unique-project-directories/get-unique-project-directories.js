@@ -203,7 +203,7 @@ function run() {
         const finalValue = toDirectoryOnly(candidate);
         const transformedValue = transformOutputPath(finalValue, transformer);
         let outputValue = transformedValue;
-        if (transformer && useOriginalIfMissing && !directoryExists(transformedValue)) {
+        if (transformer && useOriginalIfMissing && transformedValue && !directoryExists(transformedValue)) {
             outputValue = finalValue;
             if (debugMode) {
                 console.log(`🔍 Transformed directory '${transformedValue}' does not exist. Using original '${finalValue}'.`);
