@@ -381,6 +381,42 @@ runs:
         expected: "1"
         actual: ${{ steps.t19.outputs.code }}
 
+    - name: Generic transformer (regex style) with mixed input paths
+      id: t20
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj,src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests/ExternalMessageConsumerTests.cs,src/demo/get-unique-project-directories/samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        debug-mode: "true"
+
+    - name: Assert generic transformer (regex style)
+      uses: ./src/testing/assert
+      with:
+        test-name: "generic transformer regex style"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
+        actual: ${{ steps.t20.outputs.unique_project_directories }}
+
+    - name: Generic transformer (sed style) with mixed input paths
+      id: t21
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj,src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests/ExternalMessageConsumerTests.cs,src/demo/get-unique-project-directories/samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj"
+        transformer: "s#(^|/)src/#$1tests/#"
+        debug-mode: "true"
+
+    - name: Assert generic transformer (sed style)
+      uses: ./src/testing/assert
+      with:
+        test-name: "generic transformer sed style"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
+        actual: ${{ steps.t21.outputs.unique_project_directories }}
+
     - name: Summarize
       shell: bash
       if: always()
