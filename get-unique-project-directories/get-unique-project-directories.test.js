@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath } = require('./get-unique-project-directories');
+const { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath, directoryExists } = require('./get-unique-project-directories');
 
 function withEnv(env, fn) {
     const prev = { ...process.env };
@@ -251,6 +251,46 @@ test('transformer handles generic regex - sed style', () => {
     });
 });
 
+test('useOriginalIfMissing falls back to original when transformed directory is missing', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'true',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/src\/Trafera\.Messaging\.Abstractions"\]/);
+    });
+});
+
+test('useOriginalIfMissing keeps transformed when transformed directory exists', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const transformedProject = 'Messaging/tests/Trafera.Messaging.Abstractions.Tests/Trafera.Messaging.Abstractions.Tests.csproj';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+        touch(transformedProject);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'true',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions\.Tests"\]/);
+    });
+});
+
 test('debug mode prints detailed logs', () => {
     withTmpTree(() => {
         touch('Proj/src/Proj.csproj');
@@ -360,6 +400,8 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     const extractTransformer = parseTransformer('^tests/(.+)$');
     assert.strictEqual(transformOutputPath('tests/Proj', extractTransformer), 'Proj');
     assert.strictEqual(transformOutputPath('src/Proj', extractTransformer), '');
+
+    assert.strictEqual(directoryExists('no/such/dir'), false);
 });
 
 test('findNearestCsproj tolerates missing directories', () => {

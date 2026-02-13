@@ -417,6 +417,44 @@ runs:
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
         actual: ${{ steps.t21.outputs.unique_project_directories }}
 
+    - name: useOriginalIfMissing true falls back when transformed path missing
+      id: t22
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2.Tests#"
+        useOriginalIfMissing: "true"
+        debug-mode: "true"
+
+    - name: Assert fallback to original when transformed missing
+      uses: ./src/testing/assert
+      with:
+        test-name: "useOriginalIfMissing falls back to original"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
+        actual: ${{ steps.t22.outputs.unique_project_directories }}
+
+    - name: useOriginalIfMissing true keeps transformed when transformed exists
+      id: t23
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/MessagingMassTransitExtensions.cs"
+        transformer: "s#^src/demo/get-unique-project-directories/src/(.*)$#src/demo/get-unique-project-directories/tests/$1.Tests#"
+        useOriginalIfMissing: "true"
+        debug-mode: "true"
+
+    - name: Assert transformed kept when transformed exists
+      uses: ./src/testing/assert
+      with:
+        test-name: "useOriginalIfMissing keeps transformed value"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests"]'
+        actual: ${{ steps.t23.outputs.unique_project_directories }}
+
     - name: Summarize
       shell: bash
       if: always()
