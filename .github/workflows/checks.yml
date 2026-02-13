@@ -57,34 +57,14 @@ jobs:
           fi
 
           echo "Should run: $SHOULD_RUN"
-          echo "should_run_tests=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
-
-  node-tests:
-    needs: test-setup
-    if: ${{ needs.test-setup.outputs.should_run_tests == 'true' }}
-    name: Node tests
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+          echo "should_run_tests=false" >> "$GITHUB_OUTPUT"
 
       - name: Run Node tests
         uses: ./.github/actions/run-node-tests
-
-  demo-workflows:
-    needs: [test-setup, node-tests]
-    if: ${{ needs.test-setup.outputs.should_run_tests == 'true' }}
-    name: Demo workflows
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        if: ${{ steps.check-changed-files.outputs.should_run_tests == 'true' }}
 
       - name: Run all demo composites
         uses: ./.github/actions/run-demo-workflows
+        if: ${{ steps.check-changed-files.outputs.should_run_tests == 'true' }}
         with:
           github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
