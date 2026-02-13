@@ -20,11 +20,15 @@ inputs:
   paths:
     description: "Comma-separated list of paths to evaluate."
     required: true
+  transformer:
+    description: "Optional output transformer. Supports either sed-style replacement (e.g. s#^src/#tests/#) or a regex extractor (first capture group, or full match). Applied to each resolved output path."
+    required: false
+    default: ""
 
 outputs:
-  parent_projects:
+  unique_project_directories:
     description: "Resolved parent project directories for each input path. Matched output paths are guaranteed to be unique. When matches come from actual project files, the directories will contain a .csproj; when derived via fallback-regex, they may instead reflect a regex-based project name without a corresponding .csproj."
-    value: ${{ steps.find-parent.outputs.parent_projects }}
+    value: ${{ steps.find-unique-project-directories.outputs.unique_project_directories }}
 
 runs:
   using: "composite"
@@ -32,8 +36,8 @@ runs:
     - name: Setup Node.js
       uses: Now-Micro/actions/setup-node@v1
 
-    - name: Find parent projects
-      id: find-parent
+    - name: Find Unique Project Directories
+      id: find-unique-project-directories
       shell: bash
       run: node "$GITHUB_ACTION_PATH/get-unique-project-directories.js"
       env:
@@ -42,3 +46,4 @@ runs:
         INPUT_FALLBACK_REGEX: ${{ inputs.fallback-regex }}
         INPUT_PATHS: ${{ inputs.paths }}
         INPUT_PATTERN: ${{ inputs.pattern }}
+        INPUT_TRANSFORMER: ${{ inputs.transformer }}

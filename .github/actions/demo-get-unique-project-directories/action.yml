@@ -16,46 +16,63 @@ runs:
       id: pre
       run: echo "summary_file=$(pwd)/get-unique-project-directories-summary.txt" >> $GITHUB_OUTPUT
 
-    - name: Resolve nearest project directories (default JSON)
+    - name: Resolve nearest project directory (same directory csproj)
       id: t1
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         debug-mode: "true"
 
-    - name: Assert default JSON output
+    - name: Assert same directory csproj resolution
       uses: ./src/testing/assert
       with:
-        test-name: "returns nearest project directories"
+        test-name: "same directory csproj"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["src/demo/dotnet/src/Api","src/demo/dotnet/tests/Api.Tests"]'
-        actual: ${{ steps.t1.outputs.parent_projects }}
+        expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
+        actual: ${{ steps.t1.outputs.unique_project_directories }}
 
-    - name: Non-matching entries remain empty
+    - name: Resolve nearest project directory (parent directory csproj)
       id: t2
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/README.md,src/demo/dotnet/src/Api/Program.cs"
+        paths: "src/demo/get-unique-project-directories/tests/Trafera.Messaging.MediatR.Tests/Integration/MediatRPipelineIntegrationTests.cs"
         debug-mode: "true"
 
-    - name: Assert non-matching entry output
+    - name: Assert parent directory csproj resolution
       uses: ./src/testing/assert
       with:
-        test-name: "non-matching path yields empty entry"
+        test-name: "parent directory csproj"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["src/demo/dotnet/src/Api"]'
-        actual: ${{ steps.t2.outputs.parent_projects }}
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MediatR.Tests"]'
+        actual: ${{ steps.t2.outputs.unique_project_directories }}
 
-    - name: Fallback regex captures root segment
+    - name: No csproj found returns empty output
       id: t3
       uses: ./get-unique-project-directories
       with:
-        pattern: ".*\\.md$"
-        paths: "src/demo/dotnet/README.md"
+        pattern: ".*\\.slnx$"
+        paths: "src/demo/get-unique-project-directories/Trafera.Messaging.slnx"
+        debug-mode: "true"
+
+    - name: Assert no csproj found output
+      uses: ./src/testing/assert
+      with:
+        test-name: "no csproj returns empty list"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "[]"
+        actual: ${{ steps.t3.outputs.unique_project_directories }}
+
+    - name: Fallback regex captures root segment
+      id: t4
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.slnx$"
+        paths: "src/demo/get-unique-project-directories/Trafera.Messaging.slnx"
         fallback-regex: "^([^/]+)"
         debug-mode: "true"
 
@@ -66,14 +83,14 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src"]'
-        actual: ${{ steps.t3.outputs.parent_projects }}
+        actual: ${{ steps.t4.outputs.unique_project_directories }}
 
-    - name: Fallback regex non-match keeps directory
-      id: t4
+    - name: Fallback regex non-match returns empty
+      id: t5
       uses: ./get-unique-project-directories
       with:
-        pattern: ".*\\.md$"
-        paths: "src/demo/dotnet/README.md"
+        pattern: ".*\\.slnx$"
+        paths: "src/demo/get-unique-project-directories/Trafera.Messaging.slnx"
         fallback-regex: "^ZZZ"
         debug-mode: "true"
 
@@ -84,14 +101,49 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "[]"
-        actual: ${{ steps.t4.outputs.parent_projects }}
+        actual: ${{ steps.t5.outputs.unique_project_directories }}
 
-    - name: Resolve directories as csv (string false)
-      id: t5
+    - name: Fallback preserves dotted segment
+      id: t6
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.slnx$"
+        paths: "src/demo/get-unique-project-directories/Trafera.Messaging.slnx"
+        fallback-regex: "^src/demo/get-unique-project-directories/([^.]+\\.[^.]+)\\.slnx$"
+        debug-mode: "true"
+
+    - name: Assert dotted fallback value
+      uses: ./src/testing/assert
+      with:
+        test-name: "dotted root directory preserved"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["Trafera.Messaging"]'
+        actual: ${{ steps.t6.outputs.unique_project_directories }}
+
+    - name: Non-matching pattern returns no entry
+      id: t7
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/README.md"
+        debug-mode: "true"
+
+    - name: Assert non-matching pattern output
+      uses: ./src/testing/assert
+      with:
+        test-name: "non-matching pattern returns empty list"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "[]"
+        actual: ${{ steps.t7.outputs.unique_project_directories }}
+
+    - name: Resolve directories as csv (string false)
+      id: t8
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         output-is-json: "false"
         debug-mode: "true"
 
@@ -101,15 +153,15 @@ runs:
         test-name: "csv output when output-is-json is string false"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
-        actual: ${{ steps.t5.outputs.parent_projects }}
+        expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
+        actual: ${{ steps.t8.outputs.unique_project_directories }}
 
     - name: Resolve directories as csv (boolean false)
-      id: t6
+      id: t9
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/tests/Api.Tests/ApiTests.cs"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         output-is-json: false
         debug-mode: "true"
 
@@ -119,15 +171,15 @@ runs:
         test-name: "csv output when output-is-json is boolean false"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: "src/demo/dotnet/src/Api,src/demo/dotnet/tests/Api.Tests"
-        actual: ${{ steps.t6.outputs.parent_projects }}
+        expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
+        actual: ${{ steps.t9.outputs.unique_project_directories }}
 
     - name: De-duplicate default JSON output
-      id: t7
+      id: t10
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         debug-mode: "true"
 
     - name: Assert de-duplicated JSON output
@@ -136,15 +188,15 @@ runs:
         test-name: "deduplicates JSON output"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["src/demo/dotnet/src/Api"]'
-        actual: ${{ steps.t7.outputs.parent_projects }}
+        expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
+        actual: ${{ steps.t10.outputs.unique_project_directories }}
 
     - name: De-duplicate csv output
-      id: t8
+      id: t11
       uses: ./get-unique-project-directories
       with:
         pattern: ".*\\.cs$"
-        paths: "src/demo/dotnet/src/Api/Program.cs,src/demo/dotnet/src/Api/Program.cs"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         output-is-json: "false"
         debug-mode: "true"
 
@@ -154,70 +206,216 @@ runs:
         test-name: "deduplicates csv output"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: "src/demo/dotnet/src/Api"
-        actual: ${{ steps.t8.outputs.parent_projects }}
+        expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
+        actual: ${{ steps.t11.outputs.unique_project_directories }}
 
-    - name: Create root-level demo project files
+    - name: Debug mode logs are emitted
+      id: t12
       shell: bash
       run: |
-        cat > Demo.Root.csproj <<'EOF'
-        <Project Sdk="Microsoft.NET.Sdk"></Project>
-        EOF
-        cat > Demo.Root.cs <<'EOF'
-        public static class DemoRoot {}
-        EOF
+        tmp_out=$(mktemp)
+        set +e
+        logs=$(INPUT_PATTERN='.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_DEBUG_MODE='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js 2>&1)
+        code=$?
+        echo "code=$code" >> $GITHUB_OUTPUT
+        {
+          echo "logs<<EOF"
+          echo "$logs"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
 
-    - name: Resolve root-level project directory
-      id: t9
-      uses: ./get-unique-project-directories
+    - name: Assert debug mode logs
+      uses: ./src/testing/assert
       with:
-        pattern: ".*\\.cs$"
-        paths: "Demo.Root.cs"
-        debug-mode: "true"
+        test-name: "debug mode prints detailed logs"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: regex
+        expected: "Debug mode is ON"
+        actual: ${{ steps.t12.outputs.logs }}
 
-    - name: Assert root-level project directory is dot
+    - name: Assert debug mode run succeeded
+      uses: ./src/testing/assert
+      with:
+        test-name: "debug mode command exit code"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "0"
+        actual: ${{ steps.t12.outputs.code }}
+
+    - name: Invalid regex exits 1
+      id: t13
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATTERN='([bad' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert invalid regex exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "invalid regex exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t13.outputs.code }}
+
+    - name: Invalid fallback regex exits 1
+      id: t14
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATTERN='.*' INPUT_PATHS='src/demo/get-unique-project-directories/Trafera.Messaging.slnx' INPUT_FALLBACK_REGEX='([bad' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert invalid fallback regex exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "invalid fallback regex exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t14.outputs.code }}
+
+    - name: Missing pattern exits 1
+      id: t15
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert missing pattern exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "missing pattern exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t15.outputs.code }}
+
+    - name: Missing GITHUB_OUTPUT exits 1
+      id: t16
+      shell: bash
+      run: |
+        set +e
+        INPUT_PATTERN='.*' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' GITHUB_OUTPUT='' node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert missing GITHUB_OUTPUT exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "missing GITHUB_OUTPUT exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t16.outputs.code }}
+
+    - name: Root-level project returns dot when cwd is project folder
+      id: t17
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        pushd src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions > /dev/null
+        set +e
+        INPUT_PATTERN='.*\.cs$' INPUT_PATHS='MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ../../../../../get-unique-project-directories/get-unique-project-directories.js
+        code=$?
+        popd > /dev/null
+        value=$(grep '^unique_project_directories=' "$tmp_out" | tail -n 1 | cut -d'=' -f2-)
+        echo "code=$code" >> $GITHUB_OUTPUT
+        echo "unique_project_directories=$value" >> $GITHUB_OUTPUT
+
+    - name: Assert root-level dot behavior
       uses: ./src/testing/assert
       with:
         test-name: "root-level csproj returns dot directory"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["."]'
-        actual: ${{ steps.t9.outputs.parent_projects }}
+        actual: ${{ steps.t17.outputs.unique_project_directories }}
 
-    - name: Remove root-level project fixture
-      shell: bash
-      run: rm -f Demo.Root.csproj Demo.Root.cs
-
-    - name: Create dotted root directory fixture
-      shell: bash
-      run: |
-        mkdir -p My.Project/Sub
-        cat > My.Project/Sub/README.md <<'EOF'
-        demo
-        EOF
-
-    - name: Resolve dotted root directory via fallback
-      id: t10
-      uses: ./get-unique-project-directories
-      with:
-        pattern: ".*\\.md$"
-        paths: "My.Project/Sub/README.md"
-        fallback-regex: "^([^/]+)"
-        debug-mode: "true"
-
-    - name: Assert dotted root directory is preserved
+    - name: Assert root-level command exit code
       uses: ./src/testing/assert
       with:
-        test-name: "dotted root directory preserved"
+        test-name: "root-level command exit code"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["My.Project"]'
-        actual: ${{ steps.t10.outputs.parent_projects }}
+        expected: "0"
+        actual: ${{ steps.t17.outputs.code }}
 
-    - name: Clean demo fixtures
+    - name: Transformer rewrites src output to tests output
+      id: t18
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/MessagingMassTransitExtensions.cs"
+        transformer: "s#^src/demo/get-unique-project-directories/src/(.*)$#src/demo/get-unique-project-directories/tests/$1.Tests#"
+        debug-mode: "true"
+
+    - name: Assert transformer rewritten output
+      uses: ./src/testing/assert
+      with:
+        test-name: "transformer rewrites src to tests"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests"]'
+        actual: ${{ steps.t18.outputs.unique_project_directories }}
+
+    - name: Invalid transformer exits 1
+      id: t19
       shell: bash
-      if: always()
-      run: rm -rf Demo.Root.csproj Demo.Root.cs My.Project
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATTERN='.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='([bad' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert invalid transformer exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "invalid transformer exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t19.outputs.code }}
+
+    - name: Generic transformer (regex style) with mixed input paths
+      id: t20
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj,src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests/ExternalMessageConsumerTests.cs,src/demo/get-unique-project-directories/samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        debug-mode: "true"
+
+    - name: Assert generic transformer (regex style)
+      uses: ./src/testing/assert
+      with:
+        test-name: "generic transformer regex style"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
+        actual: ${{ steps.t20.outputs.unique_project_directories }}
+
+    - name: Generic transformer (sed style) with mixed input paths
+      id: t21
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj,src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests/ExternalMessageConsumerTests.cs,src/demo/get-unique-project-directories/samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj"
+        transformer: "s#/src/#/tests/#"
+        debug-mode: "true"
+
+    - name: Assert generic transformer (sed style)
+      uses: ./src/testing/assert
+      with:
+        test-name: "generic transformer sed style"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
+        actual: ${{ steps.t21.outputs.unique_project_directories }}
 
     - name: Summarize
       shell: bash

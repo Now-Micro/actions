@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.3.1" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.*" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Trafera.Messaging.MassTransit\Trafera.Messaging.MassTransit.csproj" />
+    <ProjectReference Include="..\..\src\Trafera.Messaging.MediatR\Trafera.Messaging.MediatR.csproj" />
+    <ProjectReference Include="..\..\src\Trafera.Messaging.Abstractions\Trafera.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
