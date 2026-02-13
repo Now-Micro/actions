@@ -405,7 +405,7 @@ runs:
       with:
         pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
         paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs,src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj,src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests/ExternalMessageConsumerTests.cs,src/demo/get-unique-project-directories/samples/Trafera.Messaging.MediatR.SampleApp/Trafera.Messaging.MediatR.SampleApp.csproj"
-        transformer: "s#(^|/)src/#$1tests/#"
+        transformer: "s#/src/#/tests/#"
         debug-mode: "true"
 
     - name: Assert generic transformer (sed style)
