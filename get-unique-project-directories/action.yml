@@ -20,6 +20,10 @@ inputs:
   paths:
     description: "Comma-separated list of paths to evaluate."
     required: true
+  transformer:
+    description: "Optional output transformer. Supports either sed-style replacement (e.g. s#^src/#tests/#) or a regex extractor (first capture group, or full match). Applied to each resolved output path."
+    required: false
+    default: ""
 
 outputs:
   unique_project_directories:
@@ -42,3 +46,4 @@ runs:
         INPUT_FALLBACK_REGEX: ${{ inputs.fallback-regex }}
         INPUT_PATHS: ${{ inputs.paths }}
         INPUT_PATTERN: ${{ inputs.pattern }}
+        INPUT_TRANSFORMER: ${{ inputs.transformer }}

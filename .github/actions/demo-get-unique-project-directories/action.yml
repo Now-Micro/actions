@@ -345,6 +345,42 @@ runs:
         expected: "0"
         actual: ${{ steps.t17.outputs.code }}
 
+    - name: Transformer rewrites src output to tests output
+      id: t18
+      uses: ./get-unique-project-directories
+      with:
+        pattern: ".*\\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.MassTransit/MessagingMassTransitExtensions.cs"
+        transformer: "s#^src/demo/get-unique-project-directories/src/(.*)$#src/demo/get-unique-project-directories/tests/$1.Tests#"
+        debug-mode: "true"
+
+    - name: Assert transformer rewritten output
+      uses: ./src/testing/assert
+      with:
+        test-name: "transformer rewrites src to tests"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests"]'
+        actual: ${{ steps.t18.outputs.unique_project_directories }}
+
+    - name: Invalid transformer exits 1
+      id: t19
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATTERN='.*\\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='([bad' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert invalid transformer exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "invalid transformer exits 1"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t19.outputs.code }}
+
     - name: Summarize
       shell: bash
       if: always()

@@ -20,6 +20,46 @@ function normalizePath(input) {
     return collapsed.replace(/^\/+/g, '').replace(/\/+$/g, '').trim();
 }
 
+function parseTransformer(spec) {
+    if (!spec) return null;
+
+    // sed-style replacement: s<delimiter>pattern<delimiter>replacement<delimiter>flags
+    const replaceMatch = spec.match(/^s(.)(.*?)\1(.*?)\1([gimsuy]*)$/);
+    if (replaceMatch) {
+        const [, , pattern, replacement, flags] = replaceMatch;
+        return {
+            type: 'replace',
+            regex: new RegExp(pattern, flags),
+            replacement,
+        };
+    }
+
+    // extraction style: first capture group, or full match when group 1 is not present
+    return {
+        type: 'extract',
+        regex: new RegExp(spec),
+    };
+}
+
+function transformOutputPath(value, transformer) {
+    if (!transformer) return value;
+
+    if (transformer.type === 'replace') {
+        const replaced = value.replace(transformer.regex, transformer.replacement);
+        return normalizePath(replaced);
+    }
+
+    const match = transformer.regex.exec(value);
+    if (!match) {
+        transformer.regex.lastIndex = 0;
+        return '';
+    }
+
+    transformer.regex.lastIndex = 0;
+    const transformed = match[1] !== undefined ? match[1] : match[0];
+    return normalizePath(transformed);
+}
+
 function toDirectoryOnly(value) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
@@ -76,6 +116,7 @@ function run() {
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
     const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
+    const transformerSpec = process.env.INPUT_TRANSFORMER || '';
     const raw = process.env.INPUT_PATHS || '';
     const paths = raw
         .split(',')
@@ -88,6 +129,7 @@ function run() {
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
         if (fallbackRegexPattern) console.log(`🔍 FALLBACK_REGEX: ${fallbackRegexPattern}`);
+        if (transformerSpec) console.log(`🔍 TRANSFORMER: ${transformerSpec}`);
     }
 
     if (!pattern) {
@@ -109,6 +151,16 @@ function run() {
             fallbackRe = new RegExp(fallbackRegexPattern);
         } catch (e) {
             console.error(`Invalid fallback regex: ${e.message}`);
+            process.exit(1);
+        }
+    }
+
+    let transformer = null;
+    if (transformerSpec) {
+        try {
+            transformer = parseTransformer(transformerSpec);
+        } catch (e) {
+            console.error(`Invalid transformer regex: ${e.message}`);
             process.exit(1);
         }
     }
@@ -136,8 +188,15 @@ function run() {
             fallbackRe.lastIndex = 0;
         }
         const finalValue = toDirectoryOnly(candidate);
-        results.push(finalValue);
-        if (debugMode) console.log(`🔍 Path '${p}' resolved to '${finalValue}'.`);
+        const transformedValue = transformOutputPath(finalValue, transformer);
+        results.push(transformedValue);
+        if (debugMode) {
+            if (transformer) {
+                console.log(`🔍 Path '${p}' resolved to '${finalValue}', transformed to '${transformedValue}'.`);
+            } else {
+                console.log(`🔍 Path '${p}' resolved to '${transformedValue}'.`);
+            }
+        }
     }
 
     const uniqueResults = [...new Set(results.filter(Boolean))];
@@ -158,4 +217,4 @@ function run() {
 }
 
 if (require.main === module) run();
-module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly };
+module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath };
