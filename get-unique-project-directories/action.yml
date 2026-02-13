@@ -24,7 +24,7 @@ inputs:
     description: "Optional output transformer. Supports either sed-style replacement (e.g. s#^src/#tests/#) or a regex extractor (first capture group, or full match). Applied to each resolved output path."
     required: false
     default: ""
-  useOriginalIfMissing:
+  use-original-if-missing:
     description: "When true and transformer is provided, checks whether each transformed directory exists. If it does not exist, the original non-transformed directory is used instead."
     required: false
     default: "false"
@@ -51,4 +51,4 @@ runs:
         INPUT_PATHS: ${{ inputs.paths }}
         INPUT_PATTERN: ${{ inputs.pattern }}
         INPUT_TRANSFORMER: ${{ inputs.transformer }}
-        INPUT_USE_ORIGINAL_IF_MISSING: ${{ inputs.useOriginalIfMissing }}
+        INPUT_USE_ORIGINAL_IF_MISSING: ${{ inputs.use-original-if-missing }}
