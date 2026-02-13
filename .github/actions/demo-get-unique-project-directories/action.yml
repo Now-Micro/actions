@@ -215,7 +215,7 @@ runs:
       run: |
         tmp_out=$(mktemp)
         set +e
-        logs=$(INPUT_PATTERN='.*\\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_DEBUG_MODE='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js 2>&1)
+        logs=$(INPUT_PATTERN='.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_DEBUG_MODE='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js 2>&1)
         code=$?
         echo "code=$code" >> $GITHUB_OUTPUT
         {
@@ -320,7 +320,7 @@ runs:
         tmp_out=$(mktemp)
         pushd src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions > /dev/null
         set +e
-        INPUT_PATTERN='.*\\.cs$' INPUT_PATHS='MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ../../../../../get-unique-project-directories/get-unique-project-directories.js
+        INPUT_PATTERN='.*\.cs$' INPUT_PATHS='MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ../../../../../get-unique-project-directories/get-unique-project-directories.js
         code=$?
         popd > /dev/null
         value=$(grep '^unique_project_directories=' "$tmp_out" | tail -n 1 | cut -d'=' -f2-)
@@ -369,7 +369,7 @@ runs:
       run: |
         tmp_out=$(mktemp)
         set +e
-        INPUT_PATTERN='.*\\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='([bad' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        INPUT_PATTERN='.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='([bad' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
         echo "code=$?" >> $GITHUB_OUTPUT
 
     - name: Assert invalid transformer exits 1
