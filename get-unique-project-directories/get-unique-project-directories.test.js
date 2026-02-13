@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath } = require('./get-unique-project-directories');
+const { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath, directoryExists } = require('./get-unique-project-directories');
 
 function withEnv(env, fn) {
     const prev = { ...process.env };
@@ -186,46 +186,127 @@ test('transformer (extract mode) uses capture group', () => {
 });
 
 test('transformer handles generic regex - regex style', () => {
+    const projectFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const projectFile2 = 'Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj';
+    const changedFile2 = 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx';
+    const projectFile3 = 'Messaging/tests/Trafera.Messaging.Something.Tests/Trafera.Messaging.Something.Tests.csproj';
+    const changedFile3 = 'Messaging/tests/Trafera.Messaging.Something.Tests/subdir/test.sln';
+    const projectFile4 = 'Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj';
+    const changedFile4 = 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj';
+    const projectFile5 = 'Messaging/tests/Trafera.Messaging.Abstractions.Tests/Trafera.Messaging.Abstractions.Tests.csproj';
+    const paths = [changedFile1, changedFile2, changedFile3, changedFile4].join(',');
+
     withTmpTree(() => {
-        touch('Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs');
-        touch('Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj');
-        touch('Messaging/src/Trafera.Messaging.Something/subdir/test.slnx');
-        touch('Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/tests/Trafera.Messaging.Something/subdir/test.sln');
-        touch('Messaging/tests/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
+        touch(changedFile1);
+        touch(changedFile2);
+        touch(changedFile3);
+        touch(changedFile4);
+        touch(projectFile1);
+        touch(projectFile2);
+        touch(projectFile3);
+        touch(projectFile4);
+        touch(projectFile5);
     }, () => {
-        const paths = ['Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs', 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx', 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln', 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj'].join(',');
         const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
-            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2#',
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
         });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions","Messaging\/tests\/Trafera\.Messaging\.Something"\]/);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions.Tests","Messaging\/tests\/Trafera\.Messaging\.Something.Tests"\]/);
     });
 });
 
 test('transformer handles generic regex - sed style', () => {
+    const projectFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const projectFile2 = 'Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj';
+    const changedFile2 = 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx';
+    const projectFile3 = 'Messaging/tests/Trafera.Messaging.Something.Tests/Trafera.Messaging.Something.Tests.csproj';
+    const changedFile3 = 'Messaging/tests/Trafera.Messaging.Something.Tests/subdir/test.sln';
+    const projectFile4 = 'Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj';
+    const changedFile4 = 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj';
+    const projectFile5 = 'Messaging/tests/Trafera.Messaging.Abstractions.Tests/Trafera.Messaging.Abstractions.Tests.csproj';
+    const paths = [changedFile1, changedFile2, changedFile3, changedFile4].join(',');
+
     withTmpTree(() => {
-        touch('Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs');
-        touch('Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj');
-        touch('Messaging/src/Trafera.Messaging.Something/subdir/test.slnx');
-        touch('Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/tests/Trafera.Messaging.Something/subdir/test.sln');
-        touch('Messaging/tests/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
+        touch(changedFile1);
+        touch(changedFile2);
+        touch(changedFile3);
+        touch(changedFile4);
+        touch(projectFile1);
+        touch(projectFile2);
+        touch(projectFile3);
+        touch(projectFile4);
+        touch(projectFile5);
     }, () => {
-        const paths = ['Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs', 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx', 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln', 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj'].join(',');
         const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
-            INPUT_TRANSFORMER: 's#(^|/)src/#$1tests/#',
+            INPUT_TRANSFORMER: 's#(^|/)src/(.*)$#$1tests/$2.Tests#',
         });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions","Messaging\/tests\/Trafera\.Messaging\.Something"\]/);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions.Tests","Messaging\/tests\/Trafera\.Messaging\.Something.Tests"\]/);
+    });
+});
+
+test('useOriginalIfMissing falls back to original when transformed directory is missing', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'true',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/src\/Trafera\.Messaging\.Abstractions"\]/);
+    });
+});
+
+test('useOriginalIfMissing keeps transformed when transformed directory exists', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const transformedProject = 'Messaging/tests/Trafera.Messaging.Abstractions.Tests/Trafera.Messaging.Abstractions.Tests.csproj';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+        touch(transformedProject);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'true',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions\.Tests"\]/);
+    });
+});
+
+test('useOriginalIfMissing false keeps transformed even when transformed directory is missing', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'false',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions\.Tests"\]/);
     });
 });
 
@@ -338,6 +419,8 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     const extractTransformer = parseTransformer('^tests/(.+)$');
     assert.strictEqual(transformOutputPath('tests/Proj', extractTransformer), 'Proj');
     assert.strictEqual(transformOutputPath('src/Proj', extractTransformer), '');
+
+    assert.strictEqual(directoryExists('no/such/dir'), false);
 });
 
 test('findNearestCsproj tolerates missing directories', () => {

@@ -60,6 +60,17 @@ function transformOutputPath(value, transformer) {
     return normalizePath(transformed);
 }
 
+function directoryExists(value) {
+    const normalized = normalizePath(value);
+    if (!normalized) return false;
+    try {
+        const stat = fs.statSync(path.resolve(normalized));
+        return stat.isDirectory();
+    } catch {
+        return false;
+    }
+}
+
 function toDirectoryOnly(value) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
@@ -115,6 +126,7 @@ function run() {
     const pattern = process.env.INPUT_PATTERN;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
+    const useOriginalIfMissing = parseBool(process.env.INPUT_USE_ORIGINAL_IF_MISSING, false);
     const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
     const transformerSpec = process.env.INPUT_TRANSFORMER || '';
     const raw = process.env.INPUT_PATHS || '';
@@ -128,6 +140,7 @@ function run() {
         console.log(`🔍 INPUT_PATTERN: ${pattern}`);
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
+        console.log(`🔍 USE_ORIGINAL_IF_MISSING: ${useOriginalIfMissing}`);
         if (fallbackRegexPattern) console.log(`🔍 FALLBACK_REGEX: ${fallbackRegexPattern}`);
         if (transformerSpec) console.log(`🔍 TRANSFORMER: ${transformerSpec}`);
     }
@@ -189,12 +202,20 @@ function run() {
         }
         const finalValue = toDirectoryOnly(candidate);
         const transformedValue = transformOutputPath(finalValue, transformer);
-        results.push(transformedValue);
+        let outputValue = transformedValue;
+        if (transformer && useOriginalIfMissing && transformedValue && !directoryExists(transformedValue)) {
+            outputValue = finalValue;
+            if (debugMode) {
+                console.log(`🔍 Transformed directory '${transformedValue}' does not exist. Using original '${finalValue}'.`);
+            }
+        }
+
+        results.push(outputValue);
         if (debugMode) {
             if (transformer) {
-                console.log(`🔍 Path '${p}' resolved to '${finalValue}', transformed to '${transformedValue}'.`);
+                console.log(`🔍 Path '${p}' resolved to '${finalValue}', transformed to '${transformedValue}', output '${outputValue}'.`);
             } else {
-                console.log(`🔍 Path '${p}' resolved to '${transformedValue}'.`);
+                console.log(`🔍 Path '${p}' resolved to '${outputValue}'.`);
             }
         }
     }
@@ -217,4 +238,4 @@ function run() {
 }
 
 if (require.main === module) run();
-module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath };
+module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath, directoryExists };
