@@ -154,7 +154,7 @@ function run() {
         process.exit(1);
     }
 
-    fs.appendFileSync(out, `parent_projects=${serialized}\n`);
+    fs.appendFileSync(out, `unique_project_directories=${serialized}\n`);
 }
 
 if (require.main === module) run();

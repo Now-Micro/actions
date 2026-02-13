@@ -31,7 +31,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
-        actual: ${{ steps.t1.outputs.parent_projects }}
+        actual: ${{ steps.t1.outputs.unique_project_directories }}
 
     - name: Resolve nearest project directory (parent directory csproj)
       id: t2
@@ -48,7 +48,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MediatR.Tests"]'
-        actual: ${{ steps.t2.outputs.parent_projects }}
+        actual: ${{ steps.t2.outputs.unique_project_directories }}
 
     - name: No csproj found returns empty output
       id: t3
@@ -65,7 +65,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "[]"
-        actual: ${{ steps.t3.outputs.parent_projects }}
+        actual: ${{ steps.t3.outputs.unique_project_directories }}
 
     - name: Fallback regex captures root segment
       id: t4
@@ -83,7 +83,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src"]'
-        actual: ${{ steps.t4.outputs.parent_projects }}
+        actual: ${{ steps.t4.outputs.unique_project_directories }}
 
     - name: Fallback regex non-match returns empty
       id: t5
@@ -101,7 +101,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "[]"
-        actual: ${{ steps.t5.outputs.parent_projects }}
+        actual: ${{ steps.t5.outputs.unique_project_directories }}
 
     - name: Fallback preserves dotted segment
       id: t6
@@ -119,7 +119,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["Trafera.Messaging"]'
-        actual: ${{ steps.t6.outputs.parent_projects }}
+        actual: ${{ steps.t6.outputs.unique_project_directories }}
 
     - name: Non-matching pattern returns no entry
       id: t7
@@ -136,7 +136,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "[]"
-        actual: ${{ steps.t7.outputs.parent_projects }}
+        actual: ${{ steps.t7.outputs.unique_project_directories }}
 
     - name: Resolve directories as csv (string false)
       id: t8
@@ -154,7 +154,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
-        actual: ${{ steps.t8.outputs.parent_projects }}
+        actual: ${{ steps.t8.outputs.unique_project_directories }}
 
     - name: Resolve directories as csv (boolean false)
       id: t9
@@ -172,7 +172,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
-        actual: ${{ steps.t9.outputs.parent_projects }}
+        actual: ${{ steps.t9.outputs.unique_project_directories }}
 
     - name: De-duplicate default JSON output
       id: t10
@@ -189,7 +189,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
-        actual: ${{ steps.t10.outputs.parent_projects }}
+        actual: ${{ steps.t10.outputs.unique_project_directories }}
 
     - name: De-duplicate csv output
       id: t11
@@ -207,7 +207,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"
-        actual: ${{ steps.t11.outputs.parent_projects }}
+        actual: ${{ steps.t11.outputs.unique_project_directories }}
 
     - name: Debug mode logs are emitted
       id: t12
@@ -323,9 +323,9 @@ runs:
         INPUT_PATTERN='.*\\.cs$' INPUT_PATHS='MessageContracts.cs' GITHUB_OUTPUT="$tmp_out" node ../../../../../get-unique-project-directories/get-unique-project-directories.js
         code=$?
         popd > /dev/null
-        value=$(grep '^parent_projects=' "$tmp_out" | tail -n 1 | cut -d'=' -f2-)
+        value=$(grep '^unique_project_directories=' "$tmp_out" | tail -n 1 | cut -d'=' -f2-)
         echo "code=$code" >> $GITHUB_OUTPUT
-        echo "parent_projects=$value" >> $GITHUB_OUTPUT
+        echo "unique_project_directories=$value" >> $GITHUB_OUTPUT
 
     - name: Assert root-level dot behavior
       uses: ./src/testing/assert
@@ -334,7 +334,7 @@ runs:
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["."]'
-        actual: ${{ steps.t17.outputs.parent_projects }}
+        actual: ${{ steps.t17.outputs.unique_project_directories }}
 
     - name: Assert root-level command exit code
       uses: ./src/testing/assert
