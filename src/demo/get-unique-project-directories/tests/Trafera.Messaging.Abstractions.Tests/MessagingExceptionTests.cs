@@ -38,13 +38,9 @@ public sealed class MessagingExceptionTests
     private sealed class TestMessagingException : MessagingException
     {
         public TestMessagingException(string message)
-            : base(message)
-        {
-        }
+            : base(message) { }
 
         public TestMessagingException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+            : base(message, innerException) { }
     }
 }

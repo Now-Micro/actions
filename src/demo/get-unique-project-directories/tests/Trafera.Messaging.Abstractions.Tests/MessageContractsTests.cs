@@ -53,19 +53,11 @@ public sealed class MessageContractsTests
         instance.Should().BeAssignableTo<IIntegrationEvent>();
     }
 
-    private sealed class TestInternalCommand : IInternalCommand
-    {
-    }
+    private sealed class TestInternalCommand : IInternalCommand { }
 
-    private sealed class TestDomainEvent : IDomainEvent
-    {
-    }
+    private sealed class TestDomainEvent : IDomainEvent { }
 
-    private sealed class TestExternalCommand : IExternalCommand
-    {
-    }
+    private sealed class TestExternalCommand : IExternalCommand { }
 
-    private sealed class TestIntegrationEvent : IIntegrationEvent
-    {
-    }
+    private sealed class TestIntegrationEvent : IIntegrationEvent { }
 }

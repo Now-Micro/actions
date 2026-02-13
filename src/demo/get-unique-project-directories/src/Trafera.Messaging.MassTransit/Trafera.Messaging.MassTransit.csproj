@@ -1,40 +1,37 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<VersionPrefix>1.0.0</VersionPrefix>
-		<VersionSuffix>$(Version_Suffix)</VersionSuffix>
-		<Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
-		<Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<Description>Trafera MassTransit integration with RabbitMQ and MongoDB outbox support.</Description>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="MassTransit" Version="8.3.1" />
-		<PackageReference Include="MassTransit.RabbitMQ" Version="8.3.1" />
-		<PackageReference Include="MassTransit.MongoDb" Version="8.3.1" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.*" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.*" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.*" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.*" />
-		<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.*" />
-		<PackageReference Include="MongoDB.Driver" Version="2.30.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Trafera.Messaging.Abstractions\Trafera.Messaging.Abstractions.csproj" />
-		<ProjectReference Include="..\Trafera.Messaging.MediatR\Trafera.Messaging.MediatR.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\" />
-	</ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>$(Version_Suffix)</VersionSuffix>
+    <Version Condition="'$(VersionSuffix)' == ''">$(VersionPrefix)</Version>
+    <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>Trafera MassTransit integration with RabbitMQ and MongoDB outbox support.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.3.1" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.1" />
+    <PackageReference Include="MassTransit.MongoDb" Version="8.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.*" />
+    <PackageReference
+      Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+      Version="9.0.*"
+    />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.*" />
+    <PackageReference Include="MongoDB.Driver" Version="2.30.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Trafera.Messaging.Abstractions\Trafera.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\Trafera.Messaging.MediatR\Trafera.Messaging.MediatR.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

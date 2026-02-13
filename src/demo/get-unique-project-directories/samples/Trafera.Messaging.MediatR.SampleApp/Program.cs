@@ -22,7 +22,8 @@ public static class Program
         using var host = builder.Build();
 
         var mediator = host.Services.GetRequiredService<IMediator>();
-        var response = await mediator.Send(new PingInternal("Hello"), CancellationToken.None)
+        var response = await mediator
+            .Send(new PingInternal("Hello"), CancellationToken.None)
             .ConfigureAwait(false);
 
         Console.WriteLine(response);

@@ -24,28 +24,36 @@ public static class Program
         var mongoConnection = Environment.GetEnvironmentVariable("MONGODB_CONNECTION");
         var mongoDatabase = Environment.GetEnvironmentVariable("MONGODB_DATABASE");
 
-        builder.Services.AddMessagingMassTransit(options =>
-        {
-            options.RabbitMqConnectionString = Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION")
-                ?? "amqp://guest:guest@localhost:5672/";
+        builder.Services.AddMessagingMassTransit(
+            options =>
+            {
+                options.RabbitMqConnectionString =
+                    Environment.GetEnvironmentVariable("RABBITMQ_CONNECTION")
+                    ?? "amqp://guest:guest@localhost:5672/";
 
-            if (!string.IsNullOrWhiteSpace(mongoConnection) && !string.IsNullOrWhiteSpace(mongoDatabase))
-            {
-                options.MongoConnectionString = mongoConnection;
-                options.MongoDatabaseName = mongoDatabase;
-            }
-            else
-            {
-                options.EnableMongoOutbox = false;
-            }
-        }, typeof(Program).Assembly);
+                if (
+                    !string.IsNullOrWhiteSpace(mongoConnection)
+                    && !string.IsNullOrWhiteSpace(mongoDatabase)
+                )
+                {
+                    options.MongoConnectionString = mongoConnection;
+                    options.MongoDatabaseName = mongoDatabase;
+                }
+                else
+                {
+                    options.EnableMongoOutbox = false;
+                }
+            },
+            typeof(Program).Assembly
+        );
 
         using var host = builder.Build();
 
         await host.StartAsync().ConfigureAwait(false);
 
         var publishEndpoint = host.Services.GetRequiredService<IPublishEndpoint>();
-        await publishEndpoint.Publish<IOrderShipped>(new { OrderId = Guid.NewGuid() })
+        await publishEndpoint
+            .Publish<IOrderShipped>(new { OrderId = Guid.NewGuid() })
             .ConfigureAwait(false);
 
         await host.StopAsync().ConfigureAwait(false);
@@ -89,17 +97,14 @@ public sealed class FlagOrderInternalHandler : IRequestHandler<FlagOrderInternal
 /// <summary>
 /// Consumes external messages and dispatches internal commands.
 /// </summary>
-public sealed class OrderShippedConsumer
-    : ExternalMessageConsumer<IOrderShipped, FlagOrderInternal>
+public sealed class OrderShippedConsumer : ExternalMessageConsumer<IOrderShipped, FlagOrderInternal>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="OrderShippedConsumer"/> class.
     /// </summary>
     /// <param name="mediator">The mediator used for dispatching.</param>
     public OrderShippedConsumer(IMediator mediator)
-        : base(mediator)
-    {
-    }
+        : base(mediator) { }
 
     /// <summary>
     /// Maps the external message to an internal command.
