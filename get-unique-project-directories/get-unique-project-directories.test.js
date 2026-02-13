@@ -186,17 +186,23 @@ test('transformer (extract mode) uses capture group', () => {
 });
 
 test('transformer handles generic regex - regex style', () => {
+    const testFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const testFile2 = 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx';
+    const testFile3 = 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln';
+    const testFile4 = 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj';
+    const testFiles = [testFile1, testFile2, testFile3, testFile4];
+
     withTmpTree(() => {
-        touch('Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs');
+        touch(testFile1);
         touch('Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj');
-        touch('Messaging/src/Trafera.Messaging.Something/subdir/test.slnx');
+        touch(testFile2);
         touch('Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/tests/Trafera.Messaging.Something/subdir/test.sln');
+        touch(testFile3);
         touch('Messaging/tests/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj');
+        touch(testFile4);
         touch('Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
     }, () => {
-        const paths = ['Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs', 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx', 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln', 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj'].join(',');
+        const paths = testFiles.join(',');
         const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
@@ -208,17 +214,23 @@ test('transformer handles generic regex - regex style', () => {
 });
 
 test('transformer handles generic regex - sed style', () => {
+    const testFile1 = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+    const testFile2 = 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx';
+    const testFile3 = 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln';
+    const testFile4 = 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj';
+    const testFiles = [testFile1, testFile2, testFile3, testFile4];
+
     withTmpTree(() => {
-        touch('Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs');
+        touch(testFile1);
         touch('Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj');
-        touch('Messaging/src/Trafera.Messaging.Something/subdir/test.slnx');
+        touch(testFile2);
         touch('Messaging/src/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/tests/Trafera.Messaging.Something/subdir/test.sln');
+        touch(testFile3);
         touch('Messaging/tests/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
-        touch('Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj');
+        touch(testFile4);
         touch('Messaging/samples/Trafera.Messaging.Something/Trafera.Messaging.Something.csproj');
     }, () => {
-        const paths = ['Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs', 'Messaging/src/Trafera.Messaging.Something/subdir/test.slnx', 'Messaging/tests/Trafera.Messaging.Something/subdir/test.sln', 'Messaging/samples/Trafera.Messaging.Something/subdir/test.csproj'].join(',');
+        const paths = testFiles.join(',');
         const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
