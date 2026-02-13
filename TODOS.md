@@ -1,8 +1,0 @@
-# Todos
-
-- fix the failing tests by changing only the filter pattern (make sure it can only match /(test|src)/*.cs)
-
-- need to add an input for transforming the output paths (to handle cases where changes are made in a /src directory but the output value should be /tests or something like that)
-
-## Prompt
-I want you to add an input called `transformer` that takes a regular expression and uses it to transform each output path.  The idea is if \src\demo\get-unique-project-directories\src\Trafera.Messaging.MassTransit\MessagingMassTransitExtensions.cs changes, the output path would be transformed from get-unique-project-directories\src\Trafera.Messaging.MassTransit\ to get-unique-project-directories\tests\Trafera.Messaging.MassTransit  This would allow the action to be used in cases where the output paths are different from the input paths, such as when changes are made in a /src directory but the output value should be /tests or something like that.  I also want you to add test cases for this new input to ensure that it works correctly as well as demo steps in the workflow file to show how to use it.
