@@ -291,6 +291,25 @@ test('useOriginalIfMissing keeps transformed when transformed directory exists',
     });
 });
 
+test('useOriginalIfMissing false keeps transformed even when transformed directory is missing', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_USE_ORIGINAL_IF_MISSING: 'false',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions\.Tests"\]/);
+    });
+});
+
 test('debug mode prints detailed logs', () => {
     withTmpTree(() => {
         touch('Proj/src/Proj.csproj');
