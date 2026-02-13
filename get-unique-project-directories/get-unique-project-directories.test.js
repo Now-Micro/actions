@@ -211,10 +211,10 @@ test('transformer handles generic regex - regex style', () => {
         const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
-            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2#',
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
         });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions","Messaging\/tests\/Trafera\.Messaging\.Something"\]/);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions.Tests","Messaging\/tests\/Trafera\.Messaging\.Something.Tests"\]/);
     });
 });
 
@@ -241,16 +241,14 @@ test('transformer handles generic regex - sed style', () => {
         touch(projectFile4);
         touch(projectFile5);
     }, () => {
-          const r = runWith({
+        const r = runWith({
             INPUT_PATTERN: '^.*/src/.*\\.(cs|csproj|sln|slnx)$',
             INPUT_PATHS: paths,
-            INPUT_TRANSFORMER: 's#(^|/)src/#$1tests/#',
+            INPUT_TRANSFORMER: 's#(^|/)src/(.*)$#$1tests/$2.Tests#',
         });
         assert.strictEqual(r.exitCode, 0);
-        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions","Messaging\/tests\/Trafera\.Messaging\.Something"\]/);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions.Tests","Messaging\/tests\/Trafera\.Messaging\.Something.Tests"\]/);
     });
-
-
 });
 
 test('debug mode prints detailed logs', () => {
