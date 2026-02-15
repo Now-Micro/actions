@@ -425,6 +425,7 @@ runs:
         paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
         use-original-if-missing: "true"
+        throw-if-transformed-not-found: "false"
         debug-mode: "true"
 
     - name: Assert fallback to original when transformed missing
@@ -463,6 +464,7 @@ runs:
         paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
         use-original-if-missing: "false"
+        throw-if-transformed-not-found: "false"
         debug-mode: "true"
 
     - name: Assert fallback to original when transformed missing
@@ -473,6 +475,24 @@ runs:
         mode: exact
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions"]'
         actual: ${{ steps.t24.outputs.unique_project_directories }}
+
+    - name: throw-if-transformed-not-found true exits 1 when transformed path is missing
+      id: t25
+      shell: bash
+      run: |
+        tmp_out=$(mktemp)
+        set +e
+        INPUT_PATTERN='^.*/src/.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='s#^(.*?)/src/(.*)$#$1/tests/$2#' INPUT_THROW_IF_TRANSFORMED_NOT_FOUND='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        echo "code=$?" >> $GITHUB_OUTPUT
+
+    - name: Assert throw-if-transformed-not-found exits 1
+      uses: ./src/testing/assert
+      with:
+        test-name: "throw-if-transformed-not-found exits on missing transformed directory"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t25.outputs.code }}
 
     - name: Summarize
       shell: bash

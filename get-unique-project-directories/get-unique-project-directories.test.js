@@ -163,6 +163,7 @@ test('transformer (replace mode) rewrites output directory', () => {
             INPUT_PATTERN: '.*\\.cs$',
             INPUT_PATHS: paths,
             INPUT_TRANSFORMER: 's#^src/#tests/#',
+            INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: 'false',
         });
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /unique_project_directories=\["tests\/Trafera\.Messaging\.MassTransit"\]/);
@@ -179,6 +180,7 @@ test('transformer (extract mode) uses capture group', () => {
             INPUT_PATTERN: '.*\\.cs$',
             INPUT_PATHS: paths,
             INPUT_TRANSFORMER: '^src/(.+)$',
+            INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: 'false',
         });
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /unique_project_directories=\["Trafera\.Messaging\.MassTransit"\]/);
@@ -264,9 +266,29 @@ test('useOriginalIfMissing falls back to original when transformed directory is 
             INPUT_PATHS: changedFile,
             INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
             INPUT_USE_ORIGINAL_IF_MISSING: 'true',
+            INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: 'false',
         });
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /unique_project_directories=\["Messaging\/src\/Trafera\.Messaging\.Abstractions"\]/);
+    });
+});
+
+test('throwIfTransformedNotFound true exits when transformed directory is missing', () => {
+    const projectFile = 'Messaging/src/Trafera.Messaging.Abstractions/Trafera.Messaging.Abstractions.csproj';
+    const changedFile = 'Messaging/src/Trafera.Messaging.Abstractions/subdir/test.cs';
+
+    withTmpTree(() => {
+        touch(changedFile);
+        touch(projectFile);
+    }, () => {
+        const r = runWith({
+            INPUT_PATTERN: '^.*/src/.*\\.cs$',
+            INPUT_PATHS: changedFile,
+            INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
+            INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: 'true',
+        });
+        assert.strictEqual(r.exitCode, 1);
+        assert.match(r.err + r.out, /Transformed directory not found:/);
     });
 });
 
@@ -304,6 +326,7 @@ test('useOriginalIfMissing false keeps transformed even when transformed directo
             INPUT_PATHS: changedFile,
             INPUT_TRANSFORMER: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#',
             INPUT_USE_ORIGINAL_IF_MISSING: 'false',
+            INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: 'false',
         });
         assert.strictEqual(r.exitCode, 0);
         assert.match(r.outputContent, /unique_project_directories=\["Messaging\/tests\/Trafera\.Messaging\.Abstractions\.Tests"\]/);
