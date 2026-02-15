@@ -218,7 +218,7 @@ function run() {
         let outputValue = transformedValue;
         const transformedMissing = transformer && transformedValue && !directoryExists(transformedValue);
 
-        if (transformedMissing && throwIfTransformedNotFound) {
+        if (transformedMissing && throwIfTransformedNotFound && !useOriginalIfMissing) {
             console.error(`Transformed directory not found: '${transformedValue}'.  Please ensure it exists and try again.`);
             process.exit(1);
         }

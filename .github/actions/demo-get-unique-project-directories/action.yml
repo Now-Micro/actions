@@ -419,7 +419,7 @@ runs:
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions","src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit"]'
         actual: ${{ steps.t21.outputs.unique_project_directories }}
 
-    - name: useOriginalIfMissing true falls back when transformed path missing
+    - name: Mode 2 - fallback to original when transformed path missing
       id: t22
       uses: ./get-unique-project-directories
       with:
@@ -430,10 +430,10 @@ runs:
         throw-if-transformed-not-found: "false"
         debug-mode: "true"
 
-    - name: Assert fallback to original when transformed missing
+    - name: Assert mode 2 fallback to original
       uses: ./src/testing/assert
       with:
-        test-name: "useOriginalIfMissing falls back to original"
+        test-name: "mode 2 fallback to original"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
@@ -458,7 +458,7 @@ runs:
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.MassTransit.Tests"]'
         actual: ${{ steps.t23.outputs.unique_project_directories }}
 
-    - name: useOriginalIfMissing - uses transformed when false and missing
+    - name: Mode 3 - keep transformed when missing
       id: t24
       uses: ./get-unique-project-directories
       with:
@@ -469,32 +469,52 @@ runs:
         throw-if-transformed-not-found: "false"
         debug-mode: "true"
 
-    - name: Assert fallback to original when transformed missing
+    - name: Assert mode 3 keeps transformed value
       uses: ./src/testing/assert
       with:
-        test-name: "useOriginalIfMissing uses transformed value when false"
+        test-name: "mode 3 keep transformed"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: '["src/demo/get-unique-project-directories/tests/Trafera.Messaging.Abstractions"]'
         actual: ${{ steps.t24.outputs.unique_project_directories }}
 
-    - name: throw-if-transformed-not-found true exits 1 when transformed path is missing
+    - name: Mode 1 - throw when transformed path missing
       id: t25
       shell: bash
       run: |
         tmp_out=$(mktemp)
         set +e
-        INPUT_PATTERN='^.*/src/.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='s#^(.*?)/src/(.*)$#$1/tests/$2#' INPUT_THROW_IF_TRANSFORMED_NOT_FOUND='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
+        INPUT_PATTERN='^.*/src/.*\.cs$' INPUT_PATHS='src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs' INPUT_TRANSFORMER='s#^(.*?)/src/(.*)$#$1/tests/$2#' INPUT_USE_ORIGINAL_IF_MISSING='false' INPUT_THROW_IF_TRANSFORMED_NOT_FOUND='true' GITHUB_OUTPUT="$tmp_out" node ./get-unique-project-directories/get-unique-project-directories.js
         echo "code=$?" >> $GITHUB_OUTPUT
 
-    - name: Assert throw-if-transformed-not-found exits 1
+    - name: Assert mode 1 throws on missing transformed
       uses: ./src/testing/assert
       with:
-        test-name: "throw-if-transformed-not-found exits on missing transformed directory"
+        test-name: "mode 1 throw on missing transformed"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "1"
         actual: ${{ steps.t25.outputs.code }}
+
+    - name: Precedence - useOriginalIfMissing true overrides throw and falls back
+      id: t26
+      uses: ./get-unique-project-directories
+      with:
+        pattern: "^.*/src/.*\.cs$"
+        paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        use-original-if-missing: "true"
+        throw-if-transformed-not-found: "true"
+        debug-mode: "true"
+
+    - name: Assert precedence fallback when both flags are true
+      uses: ./src/testing/assert
+      with:
+        test-name: "both true prefers original fallback"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: '["src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions"]'
+        actual: ${{ steps.t26.outputs.unique_project_directories }}
 
     - name: Summarize
       shell: bash
