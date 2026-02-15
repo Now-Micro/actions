@@ -500,7 +500,7 @@ runs:
       id: t26
       uses: ./get-unique-project-directories
       with:
-        pattern: "^.*/src/.*\.cs$"
+        pattern: "^.*/src/.*\\.cs$"
         paths: "src/demo/get-unique-project-directories/src/Trafera.Messaging.Abstractions/MessageContracts.cs"
         transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
         use-original-if-missing: "true"
