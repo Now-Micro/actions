@@ -25,9 +25,13 @@ inputs:
     required: false
     default: ""
   use-original-if-missing:
-    description: "When true and transformer is provided, checks whether each transformed directory exists. If it does not exist, the original non-transformed directory is used instead."
+    description: "When true and transformer is provided, checks whether each transformed directory exists. If it does not exist, the original non-transformed directory is used instead. This behavior takes precedence over throw-if-transformed-not-found."
     required: false
     default: "false"
+  throw-if-transformed-not-found:
+    description: "When true and transformer is provided, the action exits with an error if a transformed directory does not exist. Ignored when use-original-if-missing is true."
+    required: false
+    default: "true"
 
 outputs:
   unique_project_directories:
@@ -52,3 +56,4 @@ runs:
         INPUT_PATTERN: ${{ inputs.pattern }}
         INPUT_TRANSFORMER: ${{ inputs.transformer }}
         INPUT_USE_ORIGINAL_IF_MISSING: ${{ inputs.use-original-if-missing }}
+        INPUT_THROW_IF_TRANSFORMED_NOT_FOUND: ${{ inputs.throw-if-transformed-not-found }}

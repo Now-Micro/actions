@@ -127,6 +127,7 @@ function run() {
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
     const useOriginalIfMissing = parseBool(process.env.INPUT_USE_ORIGINAL_IF_MISSING, false);
+    const throwIfTransformedNotFound = parseBool(process.env.INPUT_THROW_IF_TRANSFORMED_NOT_FOUND, true);
     const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
     const transformerSpec = process.env.INPUT_TRANSFORMER || '';
     const raw = process.env.INPUT_PATHS || '';
@@ -141,6 +142,7 @@ function run() {
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
         console.log(`🔍 USE_ORIGINAL_IF_MISSING: ${useOriginalIfMissing}`);
+        console.log(`🔍 THROW_IF_TRANSFORMED_NOT_FOUND: ${throwIfTransformedNotFound}`);
         if (fallbackRegexPattern) console.log(`🔍 FALLBACK_REGEX: ${fallbackRegexPattern}`);
         if (transformerSpec) console.log(`🔍 TRANSFORMER: ${transformerSpec}`);
     }
@@ -189,21 +191,39 @@ function run() {
         }
         const resolved = findNearestCsproj(p);
         let candidate = resolved;
+        let usedFallbackMatch = false;
         if (!resolved.toLowerCase().endsWith(CS_PROJ_EXTENSION) && fallbackRe) {
             const fallbackSource = resolved || p;
             const match = fallbackRe.exec(fallbackSource);
             if (match) {
                 candidate = match[1] !== undefined ? match[1] : match[0];
+                usedFallbackMatch = true;
                 if (debugMode) console.log(`🔍 Fallback regex matched '${candidate}' for '${fallbackSource}'.`);
             } else if (debugMode) {
                 console.log(`🔍 Fallback regex did not match '${fallbackSource}', omitting entry.`);
             }
             fallbackRe.lastIndex = 0;
         }
+
+        if (usedFallbackMatch && !directoryExists(candidate)) {
+            results.push('');
+            if (debugMode) {
+                console.log(`🔍 Fallback matched directory '${candidate}' does not exist, omitting entry.`);
+            }
+            continue;
+        }
+
         const finalValue = toDirectoryOnly(candidate);
         const transformedValue = transformOutputPath(finalValue, transformer);
         let outputValue = transformedValue;
-        if (transformer && useOriginalIfMissing && transformedValue && !directoryExists(transformedValue)) {
+        const transformedMissing = transformer && transformedValue && !directoryExists(transformedValue);
+
+        if (transformedMissing && throwIfTransformedNotFound && !useOriginalIfMissing) {
+            console.error(`Transformed directory not found: '${transformedValue}'.  Please ensure it exists and try again.`);
+            process.exit(1);
+        }
+
+        if (transformedMissing && useOriginalIfMissing) {
             outputValue = finalValue;
             if (debugMode) {
                 console.log(`🔍 Transformed directory '${transformedValue}' does not exist. Using original '${finalValue}'.`);
