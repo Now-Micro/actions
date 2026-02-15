@@ -103,7 +103,7 @@ runs:
         expected: "[]"
         actual: ${{ steps.t5.outputs.unique_project_directories }}
 
-    - name: Fallback preserves dotted segment
+    - name: Fallback matched non-existent directory is omitted
       id: t6
       uses: ./get-unique-project-directories
       with:
@@ -112,13 +112,13 @@ runs:
         fallback-regex: "^src/demo/get-unique-project-directories/([^.]+\\.[^.]+)\\.slnx$"
         debug-mode: "true"
 
-    - name: Assert dotted fallback value
+    - name: Assert omitted when fallback match directory is missing
       uses: ./src/testing/assert
       with:
-        test-name: "dotted root directory preserved"
+        test-name: "fallback match omitted when directory missing"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
-        expected: '["Trafera.Messaging"]'
+        expected: "[]"
         actual: ${{ steps.t6.outputs.unique_project_directories }}
 
     - name: Non-matching pattern returns no entry

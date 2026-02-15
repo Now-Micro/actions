@@ -153,6 +153,17 @@ test('fallback regex preserves dotted root directory name', () => {
     });
 });
 
+test('fallback regex match is omitted when matched directory does not exist', () => {
+    withTmpTree(() => {
+        touch('RootC/Sub/README.md');
+    }, () => {
+        const paths = 'RootC/Sub/README.md';
+        const r = runWith({ INPUT_PATTERN: '.*\\.md$', INPUT_PATHS: paths, INPUT_FALLBACK_REGEX: '^RootC/Sub/(README)\\.md$' });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\[\]/);
+    });
+});
+
 test('transformer (replace mode) rewrites output directory', () => {
     withTmpTree(() => {
         touch('src/Trafera.Messaging.MassTransit/Trafera.Messaging.MassTransit.csproj');

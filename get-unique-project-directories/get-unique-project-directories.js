@@ -191,17 +191,28 @@ function run() {
         }
         const resolved = findNearestCsproj(p);
         let candidate = resolved;
+        let usedFallbackMatch = false;
         if (!resolved.toLowerCase().endsWith(CS_PROJ_EXTENSION) && fallbackRe) {
             const fallbackSource = resolved || p;
             const match = fallbackRe.exec(fallbackSource);
             if (match) {
                 candidate = match[1] !== undefined ? match[1] : match[0];
+                usedFallbackMatch = true;
                 if (debugMode) console.log(`🔍 Fallback regex matched '${candidate}' for '${fallbackSource}'.`);
             } else if (debugMode) {
                 console.log(`🔍 Fallback regex did not match '${fallbackSource}', omitting entry.`);
             }
             fallbackRe.lastIndex = 0;
         }
+
+        if (usedFallbackMatch && !directoryExists(candidate)) {
+            results.push('');
+            if (debugMode) {
+                console.log(`🔍 Fallback matched directory '${candidate}' does not exist, omitting entry.`);
+            }
+            continue;
+        }
+
         const finalValue = toDirectoryOnly(candidate);
         const transformedValue = transformOutputPath(finalValue, transformer);
         let outputValue = transformedValue;
