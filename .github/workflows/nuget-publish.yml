@@ -40,7 +40,7 @@ on:
                 description: "Debug mode for release validation and release publishing."
                 required: false
                 type: string
-                default: "false"
+                default: "true"
             version:
                 description: "Version to package."
                 required: false
