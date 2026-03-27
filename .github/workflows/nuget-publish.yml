@@ -102,24 +102,48 @@ jobs:
     validate-release:
         runs-on: ubuntu-22.04
         outputs:
-            release_version: ${{ steps.validate.outputs.version }}
-            library_name: ${{ steps.validate.outputs.library_name }}
-            path_to_project: ${{ steps.validate.outputs.path_to_project }}
+            release_version: ${{ steps.get-version.outputs.version }}
+            library_name: ${{ steps.get-version.outputs.library_name }}
+            path_to_project: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}
         steps:
             - name: Check out code
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
 
-            - name: Validate release configuration
-              id: validate
-              uses: ./validate-release
+            - name: Parse release configuration
+              id: get-version
+              uses: Now-Micro/actions/nuget/release/validation@v1
               with:
                   package: ${{ inputs.package }}
                   version: ${{ inputs.version }}
-                  ref-name: ${{ inputs['ref-name'] }}
-                  working-directory: .
+
+            - name: Find project path from package name
+              id: path-finder
+              uses: Now-Micro/actions/find@v1
+              with:
+                  regex: ${{ steps.get-version.outputs.library_name }}.csproj
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
+
+            - name: Validate outputs
+              run: |
+                  if [ -z "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}" ]; then
+                    echo "No project found for package ${{ steps.get-version.outputs.library_name }}";
+                    exit 1;
+                  fi
+                  if [ $(echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute) }}" | jq length) -gt 1 ]; then
+                    echo "Multiple projects found for package ${{ steps.get-version.outputs.library_name }}:";
+                    echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute) }}";
+                    exit 1;
+                  fi
+                  if [ -z "${{ steps.get-version.outputs.version }}" ]; then
+                    echo "No version specified for release.";
+                    exit 1;
+                  fi
+                  if [ -z "${{ steps.get-version.outputs.library_name }}" ]; then
+                    echo "No library name specified for release.";
+                    exit 1;
+                  fi
 
     publish:
         runs-on: ubuntu-22.04

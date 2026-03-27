@@ -1,5 +1,5 @@
-name: Demo - Validate Release
-description: Demonstrates the validate-release action
+name: Demo - Validate NuGet Release
+description: Demonstrates the nuget/release/validation action
 author: Trafera
 
 inputs:
@@ -32,20 +32,19 @@ runs:
         echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-validate-release-summary.txt" >> "$GITHUB_ENV"
         : > "$GITHUB_WORKSPACE/demo-validate-release-summary.txt"
 
-    - name: Title - Validate Release Demo
+    - name: Title - Nuget Release Validation Demo
       uses: ./.github/actions/output-demo-title
       with:
-        title: Validate Release Demo
+        title: Nuget Release Validation Demo
         path: ./.github/actions/demo-validate-release
 
     - name: Run dispatch scenario
       id: dispatch
       if: inputs.package != '' && inputs.version != '' && inputs.skip-ref-scenario == 'true'
-      uses: ./validate-release
+      uses: ./nuget/release/validation
       with:
         package: ${{ inputs.package }}
         version: ${{ inputs.version }}
-        working-directory: .
         debug-mode: "true"
 
     - name: Assert dispatch outputs
@@ -69,11 +68,9 @@ runs:
     - name: Run branch scenario
       id: branch
       if: inputs.skip-ref-scenario != 'true'
-      uses: ./validate-release
+      uses: ./nuget/release/validation
       with:
         debug-mode: "true"
-        ref-name: ${{ inputs.ref-name }}
-        working-directory: .
 
     - name: Derive branch expectations
       id: branch_expected
