@@ -69,9 +69,17 @@ on:
                 description: "Package name to release."
                 required: false
                 type: choice
-                default: "Trafera.CSI.Shared"
+                default: "Api"
                 options:
-                    - Trafera.CSI.Shared
+                    - Api
+                    - AppA
+                    - AppB
+                    - CodingStandards.Analyzers
+                    - Demo.Linting
+                    - Service
+                    - Trafera.Messaging.Abstractions
+                    - Trafera.Messaging.MassTransit
+                    - Trafera.Messaging.MediatR
             package-directory:
                 description: "Directory to store generated package artifacts."
                 required: false
@@ -86,7 +94,7 @@ on:
                 description: "The .NET version used for publishing."
                 required: false
                 type: string
-                default: "9.0.x"
+                default: "10.0.x"
             release-workflow-debug-mode:
                 description: "Debug mode for release validation and release publishing."
                 required: false
