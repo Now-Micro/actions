@@ -58,63 +58,7 @@ on:
             token-github-packages:
                 description: "Token used to authenticate to GitHub Packages."
                 required: true
-    workflow_dispatch:
-        inputs:
-            artifact-retention-days:
-                description: "Artifact retention period in days."
-                required: false
-                type: number
-                default: 7
-            ci-debug-mode:
-                description: "Debug mode for project discovery and publish steps."
-                required: false
-                type: string
-                default: "false"
-            package:
-                description: "Package name to release."
-                required: false
-                type: choice
-                default: "Api"
-                options:
-                    - Api
-                    - AppA
-                    - AppB
-                    - CodingStandards.Analyzers
-                    - Demo.Linting
-                    - Service
-                    - Trafera.Messaging.Abstractions
-                    - Trafera.Messaging.MassTransit
-                    - Trafera.Messaging.MediatR
-            package-directory:
-                description: "Directory to store generated package artifacts."
-                required: false
-                type: string
-                default: "nupkgs"
-            ref-name:
-                description: "Ref name to use when package/version are not provided."
-                required: false
-                type: string
-                default: ""
-            release-dotnet-version:
-                description: "The .NET version used for publishing."
-                required: false
-                type: string
-                default: "10.0.x"
-            release-workflow-debug-mode:
-                description: "Debug mode for release validation and release publishing."
-                required: false
-                type: string
-                default: "false"
-            tests-directory:
-                description: "Directory to search for the test project; leave empty to skip test discovery."
-                required: false
-                type: string
-                default: ""
-            version:
-                description: "Version to package."
-                required: false
-                type: string
-                default: "1.0.0"
+    
 
 jobs:
     validate-release:
