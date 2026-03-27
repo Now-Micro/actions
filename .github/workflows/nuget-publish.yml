@@ -6,18 +6,18 @@ permissions:
 on:
     workflow_call:
         inputs:
+            artifact-retention-days:
+                description: "Artifact retention period in days."
+                required: false
+                type: number
+                default: 7
+            ci-debug-mode:
+                description: "Debug mode for project discovery and publish steps."
+                required: false
+                type: string
+                default: "false"
             package:
                 description: "Package name to release."
-                required: false
-                type: string
-                default: ""
-            version:
-                description: "Version to package."
-                required: false
-                type: string
-                default: ""
-            ref-name:
-                description: "Ref name to use when package/version are not provided."
                 required: false
                 type: string
                 default: ""
@@ -26,23 +26,23 @@ on:
                 required: false
                 type: string
                 default: "nupkgs"
-            release-workflow-debug-mode:
-                description: "Debug mode for release validation and release publishing."
+            ref-name:
+                description: "Ref name to use when package/version are not provided."
                 required: false
                 type: string
-                default: "false"
-            ci-debug-mode:
-                description: "Debug mode for project discovery and publish steps."
-                required: false
-                type: string
-                default: "false"
+                default: ""
             release-dotnet-version:
                 description: "The .NET version used for publishing."
                 required: false
                 type: string
                 default: ""
-            artifact-retention-days:
-                description: "Artifact retention period in days."
+            release-workflow-debug-mode:
+                description: "Debug mode for release validation and release publishing."
+                required: false
+                type: string
+                default: "false"
+            version:
+                description: "Version to package."
                 required: false
                 type: string
                 default: ""
@@ -55,6 +55,16 @@ on:
                 required: true
     workflow_dispatch:
         inputs:
+            artifact-retention-days:
+                description: "Artifact retention period in days."
+                required: false
+                type: number
+                default: 7
+            ci-debug-mode:
+                description: "Debug mode for project discovery and publish steps."
+                required: false
+                type: string
+                default: "false"
             package:
                 description: "Package name to release."
                 required: false
@@ -62,41 +72,31 @@ on:
                 default: "Trafera.CSI.Shared"
                 options:
                     - Trafera.CSI.Shared
-            version:
-                description: "Version to package."
-                required: false
-                type: string
-                default: "1.0.0"
-            ref-name:
-                description: "Ref name to use when package/version are not provided."
-                required: false
-                type: string
-                default: ""
             package-directory:
                 description: "Directory to store generated package artifacts."
                 required: false
                 type: string
                 default: "nupkgs"
-            release-workflow-debug-mode:
-                description: "Debug mode for release validation and release publishing."
+            ref-name:
+                description: "Ref name to use when package/version are not provided."
                 required: false
                 type: string
-                default: "false"
-            ci-debug-mode:
-                description: "Debug mode for project discovery and publish steps."
-                required: false
-                type: string
-                default: "false"
+                default: ""
             release-dotnet-version:
                 description: "The .NET version used for publishing."
                 required: false
                 type: string
                 default: "9.0.x"
-            artifact-retention-days:
-                description: "Artifact retention period in days."
+            release-workflow-debug-mode:
+                description: "Debug mode for release validation and release publishing."
                 required: false
                 type: string
-                default: "7"
+                default: "false"
+            version:
+                description: "Version to package."
+                required: false
+                type: string
+                default: "1.0.0"
 
 jobs:
     validate-release:
@@ -175,7 +175,7 @@ jobs:
               with:
                   additional-build-args: --property WarningLevel=0 /p:Version=${{ needs.validate-release.outputs.release_version }}
                   additional-pack-args: /p:PackageVersion=${{ needs.validate-release.outputs.release_version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
-                  dotnet-version: ${{ inputs['release-dotnet-version'] }}
+                  dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   nuget-names: "github"
                   nuget-passwords: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
@@ -201,6 +201,11 @@ jobs:
         permissions:
             contents: write
         steps:
+            - name: Check out code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
             - name: Publish GitHub Release
               uses: Now-Micro/actions/github/release@v1
               with:
