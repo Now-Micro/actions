@@ -41,6 +41,11 @@ on:
                 required: false
                 type: string
                 default: "true"
+            tests-directory:
+                description: "Directory to search for the test project; leave empty to skip test discovery."
+                required: false
+                type: string
+                default: ""
             version:
                 description: "Version to package."
                 required: false
@@ -100,6 +105,11 @@ on:
                 required: false
                 type: string
                 default: "false"
+            tests-directory:
+                description: "Directory to search for the test project; leave empty to skip test discovery."
+                required: false
+                type: string
+                default: ""
             version:
                 description: "Version to package."
                 required: false
@@ -171,9 +181,10 @@ jobs:
 
             - name: Get Project File (Test)
               id: extract-project-test
+              if: ${{ inputs['tests-directory'] != '' }}
               uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
               with:
-                  directory: ${{ needs.validate-release.outputs.path_to_project }}/tests
+                  directory: ${{ inputs['tests-directory'] }}
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
                   find-project: true
                   find-solution: false
@@ -191,7 +202,7 @@ jobs:
                   nuget-usernames: ${{ github.actor }}
                   project-file: ${{ steps.extract-project-main.outputs.project-found }}
                   package-directory: ${{ inputs['package-directory'] }}
-                  test-project-file: ${{ steps.extract-project-test.outputs.project-found }}
+                  test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
 
             - name: Upload Artifacts
               uses: actions/upload-artifact@v4
