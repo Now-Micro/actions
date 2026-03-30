@@ -156,7 +156,7 @@ jobs:
                       ${{ needs.validate-release.outputs.path_to_project }}/*.nupkg
                       ${{ needs.validate-release.outputs.path_to_project }}/*.snupkg
                       ${{ needs.validate-release.outputs.path_to_project }}/*.symbols.nupkg
-                  retention-days: "${{ inputs['artifact-retention-days'] }}"
+                  retention-days: ${{ inputs['artifact-retention-days'] }}
 
     create-github-release:
         runs-on: ubuntu-22.04
