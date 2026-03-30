@@ -7,7 +7,7 @@ on:
         description: "Artifact retention period in days."
         required: false
         type: string
-        default: "7"
+        default: "1"
       ci-debug-mode:
         description: "Debug mode for project discovery and publish steps."
         required: false
