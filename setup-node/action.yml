@@ -15,7 +15,7 @@ inputs:
   node-version:
     description: 'The Node.js version to use'
     required: false
-    default: '20.x'
+    default: '24.x'
   show-version:
     description: 'Show Node.js and npm version (true/false)'
     required: false
@@ -25,7 +25,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up Node.js ${{ inputs.node-version }}
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: ${{ inputs.cache == 'true' && 'npm' || '' }}

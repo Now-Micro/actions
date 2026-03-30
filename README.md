@@ -30,7 +30,7 @@ Ensure the action is self-contained, with no external dependencies beyond Node.j
 
 ## Prerequisites
 
-- Node.js 20.x (matches the default version in the `setup-node` action).
+- Node.js 24.x (matches the default version in the `setup-node` action).
 - Git for local development and testing.
 
 ## Action Structure Pattern
