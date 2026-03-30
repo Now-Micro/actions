@@ -12,7 +12,7 @@ on:
         description: "Debug mode for project discovery and publish steps."
         required: false
         type: string
-        default: "false"
+        default: "true"
       package:
         description: "Package name to release."
         required: false
@@ -42,7 +42,7 @@ on:
         description: "Debug mode for release validation and release publishing."
         required: false
         type: string
-        default: "false"
+        default: "true"
       tests-directory:
         description: "Directory to search for the test project; leave empty to skip test discovery."
         required: false
