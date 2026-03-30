@@ -9,8 +9,8 @@ on:
             artifact-retention-days:
                 description: "Artifact retention period in days."
                 required: false
-                type: number
-                default: 7
+                type: string
+                default: "7"
             ci-debug-mode:
                 description: "Debug mode for project discovery and publish steps."
                 required: false
@@ -156,7 +156,7 @@ jobs:
                       ${{ needs.validate-release.outputs.path_to_project }}/*.nupkg
                       ${{ needs.validate-release.outputs.path_to_project }}/*.snupkg
                       ${{ needs.validate-release.outputs.path_to_project }}/*.symbols.nupkg
-                  retention-days: ${{ inputs['artifact-retention-days'] }}
+                  retention-days: "${{ inputs['artifact-retention-days'] }}"
 
     create-github-release:
         runs-on: ubuntu-22.04
