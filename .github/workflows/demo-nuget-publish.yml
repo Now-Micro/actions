@@ -34,10 +34,10 @@ on:
         type: string
         default: "nupkgs"
       release-dotnet-version:
-        description: "The .NET version used for publishing."
+        description: "The .NET version(s) used for publishing.  Separate version with a comma for multiple versions."
         required: false
         type: string
-        default: "10.0.x"
+        default: "8.0.x, 10.0.x"
       release-workflow-debug-mode:
         description: "Debug mode for release validation and release publishing."
         required: false
@@ -49,10 +49,10 @@ on:
         type: string
         default: "src/demo/dotnet/tests/Api.Tests"
       version:
-        description: "Version to package."
+        description: "Version to package. If empty a unique run id will be used."
         required: false
         type: string
-        default: "1.0.0"
+        default: ""
 
 permissions:
   contents: write
@@ -70,7 +70,7 @@ jobs:
       release-dotnet-version: ${{ inputs.release-dotnet-version }}
       release-workflow-debug-mode: ${{ inputs.release-workflow-debug-mode }}
       tests-directory: ${{ inputs.tests-directory }}
-      version: ${{ inputs.version }}
+      version: "${{ inputs.version != '' && inputs.version || github.run_id }}"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
