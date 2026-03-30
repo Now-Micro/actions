@@ -6,8 +6,8 @@ on:
       artifact-retention-days:
         description: "Artifact retention period in days."
         required: false
-        type: number
-        default: 7
+        type: string
+        default: "7"
       ci-debug-mode:
         description: "Debug mode for project discovery and publish steps."
         required: false
@@ -63,7 +63,7 @@ jobs:
     name: Trigger reusable NuGet publish workflow
     uses: ./.github/workflows/nuget-publish.yml
     with:
-      artifact-retention-days: ${{ inputs.artifact-retention-days }}
+      artifact-retention-days: "${{ inputs.artifact-retention-days }}"
       ci-debug-mode: ${{ inputs.ci-debug-mode }}
       package: ${{ inputs.package }}
       package-directory: ${{ inputs.package-directory }}
