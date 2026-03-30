@@ -60,7 +60,7 @@ permissions:
 
 jobs:
   demo-nuget-publish:
-    name: Trigger reusable NuGet publish workflow
+    name: NuGet Publish
     uses: ./.github/workflows/nuget-publish.yml
     with:
       artifact-retention-days: "${{ inputs.artifact-retention-days }}"
