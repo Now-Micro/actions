@@ -82,7 +82,7 @@ runs:
 
     - name: Download artifacts
       if: ${{ inputs.skip-download != 'true' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: ${{ inputs.artifacts-path }}
         name: ${{ inputs.artifact-name }}
@@ -121,7 +121,7 @@ runs:
     - name: Create GitHub Release
       id: create-release
       if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.prepare.outputs.tag_name }}
         name: ${{ steps.prepare.outputs.release_name }}
