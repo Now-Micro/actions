@@ -129,12 +129,6 @@ jobs:
                   find-project: true
                   find-solution: false
 
-            - name: Print masked secrets
-              env:
-                  PKG_TOKEN: ${{ secrets['token-github-packages'] }}
-              run: |
-                  echo "GitHub Packages Token: ${PKG_TOKEN:0:3}***${PKG_TOKEN: -3}"
-
             - name: Nuget Publish
               uses: Now-Micro/actions/nuget/publish@v1
               with:
@@ -155,9 +149,10 @@ jobs:
               with:
                   name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
                   path: |
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.nupkg
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.snupkg
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.symbols.nupkg
+                      ${{ inputs['package-directory'] }}/*.nupkg
+                      ${{ inputs['package-directory'] }}/*.snupkg
+                      ${{ inputs['package-directory'] }}/*.symbols.nupkg
+                  if-no-files-found: error
                   retention-days: ${{ inputs['artifact-retention-days'] }}
 
     create-github-release:
@@ -175,8 +170,8 @@ jobs:
               uses: Now-Micro/actions/github/release@v1
               with:
                   artifact-name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
-                  artifacts-path: ${{ needs.validate-release.outputs.path_to_project }}
-                  changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
+                  artifacts-path:  ${{ inputs['package-directory'] }}
+                  changelog-path:  ${{ inputs['package-directory'] }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
                   github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
