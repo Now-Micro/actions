@@ -65,7 +65,7 @@ jobs:
             path_to_project: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}
         steps:
             - name: Check out code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
@@ -108,7 +108,7 @@ jobs:
         needs: validate-release
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Get Project File (Main)
               id: extract-project-main
@@ -145,7 +145,7 @@ jobs:
                   test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
 
             - name: Upload Artifacts
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v6
               with:
                   name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
                   path: |
@@ -162,7 +162,7 @@ jobs:
             contents: write
         steps:
             - name: Check out code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
@@ -170,8 +170,8 @@ jobs:
               uses: Now-Micro/actions/github/release@v1
               with:
                   artifact-name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
-                  artifacts-path:  ${{ inputs['package-directory'] }}
-                  changelog-path:  ${{ inputs['package-directory'] }}/CHANGELOG.md
+                  artifacts-path: ${{ inputs['package-directory'] }}
+                  changelog-path: ${{ inputs['package-directory'] }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
                   github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
