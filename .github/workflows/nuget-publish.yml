@@ -52,11 +52,8 @@ on:
                 type: string
                 default: ""
         secrets:
-            github-token:
-                description: "GitHub token used for release and package publishing."
-                required: true
             token-github-packages:
-                description: "Token used to authenticate to GitHub Packages."
+                description: "PAT used to authenticate to GitHub Packages."
                 required: true
 
 jobs:
@@ -134,10 +131,8 @@ jobs:
 
             - name: Print masked secrets
               env:
-                  GH_TOKEN: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
                   PKG_TOKEN: ${{ secrets['token-github-packages'] }}
               run: |
-                  echo "GitHub Token: ${GH_TOKEN:0:3}***${GH_TOKEN: -3}"
                   echo "GitHub Packages Token: ${PKG_TOKEN:0:3}***${PKG_TOKEN: -3}"
 
             - name: Nuget Publish
@@ -146,7 +141,7 @@ jobs:
                   additional-build-args: --property WarningLevel=0 /p:Version=${{ needs.validate-release.outputs.release_version }}
                   additional-pack-args: /p:PackageVersion=${{ needs.validate-release.outputs.release_version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
                   dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
-                  github-token: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
                   nuget-names: "github"
                   nuget-passwords: ${{ secrets.token-github-packages }}
                   nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
@@ -183,6 +178,6 @@ jobs:
                   artifacts-path: ${{ needs.validate-release.outputs.path_to_project }}
                   changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  github-token: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
                   release-version: ${{ needs.validate-release.outputs.release_version }}
