@@ -135,9 +135,9 @@ jobs:
                   additional-build-args: --property WarningLevel=0 /p:Version=${{ needs.validate-release.outputs.release_version }}
                   additional-pack-args: /p:PackageVersion=${{ needs.validate-release.outputs.release_version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
                   dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
-                  github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
+                  github-token: ${{ secrets['token-github-packages'] }}
                   nuget-names: "github"
-                  nuget-passwords: ${{ secrets.token-github-packages }}
+                  nuget-passwords: ${{ secrets['token-github-packages'] }}
                   nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
                   nuget-usernames: ${{ github.actor }}
                   project-file: ${{ steps.extract-project-main.outputs.project-found }}
@@ -171,8 +171,8 @@ jobs:
               with:
                   artifact-name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
                   artifacts-path: ${{ inputs['package-directory'] }}
-                  changelog-path: ${{ inputs['package-directory'] }}/CHANGELOG.md
+                  changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  github-token: ${{ secrets['token-github-packages'] || secrets.token-github-packages }}
+                  github-token: ${{ secrets['token-github-packages'] }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
                   release-version: ${{ needs.validate-release.outputs.release_version }}
