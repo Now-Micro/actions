@@ -58,7 +58,6 @@ on:
             token-github-packages:
                 description: "Token used to authenticate to GitHub Packages."
                 required: true
-    
 
 jobs:
     validate-release:
