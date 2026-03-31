@@ -133,6 +133,14 @@ jobs:
                   find-project: true
                   find-solution: false
 
+            - name: Print masked secrets
+              env:
+                  GH_TOKEN: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
+                  PKG_TOKEN: ${{ secrets['token-github-packages'] }}
+              run: |
+                  echo "GitHub Token: ${GH_TOKEN:0:3}***${GH_TOKEN: -3}"
+                  echo "GitHub Packages Token: ${PKG_TOKEN:0:3}***${PKG_TOKEN: -3}"
+
             - name: Nuget Publish
               uses: Now-Micro/actions/nuget/publish@v1
               with:
