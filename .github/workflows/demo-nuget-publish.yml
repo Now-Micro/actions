@@ -72,5 +72,4 @@ jobs:
       tests-directory: ${{ inputs['tests-directory'] }}
       version: "${{ inputs.version != '' && inputs.version || format('0.0.0-{0}', github.run_id) }}"
     secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
