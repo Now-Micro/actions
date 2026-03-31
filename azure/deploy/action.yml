@@ -25,7 +25,7 @@ inputs:
   show-debug-info:
     description: "Show debug information for troubleshooting"
     required: false
-    default: 'false'
+    default: "false"
   slot-name:
     description: "Deployment slot name"
     required: false
@@ -33,16 +33,16 @@ inputs:
   resource-group-name:
     description: "Azure Resource Group name"
     required: true
-  
+
 runs:
   using: "composite"
   steps:
     - name: Download build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: ${{ inputs.artifact-name }}
         path: ./${{ inputs.artifact-name }}
-    
+
     - name: Log stuff
       if: ${{ inputs.show-debug-info == 'true' }}
       shell: bash

@@ -61,6 +61,9 @@ outputs:
   packages-json:
     description: "JSON array of copied package filenames."
     value: ${{ steps.prepare.outputs.packages_json }}
+  release-url:
+    description: "URL of the created GitHub release."
+    value: ${{ steps.create-release.outputs.url }}
   release-name:
     description: "Release name computed from template."
     value: ${{ steps.prepare.outputs.release_name }}
@@ -79,7 +82,7 @@ runs:
 
     - name: Download artifacts
       if: ${{ inputs.skip-download != 'true' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: ${{ inputs.artifacts-path }}
         name: ${{ inputs.artifact-name }}
@@ -116,8 +119,9 @@ runs:
         fi
 
     - name: Create GitHub Release
+      id: create-release
       if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.prepare.outputs.tag_name }}
         name: ${{ steps.prepare.outputs.release_name }}
@@ -127,3 +131,13 @@ runs:
         prerelease: ${{ contains(inputs.release-version, '-') }}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    - name: Add release URL to workflow summary
+      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 && steps.create-release.outputs.url != '' }}
+      shell: bash
+      run: |
+        {
+          echo "## GitHub Release"
+          echo ""
+          echo "Release URL: [${{ steps.prepare.outputs.release_name }}](${{ steps.create-release.outputs.url }})"
+        } >> "$GITHUB_STEP_SUMMARY"

@@ -1,39 +1,38 @@
-
-name: 'Extract Changelog Changes'
-description: 'Extracts changelog content for a specific version from various changelog file formats'
-author: 'Trafera'
+name: "Extract Changelog Changes"
+description: "Extracts changelog content for a specific version from various changelog file formats"
+author: "Trafera"
 
 inputs:
   library-name:
-    description: 'Name of the library being released'
+    description: "Name of the library being released"
     required: true
   version:
-    description: 'Version to extract from changelog (e.g., 1.0.1)'
+    description: "Version to extract from changelog (e.g., 1.0.1)"
     required: true
   library-directory:
-    description: 'Path to the library source directory'
+    description: "Path to the library source directory"
     required: true
   create-artifact:
-    description: 'Whether to create and upload an artifact with changelog content'
+    description: "Whether to create and upload an artifact with changelog content"
     required: false
-    default: 'true'
+    default: "true"
   changelog-content-path:
-    description: 'Path to save the changelog content artifact.  Do not include a trailing slash.'
+    description: "Path to save the changelog content artifact.  Do not include a trailing slash."
     required: true
 
 outputs:
   changelog-content:
-    description: 'Extracted changelog content for the specified version'
+    description: "Extracted changelog content for the specified version"
     value: ${{ steps.extract.outputs.changelog-content }}
   changelog-file-found:
-    description: 'Whether a changelog file was found'
+    description: "Whether a changelog file was found"
     value: ${{ steps.extract.outputs.changelog-file-found }}
   changelog-file-path:
-    description: 'Path to the changelog file that was found'
+    description: "Path to the changelog file that was found"
     value: ${{ steps.extract.outputs.changelog-file-path }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Extract changelog content
       id: extract
@@ -91,9 +90,9 @@ runs:
         LIBRARY_NAME="${{ inputs.library-name }}"
         VERSION="${{ inputs.version }}"
         LIBRARY_DIRECTORY="${{ inputs.library-directory }}"
-        
+
         echo "Extracting changelog for $LIBRARY_NAME v$VERSION from $LIBRARY_DIRECTORY"
-        
+
         # Look for changelog files in the library directory
         LIBRARY_ROOT_DIR=$(dirname "${{ inputs.library-directory }}")  
           if [ $? -ne 0 ]; then  
@@ -101,7 +100,7 @@ runs:
             LIBRARY_ROOT_DIR="."
           fi
         CHANGELOG_FILE=""
-        
+
         # Check common changelog file names and locations
         for changelog_path in \
           "../${LIBRARY_ROOT_DIR}/CHANGELOG.md" \
@@ -139,10 +138,10 @@ runs:
           echo "$CHANGELOG_CONTENT"
           echo "CHANGELOG_EOF"
         } >> $GITHUB_OUTPUT
-        
+
         echo "changelog-file-found=$CHANGELOG_FILE_FOUND" >> $GITHUB_OUTPUT
         echo "changelog-file-path=$CHANGELOG_FILE_PATH" >> $GITHUB_OUTPUT
-        
+
         echo "=== Extracted Changelog Content ==="
         echo "$CHANGELOG_CONTENT"
         echo "=== End Changelog Content ==="
@@ -153,19 +152,19 @@ runs:
       run: |
         mkdir -p ${{ inputs.changelog-content-path }}
         CHANGELOG_CONTENT_FILE="${{ inputs.changelog-content-path }}/changelog-${{ inputs.library-name }}.md"
-        
+
         # Save changelog content to file for artifact upload
         cat > "$CHANGELOG_CONTENT_FILE" << 'CHANGELOG_EOF'
         ${{ steps.extract.outputs.changelog-content }}
         CHANGELOG_EOF
-        
+
         echo "Changelog content saved to: $CHANGELOG_CONTENT_FILE"
         echo "File found: ${{ steps.extract.outputs.changelog-file-found }}"
         echo "File path: ${{ steps.extract.outputs.changelog-file-path }}"
 
     - name: Upload changelog content
       if: ${{ inputs.create-artifact == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: changelog-content-${{ inputs.library-name }}
         path: ${{ inputs.changelog-content-path }}/

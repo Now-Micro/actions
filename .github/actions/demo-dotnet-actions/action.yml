@@ -30,7 +30,7 @@ runs:
         file-to-build: src/demo/dotnet/demo.sln
         build-configuration: "Release"
         dotnet-version: "8.0.x"
-        node-version: "18.x"
+        node-version: "24.x"
 
     - name: Dotnet install
       uses: ./dotnet/install
@@ -44,7 +44,7 @@ runs:
         file-to-build: src/demo/dotnet/src/Api/Api.csproj
         build-configuration: "Release"
         dotnet-version: "8.0.x"
-        node-version: "18.x"
+        node-version: "24.x"
 
     - name: Run tests
       if: ${{ inputs.run-test-step == 'true' }}

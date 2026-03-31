@@ -52,13 +52,9 @@ on:
                 type: string
                 default: ""
         secrets:
-            github-token:
-                description: "GitHub token used for release and package publishing."
-                required: true
             token-github-packages:
-                description: "Token used to authenticate to GitHub Packages."
+                description: "PAT used to authenticate to GitHub Packages."
                 required: true
-    
 
 jobs:
     validate-release:
@@ -69,7 +65,7 @@ jobs:
             path_to_project: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}
         steps:
             - name: Check out code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
@@ -112,7 +108,7 @@ jobs:
         needs: validate-release
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Get Project File (Main)
               id: extract-project-main
@@ -139,9 +135,9 @@ jobs:
                   additional-build-args: --property WarningLevel=0 /p:Version=${{ needs.validate-release.outputs.release_version }}
                   additional-pack-args: /p:PackageVersion=${{ needs.validate-release.outputs.release_version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
                   dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
-                  github-token: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets['token-github-packages'] }}
                   nuget-names: "github"
-                  nuget-passwords: ${{ secrets.token-github-packages }}
+                  nuget-passwords: ${{ secrets['token-github-packages'] }}
                   nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
                   nuget-usernames: ${{ github.actor }}
                   project-file: ${{ steps.extract-project-main.outputs.project-found }}
@@ -149,13 +145,14 @@ jobs:
                   test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
 
             - name: Upload Artifacts
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v6
               with:
                   name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
                   path: |
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.nupkg
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.snupkg
-                      ${{ needs.validate-release.outputs.path_to_project }}/*.symbols.nupkg
+                      ${{ inputs['package-directory'] }}/*.nupkg
+                      ${{ inputs['package-directory'] }}/*.snupkg
+                      ${{ inputs['package-directory'] }}/*.symbols.nupkg
+                  if-no-files-found: error
                   retention-days: ${{ inputs['artifact-retention-days'] }}
 
     create-github-release:
@@ -165,7 +162,7 @@ jobs:
             contents: write
         steps:
             - name: Check out code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
@@ -173,9 +170,9 @@ jobs:
               uses: Now-Micro/actions/github/release@v1
               with:
                   artifact-name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
-                  artifacts-path: ${{ needs.validate-release.outputs.path_to_project }}
+                  artifacts-path: ${{ inputs['package-directory'] }}
                   changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  github-token: ${{ secrets['github-token'] || secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets['token-github-packages'] }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
                   release-version: ${{ needs.validate-release.outputs.release_version }}

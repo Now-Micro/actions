@@ -16,7 +16,7 @@ jobs:
       should_run_tests: ${{ steps.check-changed-files.outputs.should_run_tests }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Fetch full history so that before and after commits exist locally
           fetch-depth: 0
@@ -34,7 +34,7 @@ jobs:
           request-size: 50
           retry-attempts: 3
           workflow-name: "checks.yml"
-          
+
       - name: Get Changed Files
         uses: Now-Micro/actions/get-changed-files@v1
         id: changed-files
