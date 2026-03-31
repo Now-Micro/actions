@@ -73,7 +73,9 @@ jobs:
               id: get-version
               uses: Now-Micro/actions/nuget/release/validation@v1
               with:
+                  debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
                   package: ${{ inputs.package }}
+                  ref-name: ${{ inputs['ref-name'] != '' && inputs['ref-name'] || github.ref_name }}
                   version: ${{ inputs.version }}
 
             - name: Find project path from package name

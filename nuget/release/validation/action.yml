@@ -11,6 +11,10 @@ inputs:
     description: "Library/package name.  This is only required when you are using workflow_dispatch."
     required: false
     default: ""
+  ref-name:
+    description: "Ref name to parse when package/version are derived from a branch name."
+    required: false
+    default: ""
   version:
     description: "Semantic version (X.Y.Z or prerelease). This is only required when you are using workflow_dispatch."
     required: false
@@ -35,7 +39,7 @@ runs:
       env:
         INPUT_PACKAGE: ${{ inputs.package }}
         INPUT_VERSION: ${{ inputs.version }}
-        INPUT_REF_NAME: ${{ github.ref_name }}
+        INPUT_REF_NAME: ${{ inputs['ref-name'] || github.ref_name }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode || 'false' }}
       run: |
         node "$GITHUB_ACTION_PATH/validation.js"
