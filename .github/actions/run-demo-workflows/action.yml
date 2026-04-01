@@ -23,7 +23,6 @@ runs:
         artifact-retention-days: "1"
         ci-debug-mode: "true"
         ignore-casing: "true"
-        dry-run: "true"
         package: "Api"
         package-directory: "nupkgs"
         ref-name: "release/Api/0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
