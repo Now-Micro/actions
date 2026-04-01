@@ -21,6 +21,10 @@ on:
                 description: "Ignore casing when parsing release refs and matching package names."
                 required: false
                 type: string
+            nuget-urls:
+                description: "Nuget feed URLs to publish to, separated by commas."
+                required: false
+                type: string
             package:
                 description: "Package name to release."
                 required: false
@@ -71,6 +75,7 @@ jobs:
                   cleanup-release: "false"
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   ignore-casing: ${{ inputs['ignore-casing'] != '' && inputs['ignore-casing'] || 'true' }}
+                  nuget-urls: ${{ inputs['nuget-urls'] }}
                   package: ${{ inputs.package }}
                   package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}
                   ref-name: ${{ inputs['ref-name'] != '' && inputs['ref-name'] || github.ref_name }}
