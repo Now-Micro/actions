@@ -64,7 +64,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Run shared nuget publish workflow
-              uses: ./.github/actions/nuget-publish-workflow
+              uses: Now-Micro/actions/.github/actions/nuget-publish-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] != '' && inputs['artifact-retention-days'] || '1' }}
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] != '' && inputs['ci-debug-mode'] || 'false' }}
