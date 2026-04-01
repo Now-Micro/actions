@@ -5,6 +5,8 @@ permissions:
     packages: write
 
 on:
+    push:
+        branches: [release/**]
     workflow_call:
         inputs:
             artifact-retention-days:
