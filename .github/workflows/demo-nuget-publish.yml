@@ -49,7 +49,7 @@ on:
         description: "The .NET version(s) used for publishing.  Separate version with a comma for multiple versions."
         required: false
         type: string
-        default: "8.0.x, 10.0.x"
+        default: ""
       release-workflow-debug-mode:
         description: "Debug mode for release validation and release publishing."
         required: false
