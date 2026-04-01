@@ -86,6 +86,32 @@ test('branch success parses library and version', () => {
     assert.match(r.outputContent, /library_name=Api/);
 });
 
+test('branch success ignores casing by default', () => {
+    const r = runWith({ INPUT_REF_NAME: 'release/api/2.3.4' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version=2.3.4/);
+    assert.match(r.outputContent, /library_name=api/);
+});
+
+test('branch casing can be enforced when ignore casing is disabled', () => {
+    const r = runWith({ INPUT_REF_NAME: 'release/api/2.3.4', INPUT_IGNORE_CASING: 'false' });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
+});
+
+test('branch success ignores casing by default', () => {
+    const r = runWith({ INPUT_REF_NAME: 'release/api/2.3.4' });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /version=2.3.4/);
+    assert.match(r.outputContent, /library_name=api/);
+});
+
+test('branch casing can be enforced when ignore casing is disabled', () => {
+    const r = runWith({ INPUT_REF_NAME: 'release/api/2.3.4', INPUT_IGNORE_CASING: 'false' });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err + r.out, /Ref does not match release\/\* and package\/version inputs are missing or incomplete/);
+});
+
 test('uses github.ref_name when input ref is absent', () => {
     const r = runWith({ GITHUB_REF_NAME: 'release/FromRef/1.0.0' });
     assert.strictEqual(r.exitCode, 0);
