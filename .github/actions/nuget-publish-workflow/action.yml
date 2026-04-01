@@ -26,6 +26,10 @@ inputs:
     description: "Ignore casing when parsing release refs and matching package names."
     required: false
     default: "true"
+  nuget-urls:
+    description: "Nuget feed URLs to publish to, separated by commas. Required if token-github-packages is provided."
+    required: false
+    default: ""
   package:
     description: "Package name to release."
     required: false
@@ -146,7 +150,7 @@ runs:
         github-token: ${{ inputs['token-github-packages'] }}
         nuget-names: "github"
         nuget-passwords: ${{ inputs['token-github-packages'] }}
-        nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        nuget-urls: ${{ inputs['nuget-urls'] }}
         nuget-usernames: ${{ github.actor }}
         project-file: ${{ steps.extract-project-main.outputs.project-found }}
         package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}

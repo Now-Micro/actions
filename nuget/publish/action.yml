@@ -30,7 +30,7 @@ inputs:
     description: "Personal Access Tokens for authentication (comma-separated)"
     required: false
   nuget-urls:
-    description: "URLs of the NuGet feed (comma-separated)"
+    description: "URLs of the NuGet sources (comma-separated) used for restore/pack. This does not control the publish destination; use 'publish-source' for that. When omitted, restore/pack defaults to the current repository's GitHub Packages feed."
     required: false
   nuget-usernames:
     description: "Usernames for source authentication (comma-separated)"
@@ -105,7 +105,7 @@ runs:
         mode: "pack"
         nuget-names: ${{ inputs.nuget-names }}
         nuget-passwords: ${{ inputs.nuget-passwords }}
-        nuget-urls: ${{ inputs.nuget-urls }}
+        nuget-urls: ${{ inputs.nuget-urls != '' && inputs.nuget-urls || format('https://nuget.pkg.github.com/{0}/index.json', github.repository_owner) }}
         nuget-usernames: ${{ inputs.nuget-usernames }}
 
     - name: Test

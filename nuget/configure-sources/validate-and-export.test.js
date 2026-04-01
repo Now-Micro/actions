@@ -138,6 +138,17 @@ test('valid single', () => {
     assert.match(r.outputs, /urls=x/);
 });
 
+test('single credentials broadcast across multiple urls', () => {
+    const r = runWith({ INPUT_NAMES: 'A,B,C', INPUT_USERNAMES: 'u', INPUT_PASSWORDS: 'p', INPUT_URLS: 'x1,x2,x3' });
+    assert.strictEqual(r.code, 0);
+    assert.match(r.out, /Validated 3 source/);
+    assert.match(r.outputs, /count=3/);
+    assert.match(r.outputs, /names=A,B,C/);
+    assert.match(r.outputs, /usernames=u,u,u/);
+    assert.match(r.outputs, /passwords=p,p,p/);
+    assert.match(r.outputs, /urls=x1,x2,x3/);
+});
+
 test('valid multi with spaces and empty items filtered', () => {
     const r = runWith({ INPUT_NAMES: ' A , ,B ', INPUT_USERNAMES: ' u1 , u2 ', INPUT_PASSWORDS: ' p1 , p2 ', INPUT_URLS: ' x1 , x2 ' });
     assert.strictEqual(r.code, 0);

@@ -10,6 +10,14 @@ function splitCsvKeepEmpty(s) {
     return s.split(',').map(x => x.trim());
 }
 
+function broadcastSingleValue(values, targetLength) {
+    if (values.length === 1 && targetLength > 1) {
+        return Array.from({ length: targetLength }, () => values[0]);
+    }
+
+    return values;
+}
+
 function setOutput(name, value) {
     const f = process.env.GITHUB_OUTPUT;
     if (!f) { err('GITHUB_OUTPUT not set'); process.exit(1); }
@@ -52,16 +60,19 @@ try {
 
     if (DEBUG) {
         log('🔧 Parsed arrays (including empties):');
-        log(`  names=[${namesAll.map(x=>`'${x}'`).join(', ')}]`);
-        log(`  usernames=[${usersAll.map(x=>`'${x}'`).join(', ')}]`);
-        log(`  passwords=[${pwdsAll.map(x=>`'${x}'`).join(', ')}]`);
-        log(`  urls=[${urlsAll.map(x=>`'${x}'`).join(', ')}]`);
+        log(`  names=[${namesAll.map(x => `'${x}'`).join(', ')}]`);
+        log(`  usernames=[${usersAll.map(x => `'${x}'`).join(', ')}]`);
+        log(`  passwords=[${pwdsAll.map(x => `'${x}'`).join(', ')}]`);
+        log(`  urls=[${urlsAll.map(x => `'${x}'`).join(', ')}]`);
     }
 
     // Remove empties independently for count baseline of non-name fields
-    const usersNZ = usersAll.filter(x => x !== '');
-    const pwdsNZ = pwdsAll.filter(x => x !== '');
+    let usersNZ = usersAll.filter(x => x !== '');
+    let pwdsNZ = pwdsAll.filter(x => x !== '');
     const urlsNZ = urlsAll.filter(x => x !== '');
+
+    usersNZ = broadcastSingleValue(usersNZ, urlsNZ.length);
+    pwdsNZ = broadcastSingleValue(pwdsNZ, urlsNZ.length);
 
     const commonNonName = Math.min(usersNZ.length, pwdsNZ.length, urlsNZ.length);
     if (commonNonName <= 0) {
