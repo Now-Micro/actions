@@ -1,6 +1,8 @@
 name: Demo - Nuget Publish
 
 on:
+  push:
+    branches: [release/**]
   workflow_dispatch:
     inputs:
       artifact-retention-days:
