@@ -1,7 +1,8 @@
 name: Nuget Package
 
 permissions:
-    contents: read
+    contents: write
+    packages: write
 
 on:
     workflow_call:
@@ -62,126 +63,27 @@ on:
                 required: true
 
 jobs:
-    validate-release:
+    nuget-publish:
         runs-on: ubuntu-22.04
-        outputs:
-            release_version: ${{ steps.get-version.outputs.version }}
-            library_name: ${{ steps.get-version.outputs.library_name }}
-            path_to_project: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}
         steps:
             - name: Check out code
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
-            - name: Parse release configuration
-              id: get-version
-              uses: Now-Micro/actions/nuget/release/validation@v1
+            - name: Run shared nuget publish workflow
+              uses: ./.github/actions/nuget-publish-workflow
               with:
-                  debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
+                  artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  cleanup-release: "false"
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   ignore-casing: ${{ inputs['ignore-casing'] }}
                   package: ${{ inputs.package }}
+                  package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}
                   ref-name: ${{ inputs['ref-name'] != '' && inputs['ref-name'] || github.ref_name }}
+                  release-dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
+                  release-workflow-debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
+                  tests-directory: ${{ inputs['tests-directory'] }}
+                  token-github-packages: ${{ secrets['token-github-packages'] }}
                   version: ${{ inputs.version }}
-
-            - name: Find project path from package name
-              id: path-finder
-              uses: Now-Micro/actions/find@v1
-              with:
-                  debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  ignore-casing: ${{ inputs['ignore-casing'] }}
-                  regex: ${{ steps.get-version.outputs.library_name }}.csproj
-
-            - name: Validate outputs
-              run: |
-                  if [ -z "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute)[0] }}" ]; then
-                    echo "No project found for package ${{ steps.get-version.outputs.library_name }}";
-                    exit 1;
-                  fi
-                  if [ $(echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute) }}" | jq length) -gt 1 ]; then
-                    echo "Multiple projects found for package ${{ steps.get-version.outputs.library_name }}:";
-                    echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute) }}";
-                    exit 1;
-                  fi
-                  if [ -z "${{ steps.get-version.outputs.version }}" ]; then
-                    echo "No version specified for release.";
-                    exit 1;
-                  fi
-                  if [ -z "${{ steps.get-version.outputs.library_name }}" ]; then
-                    echo "No library name specified for release.";
-                    exit 1;
-                  fi
-
-    publish:
-        runs-on: ubuntu-22.04
-        needs: validate-release
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-
-            - name: Get Project File (Main)
-              id: extract-project-main
-              uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
-              with:
-                  directory: ${{ needs.validate-release.outputs.path_to_project }}
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-                  find-project: true
-                  find-solution: false
-
-            - name: Get Project File (Test)
-              id: extract-project-test
-              if: ${{ inputs['tests-directory'] != '' }}
-              uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
-              with:
-                  directory: ${{ inputs['tests-directory'] }}
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-                  find-project: true
-                  find-solution: false
-
-            - name: Nuget Publish
-              uses: Now-Micro/actions/nuget/publish@v1
-              with:
-                  additional-build-args: --property WarningLevel=0 /p:Version=${{ needs.validate-release.outputs.release_version }}
-                  additional-pack-args: /p:PackageVersion=${{ needs.validate-release.outputs.release_version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
-                  dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
-                  github-token: ${{ secrets['token-github-packages'] }}
-                  nuget-names: "github"
-                  nuget-passwords: ${{ secrets['token-github-packages'] }}
-                  nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-                  nuget-usernames: ${{ github.actor }}
-                  project-file: ${{ steps.extract-project-main.outputs.project-found }}
-                  package-directory: ${{ inputs['package-directory'] }}
-                  test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
-
-            - name: Upload Artifacts
-              uses: actions/upload-artifact@v6
-              with:
-                  name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
-                  path: |
-                      ${{ inputs['package-directory'] }}/*.nupkg
-                      ${{ inputs['package-directory'] }}/*.snupkg
-                      ${{ inputs['package-directory'] }}/*.symbols.nupkg
-                  if-no-files-found: error
-                  retention-days: ${{ inputs['artifact-retention-days'] }}
-
-    create-github-release:
-        runs-on: ubuntu-22.04
-        needs: [publish, validate-release]
-        permissions:
-            contents: write
-        steps:
-            - name: Check out code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            - name: Publish GitHub Release
-              uses: Now-Micro/actions/github/release@v1
-              with:
-                  artifact-name: ${{ needs.validate-release.outputs.library_name }}-${{ needs.validate-release.outputs.release_version }}
-                  artifacts-path: ${{ inputs['package-directory'] }}
-                  changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
-                  debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  library-name: ${{ needs.validate-release.outputs.library_name }}
-                  release-version: ${{ needs.validate-release.outputs.release_version }}

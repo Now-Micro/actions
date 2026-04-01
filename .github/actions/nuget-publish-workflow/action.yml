@@ -1,5 +1,5 @@
-name: Demo - Nuget Publish Workflow
-description: Demo for the nuget-publish workflow using a composite action
+name: Nuget Publish Workflow
+description: Shared composite action for the nuget-publish workflow
 
 inputs:
   artifact-retention-days:
@@ -46,6 +46,10 @@ inputs:
     description: "Skip creating the GitHub release when true."
     required: false
     default: "false"
+  cleanup-release:
+    description: "Delete the created GitHub release and tag during cleanup when true."
+    required: false
+    default: "true"
   github-token:
     description: "GitHub token used for creating the GitHub release."
     required: false
@@ -168,7 +172,7 @@ runs:
         release-version: ${{ steps.get-version.outputs.version }}
 
     - name: Delete GitHub Release
-      if: ${{ always() && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
+      if: ${{ always() && inputs['cleanup-release'] == 'true' && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
       uses: actions/github-script@v7
       with:
         github-token: ${{ inputs['github-token'] }}

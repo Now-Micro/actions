@@ -18,20 +18,20 @@ runs:
       uses: actions/checkout@v6
 
     - name: Demo - nuget publish workflow
-      uses: ./.github/actions/demo-nuget-publish-workflow
+      uses: ./.github/actions/nuget-publish-workflow
       with:
         artifact-retention-days: "1"
         ci-debug-mode: "true"
+        github-token: ${{ inputs.github-release-token }}
         ignore-casing: "true"
-        package: "Api"
         package-directory: "nupkgs"
+        package: "Api"
         ref-name: "release/Api/0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
         release-dotnet-version: "8.0.x, 10.0.x"
         release-workflow-debug-mode: "true"
         tests-directory: "src/demo/dotnet/tests/Api.Tests"
-        version: "0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
-        github-token: ${{ inputs.github-release-token }}
         token-github-packages: ${{ inputs.github-token }}
+        version: "0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
 
     - name: Demo - github release
       uses: ./.github/actions/demo-github-release
