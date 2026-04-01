@@ -19,12 +19,23 @@ function splitCsv(value) {
     return value.split(',').map(item => (item ?? '').trim());
 }
 
+function broadcastSingleValue(values, targetLength) {
+    if (values.length === 1 && targetLength > 1) {
+        return Array.from({ length: targetLength }, () => values[0]);
+    }
+
+    return values;
+}
+
 function zipEntries(env) {
     const names = splitCsv(env.INPUT_NAMES);
-    const usernames = splitCsv(env.INPUT_USERNAMES);
-    const passwords = splitCsv(env.INPUT_PASSWORDS);
+    let usernames = splitCsv(env.INPUT_USERNAMES);
+    let passwords = splitCsv(env.INPUT_PASSWORDS);
     const urls = splitCsv(env.INPUT_URLS);
-    const maxCount = Math.min(names.length, usernames.length, passwords.length, urls.length);
+    const sourceCount = Math.min(names.length, urls.length);
+    usernames = broadcastSingleValue(usernames, sourceCount);
+    passwords = broadcastSingleValue(passwords, sourceCount);
+    const maxCount = Math.min(sourceCount, usernames.length, passwords.length);
     const entries = [];
 
     for (let i = 0; i < maxCount; i += 1) {

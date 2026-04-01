@@ -148,6 +148,27 @@ test('multiple entries keep order and skip empty names', () => {
     assert.strictEqual(execStub.calls.length, 4); // two list/add pairs
 });
 
+test('single credentials are broadcast across multiple urls', () => {
+    const execStub = createExecStub(makeListOutput([]));
+    const env = {
+        INPUT_NAMES: 'Primary,Backup',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://primary/,https://backup/',
+    };
+
+    const entries = configureSources(env, {
+        exec: execStub.exec,
+        log: () => { },
+    });
+
+    assert.strictEqual(entries.length, 2);
+    assert.deepStrictEqual(entries.map(entry => entry.username), ['user', 'user']);
+    assert.deepStrictEqual(entries.map(entry => entry.password), ['pass', 'pass']);
+    assert.deepStrictEqual(entries.map(entry => entry.url), ['https://primary/', 'https://backup/']);
+    assert.strictEqual(execStub.calls.length, 4);
+});
+
 test('debug mode logs dotnet output', () => {
     const execStub = createExecStub(makeListOutput(['Primary']));
     const logs = [];
