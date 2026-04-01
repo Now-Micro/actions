@@ -175,6 +175,6 @@ jobs:
                   artifacts-path: ${{ inputs['package-directory'] }}
                   changelog-path: ${{ needs.validate-release.outputs.path_to_project }}/CHANGELOG.md
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
-                  github-token: ${{ secrets['token-github-packages'] }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   library-name: ${{ needs.validate-release.outputs.library_name }}
                   release-version: ${{ needs.validate-release.outputs.release_version }}
