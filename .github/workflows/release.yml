@@ -80,6 +80,9 @@ jobs:
       - name: Run demo composites
         if: ${{ !fromJson(inputs['skip-tests']) }}
         uses: ./.github/actions/run-demo-workflows
+        with:
+          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          github-release-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Skipping demo workflows
         if: ${{ fromJson(inputs['skip-tests']) }}
         run: echo "skip-tests input=true; skipping demo workflows"
