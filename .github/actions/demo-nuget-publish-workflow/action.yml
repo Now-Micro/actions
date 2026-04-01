@@ -175,6 +175,25 @@ runs:
         script: |
           const tag = `${{ steps.publish-release.outputs.tag-name }}`;
           const { owner, repo } = context.repo;
-          const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-          await github.rest.repos.deleteRelease({ owner, repo, release_id: release.data.id });
-          core.info(`Deleted GitHub release for tag ${tag}`);
+          try {
+            const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: release.data.id });
+            core.info(`Deleted GitHub release for tag ${tag}`);
+          } catch (error) {
+            if (error.status === 404) {
+              core.info(`GitHub release for tag ${tag} was already deleted`);
+            } else {
+              throw error;
+            }
+          }
+
+          try {
+            await github.rest.git.deleteRef({ owner, repo, ref: `tags/${tag}` });
+            core.info(`Deleted Git tag ref ${tag}`);
+          } catch (error) {
+            if (error.status === 404) {
+              core.info(`Git tag ref ${tag} was already deleted`);
+            } else {
+              throw error;
+            }
+          }

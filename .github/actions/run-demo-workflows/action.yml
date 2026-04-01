@@ -26,11 +26,11 @@ runs:
         dry-run: "true"
         package: "Api"
         package-directory: "nupkgs"
-        ref-name: "release/Api/0.0.0"
+        ref-name: "release/Api/0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
         release-dotnet-version: "8.0.x, 10.0.x"
         release-workflow-debug-mode: "true"
         tests-directory: "src/demo/dotnet/tests/Api.Tests"
-        version: "0.0.0"
+        version: "0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
         github-token: ${{ inputs.github-release-token }}
         token-github-packages: ${{ inputs.github-token }}
 
