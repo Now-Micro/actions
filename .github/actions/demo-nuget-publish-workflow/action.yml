@@ -104,6 +104,10 @@ runs:
           echo "No library name specified for release.";
           exit 1;
         fi
+        if [ "${{ inputs['dry-run'] }}" != "true" ] && [ -z "${{ inputs['github-token'] }}" ]; then  
+          echo "Input 'github-token' is required when 'dry-run' is not 'true'.";  
+          exit 1;  
+        fi
 
     - name: Get Project File (Main)
       id: extract-project-main
