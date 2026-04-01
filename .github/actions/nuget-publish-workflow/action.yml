@@ -6,10 +6,22 @@ inputs:
     description: "Artifact retention period in days."
     required: false
     default: "1"
+  cleanup-release:
+    description: "Delete the created GitHub release and tag during cleanup when true."
+    required: false
+    default: "true"
   ci-debug-mode:
     description: "Debug mode for project discovery and publish steps."
     required: false
     default: "true"
+  dry-run:
+    description: "Skip creating the GitHub release when true."
+    required: false
+    default: "false"
+  github-token:
+    description: "GitHub token used for creating the GitHub release."
+    required: false
+    default: ""
   ignore-casing:
     description: "Ignore casing when parsing release refs and matching package names."
     required: false
@@ -38,24 +50,12 @@ inputs:
     description: "Directory to search for the test project; leave empty to skip test discovery."
     required: false
     default: "src/demo/dotnet/tests/Api.Tests"
-  version:
-    description: "Version to package. If empty a unique run id will be used."
-    required: false
-    default: ""
-  dry-run:
-    description: "Skip creating the GitHub release when true."
-    required: false
-    default: "false"
-  cleanup-release:
-    description: "Delete the created GitHub release and tag during cleanup when true."
-    required: false
-    default: "true"
-  github-token:
-    description: "GitHub token used for creating the GitHub release."
-    required: false
-    default: ""
   token-github-packages:
     description: "Token used to authenticate to GitHub Packages."
+    required: false
+    default: ""
+  version:
+    description: "Version to package. If empty a unique run id will be used."
     required: false
     default: ""
 
