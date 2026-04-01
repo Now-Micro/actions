@@ -52,7 +52,7 @@ jobs:
           # Example logic: run tests if any action.yml, .js or .cs files changed
           # Also run tests if any action.yml files or action folders changed (these affect actions behavior)
           CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
-          if echo "$CHANGED_FILES" | grep -qE '\.js|\.cs|action\.yml|\.github/actions/'; then
+          if echo "$CHANGED_FILES" | grep -qE '\.js|\.cs|action\.yml|\.github/actions/|\.github/workflows/(demo-nuget-publish|demo-all|release)\.yml'; then
             SHOULD_RUN=true
           fi
 
@@ -68,3 +68,4 @@ jobs:
         if: ${{ steps.check-changed-files.outputs.should_run_tests == 'true' }}
         with:
           github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          github-release-token: ${{ secrets.GITHUB_TOKEN }}
