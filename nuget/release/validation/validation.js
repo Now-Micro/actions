@@ -20,6 +20,7 @@ function validateVersion(version) {
 function run() {
     try {
         const debugMode = parseBool(process.env.INPUT_DEBUG_MODE || process.env.DEBUG_MODE || 'false');
+        const ignoreCasing = parseBool(process.env.INPUT_IGNORE_CASING || 'true');
         const refName = (process.env.INPUT_REF_NAME || process.env.GITHUB_REF_NAME || '').trim();
         const packageInput = (process.env.INPUT_PACKAGE || '').trim();
         const versionInput = (process.env.INPUT_VERSION || '').trim();
@@ -46,7 +47,8 @@ function run() {
                 console.log('Debug: parsed from manual inputs');
             }
         } else {
-            const branchMatch = refName && refName.match(/^release\/([^/]+)\/(.+)$/);
+            const branchRegex = new RegExp('^release\/([^/]+)\/(.+)$', ignoreCasing ? 'i' : '');
+            const branchMatch = refName && refName.match(branchRegex);
             if (branchMatch) {
                 libraryName = branchMatch[1];
                 version = branchMatch[2];

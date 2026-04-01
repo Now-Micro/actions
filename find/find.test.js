@@ -64,6 +64,30 @@ test('matches literal filename and returns relative dirs', () => {
     assert.deepStrictEqual(abs, [expectedAbs]);
 });
 
+test('matches literal filename ignoring casing by default', () => {
+    const dir = makeTempDir();
+    fs.writeFileSync(path.join(dir, 'Api.csproj'), 'hi');
+
+    const r = runWithEnv({ INPUT_REGEX: 'api.csproj', INPUT_WORKING_DIRECTORY: dir });
+    assert.strictEqual(r.exitCode, 0);
+    const { files } = parseOutputs(r.outputContent);
+    assert.deepStrictEqual(files, ['Api.csproj']);
+});
+
+test('can enforce casing when ignore casing is disabled', () => {
+    const dir = makeTempDir();
+    fs.writeFileSync(path.join(dir, 'Api.csproj'), 'hi');
+
+    const r = runWithEnv({
+        INPUT_REGEX: 'api.csproj',
+        INPUT_WORKING_DIRECTORY: dir,
+        INPUT_IGNORE_CASING: 'false',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    const { files } = parseOutputs(r.outputContent);
+    assert.deepStrictEqual(files, []);
+});
+
 test('regex matches multiple files across directories in order', () => {
     const dir = makeTempDir();
     fs.writeFileSync(path.join(dir, 'root.log'), 'root');

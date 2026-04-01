@@ -16,6 +16,11 @@ on:
                 required: false
                 type: string
                 default: "false"
+            ignore-casing:
+                description: "Ignore casing when parsing release refs and matching package names."
+                required: false
+                type: string
+                default: "true"
             package:
                 description: "Package name to release."
                 required: false
@@ -74,6 +79,7 @@ jobs:
               uses: Now-Micro/actions/nuget/release/validation@v1
               with:
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
+                  ignore-casing: ${{ inputs['ignore-casing'] }}
                   package: ${{ inputs.package }}
                   ref-name: ${{ inputs['ref-name'] != '' && inputs['ref-name'] || github.ref_name }}
                   version: ${{ inputs.version }}
@@ -82,8 +88,9 @@ jobs:
               id: path-finder
               uses: Now-Micro/actions/find@v1
               with:
-                  regex: ${{ steps.get-version.outputs.library_name }}.csproj
                   debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
+                  ignore-casing: ${{ inputs['ignore-casing'] }}
+                  regex: ${{ steps.get-version.outputs.library_name }}.csproj
 
             - name: Validate outputs
               run: |

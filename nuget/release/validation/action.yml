@@ -7,6 +7,10 @@ inputs:
     description: "Enable verbose debug logging."
     required: false
     default: "false"
+  ignore-casing:
+    description: "Ignore casing when parsing the ref name."
+    required: false
+    default: "true"
   package:
     description: "Library/package name.  This is only required when you are using workflow_dispatch."
     required: false
@@ -41,6 +45,7 @@ runs:
         INPUT_VERSION: ${{ inputs.version }}
         INPUT_REF_NAME: ${{ inputs['ref-name'] || github.ref_name }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode || 'false' }}
+        INPUT_IGNORE_CASING: ${{ inputs['ignore-casing'] || 'true' }}
       run: |
         node "$GITHUB_ACTION_PATH/validation.js"
       shell: bash

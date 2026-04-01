@@ -25,7 +25,8 @@ function buildPattern(input) {
     const source = looksLikeRegex ? input : `^${escapeRegexLiteral(input)}$`;
     let pattern;
     try {
-        pattern = new RegExp(source);
+        const ignoreCasing = parseBool(process.env.INPUT_IGNORE_CASING || 'true');
+        pattern = new RegExp(source, ignoreCasing ? 'i' : '');
     } catch (e) {
         throw new Error(`Invalid regex: ${e.message}`);
     }
