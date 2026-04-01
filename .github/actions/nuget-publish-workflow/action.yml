@@ -90,14 +90,19 @@ runs:
 
     - name: Validate outputs
       shell: bash
+      env:
+        MATCHED_DIRS_JSON: ${{ steps.path-finder.outputs.matched-dirs-absolute || '[]' }}
       run: |
-        if [ -z "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}" ]; then
+        project_count=$(printf '%s' "$MATCHED_DIRS_JSON" | jq 'length')
+        project_path=$(printf '%s' "$MATCHED_DIRS_JSON" | jq -r '.[0] // empty')
+
+        if [ -z "$project_path" ]; then
           echo "No project found for package ${{ steps.get-version.outputs.library_name }}";
           exit 1;
         fi
-        if [ $(echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]') }}" | jq length) -gt 1 ]; then
+        if [ "$project_count" -gt 1 ]; then
           echo "Multiple projects found for package ${{ steps.get-version.outputs.library_name }}:";
-          echo "${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]') }}";
+          printf '%s\n' "$MATCHED_DIRS_JSON" | jq .
           exit 1;
         fi
         if [ -z "${{ steps.get-version.outputs.version }}" ]; then
