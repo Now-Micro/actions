@@ -77,5 +77,5 @@ jobs:
                   release-dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '10.0.x' }}
                   release-workflow-debug-mode: ${{ inputs['release-workflow-debug-mode'] != '' && inputs['release-workflow-debug-mode'] || 'true' }}
                   tests-directory: ${{ inputs['tests-directory'] }}
-                  token-github-packages: ${{ github.event_name == 'push' && secrets.GITHUB_TOKEN || secrets['token-github-packages'] }}
+                  token-github-packages: ${{ github.event_name == 'push' && secrets.TOKEN_GITHUB_PACKAGES || secrets['token-github-packages'] }}
                   version: ${{ inputs.version }}
