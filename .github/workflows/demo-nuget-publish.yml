@@ -90,7 +90,7 @@ jobs:
           package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}
           package: ${{ inputs.package }}
           ref-name: ${{ inputs['ref-name'] != '' && inputs['ref-name'] || github.ref_name }}
-          release-dotnet-version: ${{ inputs['release-dotnet-version'] }}
+          release-dotnet-version: ${{ inputs['release-dotnet-version'] != '' && inputs['release-dotnet-version'] || '8.0.x, 10.0.x' }}
           release-workflow-debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
           tests-directory: ${{ inputs['tests-directory'] }}
           token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
