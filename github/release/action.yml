@@ -63,10 +63,10 @@ outputs:
     value: ${{ steps.prepare.outputs.packages_json }}
   release-url:
     description: "URL of the created GitHub release."
-    value: ${{ steps['create-release'].outputs.release_url }}
+    value: ${{ steps.create-release.outputs.url }}
   release-name:
     description: "Release name computed from template."
-    value: ${{ steps['create-release'].outputs.release_name }}
+    value: ${{ steps.prepare.outputs.release_name }}
   release-notes-path:
     description: "Absolute path to generated release notes file."
     value: ${{ steps.prepare.outputs.release_notes_path }}
@@ -121,77 +121,38 @@ runs:
     - name: Create GitHub Release
       id: create-release
       if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ inputs.github-token }}
-        script: |
-          const fs = require('fs');
-          const path = require('path');
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      shell: bash
+      run: |
+        set -euo pipefail
 
-          const owner = context.repo.owner;
-          const repo = context.repo.repo;
-          const tagName = '${{ steps.prepare.outputs.tag_name }}';
-          const releaseName = '${{ steps.prepare.outputs.release_name }}';
-          const releaseNotesPath = '${{ steps.prepare.outputs.release_notes_path }}';
-          const packagesPath = '${{ inputs.packages-path }}';
-          const prerelease = '${{ contains(inputs.release-version, '-') }}' === 'true';
-          const debugMode = '${{ inputs.debug-mode }}' === 'true';
-          const packageFiles = fs.readdirSync(packagesPath)
-            .filter(name => /\.(nupkg|snupkg|symbols\.nupkg)$/i.test(name))
-            .sort();
+        tag_name="${{ steps.prepare.outputs.tag_name }}"
+        release_name="${{ steps.prepare.outputs.release_name }}"
+        release_notes_path="${{ steps.prepare.outputs.release_notes_path }}"
+        release_files=("${{ inputs.packages-path }}"/*)
+        prerelease_flag=""
 
-          const logDebug = message => {
-            if (debugMode) {
-              core.info(`Debug: ${message}`);
-            }
-          };
+        if [ "${{ contains(inputs.release-version, '-') }}" = "true" ]; then
+          prerelease_flag="--prerelease"
+        fi
 
-          logDebug(`Create GitHub Release owner=${owner} repo=${repo}`);
-          logDebug(`Create GitHub Release tagName=${tagName}`);
-          logDebug(`Create GitHub Release releaseName=${releaseName}`);
-          logDebug(`Create GitHub Release releaseNotesPath=${releaseNotesPath}`);
-          logDebug(`Create GitHub Release packagesPath=${packagesPath}`);
-          logDebug(`Create GitHub Release prerelease=${prerelease}`);
-          logDebug(`Create GitHub Release packageFiles=${JSON.stringify(packageFiles)}`);
+        gh release create "$tag_name" "${release_files[@]}" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "$release_name" \
+          --notes-file "$release_notes_path" \
+          $prerelease_flag
 
-          const release = await github.rest.repos.createRelease({
-            owner,
-            repo,
-            tag_name: tagName,
-            name: releaseName,
-            body: fs.readFileSync(releaseNotesPath, 'utf8'),
-            draft: false,
-            prerelease,
-          });
-
-          for (const fileName of packageFiles) {
-            const filePath = path.join(packagesPath, fileName);
-            const data = fs.readFileSync(filePath);
-            logDebug(`Create GitHub Release uploading asset=${fileName} path=${filePath} bytes=${data.length}`);
-            await github.rest.repos.uploadReleaseAsset({
-              owner,
-              repo,
-              release_id: release.data.id,
-              name: fileName,
-              data,
-              headers: {
-                'content-type': 'application/octet-stream',
-                'content-length': data.length,
-              },
-            });
-          }
-
-          logDebug(`Create GitHub Release: name=${release.data.name} url=${release.data.html_url}`);
-
-          core.setOutput('release_url', release.data.html_url);
-          core.setOutput('release_name', release.data.name);
+        release_url=$(gh release view "$tag_name" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
+        echo "url=$release_url" >> "$GITHUB_OUTPUT"
 
     - name: Add release URL to workflow summary
-      if: ${{ inputs.dry-run == 'false' && steps['create-release'].outputs.release_url != '' }}
+      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 && steps.create-release.outputs.url != '' }}
       shell: bash
       run: |
         {
           echo "## GitHub Release"
           echo ""
-          echo "Release URL: [${{ steps['create-release'].outputs.release_name }}](${{ steps['create-release'].outputs.release_url }})"
+          echo "Release URL: [${{ steps.prepare.outputs.release_name }}](${{ steps.create-release.outputs.url }})"
         } >> "$GITHUB_STEP_SUMMARY"
