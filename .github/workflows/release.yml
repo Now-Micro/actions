@@ -99,7 +99,7 @@ jobs:
     steps:
       - name: Check for existing release by tag
         id: get
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -126,7 +126,7 @@ jobs:
       - name: Rename existing release (if requested)
         id: rename_release
         if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'rename' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -194,7 +194,7 @@ jobs:
 
       - name: Delete existing release (if requested)
         if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'delete' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -208,7 +208,7 @@ jobs:
 
       - name: Delete tag for existing release (if requested)
         if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy != 'none' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           TAG_NAME: ${{ inputs.tag }}
         with:
@@ -242,7 +242,7 @@ jobs:
       - name: Create release
         id: create
         if: ${{ steps.get.outputs.exists != 'true' || inputs.overwrite-strategy != 'none' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           INPUT_TAG: ${{ inputs.tag }}
           INPUT_NAME: ${{ inputs.name }}

@@ -182,7 +182,7 @@ runs:
 
     - name: Delete GitHub Release
       if: ${{ always() && inputs['cleanup-release'] == 'true' && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         github-token: ${{ inputs['github-token'] }}
         script: |

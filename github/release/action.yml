@@ -82,7 +82,7 @@ runs:
 
     - name: Download artifacts
       if: ${{ inputs.skip-download != 'true' }}
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v8
       with:
         path: ${{ inputs.artifacts-path }}
         name: ${{ inputs.artifact-name }}
@@ -121,16 +121,31 @@ runs:
     - name: Create GitHub Release
       id: create-release
       if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.prepare.outputs.tag_name }}
-        name: ${{ steps.prepare.outputs.release_name }}
-        body_path: ${{ steps.prepare.outputs.release_notes_path }}
-        files: ${{ format('{0}/*', inputs.packages-path) }}
-        draft: false
-        prerelease: ${{ contains(inputs.release-version, '-') }}
       env:
+        GH_TOKEN: ${{ inputs.github-token }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        tag_name="${{ steps.prepare.outputs.tag_name }}"
+        release_name="${{ steps.prepare.outputs.release_name }}"
+        release_notes_path="${{ steps.prepare.outputs.release_notes_path }}"
+        release_files=("${{ inputs.packages-path }}"/*)
+        prerelease_flag=""
+
+        if [ "${{ contains(inputs.release-version, '-') }}" = "true" ]; then
+          prerelease_flag="--prerelease"
+        fi
+
+        gh release create "$tag_name" "${release_files[@]}" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "$release_name" \
+          --notes-file "$release_notes_path" \
+          $prerelease_flag
+
+        release_url=$(gh release view "$tag_name" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
+        echo "url=$release_url" >> "$GITHUB_OUTPUT"
 
     - name: Add release URL to workflow summary
       if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 && steps.create-release.outputs.url != '' }}
