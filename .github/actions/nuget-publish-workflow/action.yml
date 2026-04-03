@@ -170,7 +170,7 @@ runs:
     - name: Publish GitHub Release
       id: publish-release
       if: ${{ inputs['dry-run'] != 'true' }}
-      uses: Now-Micro/actions/github/release@v1
+      uses: ./github/release/action.yml
       with:
         artifact-name: ${{ steps.get-version.outputs.library_name }}-${{ steps.get-version.outputs.version }}
         artifacts-path: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}

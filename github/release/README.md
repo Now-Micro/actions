@@ -28,7 +28,7 @@ Composite action that prepares release assets, builds release notes, and (option
 
 - Copies `.nupkg`, `.snupkg`, and `.symbols.nupkg` files from `artifacts-path` into `packages-path`.
 - Generates release notes listing copied packages and optionally appends changelog content (or a placeholder if missing).
-- When `dry-run` is `false` and packages exist, creates a git tag and GitHub release via the GitHub CLI (`gh release create`).
+- When `dry-run` is `false` and packages exist, creates a git tag and GitHub release via the GitHub API using `actions/github-script`.
 
 ## Example
 
