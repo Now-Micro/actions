@@ -135,9 +135,24 @@ runs:
           const releaseNotesPath = '${{ steps.prepare.outputs.release_notes_path }}';
           const packagesPath = '${{ inputs.packages-path }}';
           const prerelease = '${{ contains(inputs.release-version, '-') }}' === 'true';
+          const debugMode = '${{ inputs.debug-mode }}' === 'true';
           const packageFiles = fs.readdirSync(packagesPath)
             .filter(name => /\.(nupkg|snupkg|symbols\.nupkg)$/i.test(name))
             .sort();
+
+          const logDebug = message => {
+            if (debugMode) {
+              core.info(`Debug: ${message}`);
+            }
+          };
+
+          logDebug(`Create GitHub Release owner=${owner} repo=${repo}`);
+          logDebug(`Create GitHub Release tagName=${tagName}`);
+          logDebug(`Create GitHub Release releaseName=${releaseName}`);
+          logDebug(`Create GitHub Release releaseNotesPath=${releaseNotesPath}`);
+          logDebug(`Create GitHub Release packagesPath=${packagesPath}`);
+          logDebug(`Create GitHub Release prerelease=${prerelease}`);
+          logDebug(`Create GitHub Release packageFiles=${JSON.stringify(packageFiles)}`);
 
           const release = await github.rest.repos.createRelease({
             owner,
@@ -152,6 +167,7 @@ runs:
           for (const fileName of packageFiles) {
             const filePath = path.join(packagesPath, fileName);
             const data = fs.readFileSync(filePath);
+            logDebug(`Create GitHub Release uploading asset=${fileName} path=${filePath} bytes=${data.length}`);
             await github.rest.repos.uploadReleaseAsset({
               owner,
               repo,
@@ -164,6 +180,8 @@ runs:
               },
             });
           }
+
+          logDebug(`Create GitHub Release: name=${release.data.name} url=${release.data.html_url}`);
 
           core.setOutput('release_url', release.data.html_url);
           core.setOutput('release_name', release.data.name);
