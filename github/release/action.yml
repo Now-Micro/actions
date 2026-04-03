@@ -169,7 +169,7 @@ runs:
           core.setOutput('release-name', release.data.name);
 
     - name: Add release URL to workflow summary
-      if: ${{ inputs.dry-run == 'false' &&steps.create-release.outputs['release-url'] != '' }}
+      if: ${{ inputs.dry-run == 'false' && steps.create-release.outputs['release-url'] != '' }}
       shell: bash
       run: |
         {
