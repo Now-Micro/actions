@@ -63,10 +63,10 @@ outputs:
     value: ${{ steps.prepare.outputs.packages_json }}
   release-url:
     description: "URL of the created GitHub release."
-    value: ${{ steps.create-release.outputs['release-url'] }}
+    value: ${{ steps.create-release.outputs.release_url }}
   release-name:
     description: "Release name computed from template."
-    value: ${{ steps.create-release.outputs['release-name'] }}
+    value: ${{ steps.create-release.outputs.release_name }}
   release-notes-path:
     description: "Absolute path to generated release notes file."
     value: ${{ steps.prepare.outputs.release_notes_path }}
@@ -165,15 +165,15 @@ runs:
             });
           }
 
-          core.setOutput('release-url', release.data.html_url);
-          core.setOutput('release-name', release.data.name);
+          core.setOutput('release_url', release.data.html_url);
+          core.setOutput('release_name', release.data.name);
 
     - name: Add release URL to workflow summary
-      if: ${{ inputs.dry-run == 'false' && steps.create-release.outputs['release-url'] != '' }}
+      if: ${{ inputs.dry-run == 'false' && steps.create-release.outputs.release_url != '' }}
       shell: bash
       run: |
         {
           echo "## GitHub Release"
           echo ""
-          echo "Release URL: [${{ steps.create-release.outputs['release-name'] }}](${{ steps.create-release.outputs['release-url'] }})"
+          echo "Release URL: [${{ steps.create-release.outputs.release_name }}](${{ steps.create-release.outputs.release_url }})"
         } >> "$GITHUB_STEP_SUMMARY"
