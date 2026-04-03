@@ -82,7 +82,7 @@ runs:
 
     - name: Download artifacts
       if: ${{ inputs.skip-download != 'true' }}
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v8
       with:
         path: ${{ inputs.artifacts-path }}
         name: ${{ inputs.artifact-name }}
