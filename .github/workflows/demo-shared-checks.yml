@@ -19,12 +19,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve base ref two commits back
+      - name: Resolve base ref one commit back
         id: base-ref
         shell: bash
         run: |
           set -euo pipefail
-          echo "base_ref=$(git rev-parse HEAD~2)" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$(git rev-parse HEAD~0)" >> "$GITHUB_OUTPUT"
 
   shared-checks:
     name: Shared checks demo
