@@ -59,6 +59,15 @@ test('missing urls', () => {
     assert.match(r.outputs, /urls=/);
 });
 
+test('missing names and urls', () => {
+    const r = runWith({ INPUT_USERNAMES: 'u', INPUT_PASSWORDS: 'p', INPUT_NAMES: '', INPUT_URLS: '' });
+    assert.match(r.outputs, /count=0/);
+    assert.match(r.outputs, /names=/);
+    assert.match(r.outputs, /usernames=/);
+    assert.match(r.outputs, /passwords=/);
+    assert.match(r.outputs, /urls=/);
+});
+
 test('missing multiple', () => {
     const r = runWith({ INPUT_NAMES: 'n', INPUT_PASSWORDS: 'p' });
     assert.match(r.outputs, /names=/);
