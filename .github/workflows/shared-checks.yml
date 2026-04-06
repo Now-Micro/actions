@@ -4,9 +4,10 @@ on:
   workflow_call:
     inputs:
       base-ref:
-        description: "Base ref or SHA to compare for changed-file detection."
-        required: true
+        description: "Optional base ref or SHA to compare for changed-file detection. If empty, the workflow uses HEAD~2 from the checked out repository."
+        required: false
         type: string
+        default: ""
       checks-dotnet-sdk-version:
         description: "The .NET SDK version used for tests."
         required: false
@@ -117,6 +118,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  resolve-base-ref:
+    runs-on: ubuntu-22.04
+    outputs:
+      base_ref: ${{ steps.resolve.outputs.base_ref }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve base ref
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -n "${{ inputs['base-ref'] }}" ]; then
+            echo "base_ref=${{ inputs['base-ref'] }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "base_ref=$(git rev-parse HEAD~2)" >> "$GITHUB_OUTPUT"
+
   code-standards:
     runs-on: ubuntu-22.04
     needs: coding-standards-setup
@@ -143,6 +167,7 @@ jobs:
 
   coding-standards-setup:
     runs-on: ubuntu-22.04
+    needs: resolve-base-ref
     if: ${{ inputs['enable-coding-standards'] == 'true' }}
     outputs:
       directories_to_check: ${{ steps.unique-dirs.outputs.unique_root_directories }}
@@ -157,7 +182,7 @@ jobs:
         uses: Now-Micro/actions/get-changed-files@v1
         id: changed-files
         with:
-          base-ref: ${{ inputs['base-ref'] }}
+          base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
           head-ref: ${{ inputs['head-ref'] }}
 
       - name: Get Unique Root Directories
@@ -228,6 +253,7 @@ jobs:
 
   test-setup:
     runs-on: ubuntu-22.04
+    needs: resolve-base-ref
     if: ${{ inputs['enable-testing'] == 'true' }}
     outputs:
       directories_to_test: ${{ steps.unique-dirs.outputs.unique_project_directories }}
@@ -243,7 +269,7 @@ jobs:
         if: ${{ inputs['checks-optimize-base-ref'] == 'true' }}
         uses: Now-Micro/actions/get-last-workflow-success-sha@v1
         with:
-          branch: ${{ inputs['head-ref'] != '' && inputs['head-ref'] || github.head_ref || github.ref_name || inputs['base-ref'] }}
+          branch: ${{ inputs['head-ref'] != '' && inputs['head-ref'] || github.head_ref || github.ref_name || needs.resolve-base-ref.outputs.base_ref }}
           default-branch: ${{ inputs['default-branch'] }}
           github-token: ${{ github.token }}
           job-names-that-must-succeed: "test"
@@ -256,7 +282,7 @@ jobs:
         uses: Now-Micro/actions/get-changed-files@v1
         id: changed-files
         with:
-          base-ref: ${{ steps.last-success.outputs.last_success_sha || inputs['base-ref'] }}
+          base-ref: ${{ steps.last-success.outputs.last_success_sha || needs.resolve-base-ref.outputs.base_ref }}
           head-ref: ${{ inputs['head-ref'] }}
 
       - name: Get Unique Project Directories

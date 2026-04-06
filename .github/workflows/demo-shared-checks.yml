@@ -1,0 +1,56 @@
+name: Demo - Shared Checks
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  resolve-base-ref:
+    name: Resolve base ref
+    runs-on: ubuntu-latest
+    outputs:
+      base_ref: ${{ steps.base-ref.outputs.base_ref }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve base ref two commits back
+        id: base-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "base_ref=$(git rev-parse HEAD~2)" >> "$GITHUB_OUTPUT"
+
+  shared-checks:
+    name: Shared checks demo
+    needs: resolve-base-ref
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
+      checks-dotnet-sdk-version: "8.0.x"
+      checks-fail-fast: "true"
+      checks-optimize-base-ref: "false"
+      checks-prefer-solution: "false"
+      checks-test-args: ""
+      checks-transformer-pattern: ""
+      checks-use-original-if-missing: "false"
+      ci-debug-mode: "true"
+      coding-standards-path-pattern: "src/**"
+      default-branch: main
+      enable-coding-standards: "true"
+      enable-linting: "true"
+      enable-testing: "true"
+      head-ref: ${{ github.sha }}
+      nuget-names: "CodeBits"
+      nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+      roslyn-analyzer-version: "latest"
+      test-project-regex: ".*Tests.*\\.csproj$"
+      testing-path-pattern: "src/**"
+      workflow-name: "demo-shared-checks.yml"
+    secrets:
+      token_github_packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
