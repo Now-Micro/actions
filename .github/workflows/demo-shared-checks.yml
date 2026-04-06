@@ -30,25 +30,11 @@ jobs:
     uses: ./.github/workflows/shared-checks.yml
     with:
       base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
-      checks-dotnet-sdk-version: "8.0.x"
-      checks-fail-fast: "true"
-      checks-optimize-base-ref: "false"
-      checks-prefer-solution: "false"
-      checks-test-args: ""
-      checks-transformer-pattern: ""
-      checks-use-original-if-missing: "false"
-      ci-debug-mode: "true"
-      coding-standards-path-pattern: "src/**"
-      default-branch: main
-      enable-coding-standards: "true"
-      enable-linting: "true"
-      enable-testing: "true"
       head-ref: ${{ needs.resolve-base-ref.outputs.head_ref }}
       nuget-names: "CodeBits"
       nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       roslyn-analyzer-version: "latest"
       test-project-regex: ".*Tests.*\\.csproj$"
-      testing-path-pattern: "src/**"
       workflow-name: "demo-shared-checks.yml"
     secrets:
       token_github_packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
