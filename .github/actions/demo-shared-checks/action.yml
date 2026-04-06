@@ -1,0 +1,27 @@
+name: Demo Shared Checks
+description: Resolves the demo refs used by the shared-checks workflow demo
+
+outputs:
+  base_ref:
+    description: "The base ref used for the shared-checks demo."
+    value: ${{ steps.resolve.outputs.base_ref }}
+  head_ref:
+    description: "The head ref used for the shared-checks demo."
+    value: ${{ steps.resolve.outputs.head_ref }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve demo refs
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        base_ref=$(git rev-parse HEAD~2)
+        head_ref=$(git rev-parse HEAD)
+
+        echo "Resolved base-ref SHA: $base_ref"
+        echo "Resolved head-ref SHA: $head_ref"
+        echo "base_ref=$base_ref" >> "$GITHUB_OUTPUT"
+        echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"

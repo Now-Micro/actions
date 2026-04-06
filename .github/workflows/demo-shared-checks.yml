@@ -12,27 +12,24 @@ jobs:
     name: Resolve base ref
     runs-on: ubuntu-latest
     outputs:
-      base_ref: ${{ steps.base-ref.outputs.base_ref }}
+      base_ref: ${{ steps.refs.outputs.base_ref }}
+      head_ref: ${{ steps.refs.outputs.head_ref }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Resolve base ref one commit back
-        id: base-ref
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "base_ref=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
+      - name: Resolve demo refs
+        id: refs
+        uses: ./.github/actions/demo-shared-checks
 
   shared-checks:
     name: Shared checks demo
     needs: resolve-base-ref
     uses: ./.github/workflows/shared-checks.yml
     with:
-      base-ref: "main"
-    #   base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
+      base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
       checks-dotnet-sdk-version: "8.0.x"
       checks-fail-fast: "true"
       checks-optimize-base-ref: "false"
@@ -46,7 +43,7 @@ jobs:
       enable-coding-standards: "true"
       enable-linting: "true"
       enable-testing: "true"
-      head-ref: ${{ github.sha }}
+      head-ref: ${{ needs.resolve-base-ref.outputs.head_ref }}
       nuget-names: "CodeBits"
       nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       roslyn-analyzer-version: "latest"
