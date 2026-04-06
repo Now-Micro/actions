@@ -16,6 +16,8 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
     - name: Demo - nuget publish workflow
       uses: ./.github/actions/nuget-publish-workflow

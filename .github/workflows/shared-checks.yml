@@ -1,0 +1,272 @@
+name: Shared Checks
+
+on:
+  workflow_call:
+    inputs:
+      base-ref:
+        description: "Base ref or SHA to compare for changed-file detection. If empty, the workflow uses HEAD~2 from the checked out repository."
+        required: true
+        type: string
+        default: ""
+      checks-dotnet-sdk-version:
+        description: "The .NET SDK version used for tests."
+        required: false
+        type: string
+        default: "6.0.x, 8.0.x, 9.0.x, 10.0.x"
+      checks-fail-fast:
+        description: "Fail fast for the test matrix when true."
+        required: false
+        type: string
+        default: "true"
+      checks-optimize-base-ref:
+        description: "Use the last successful checks run as the base ref when true."
+        required: false
+        type: string
+        default: "true"
+      checks-prefer-solution:
+        description: "Prefer a solution file over a project file when true."
+        required: false
+        type: string
+        default: "false"
+      checks-test-args:
+        description: "Additional args passed to the test runner."
+        required: false
+        type: string
+        default: "--configuration Release --verbosity:detailed --logger \"trx;LogFileName=testresults.trx\" --results-directory \"test-results\" --blame -- BlameCollectType=Crash"
+      checks-transformer-pattern:
+        description: "Transformer pattern used when discovering test directories."
+        required: false
+        type: string
+        default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
+      checks-use-original-if-missing:
+        description: "Keep the original path only when the transformer produces a non-empty path that does not exist; if the transformer does not match and produces an empty value, the entry is omitted."
+        required: false
+        type: string
+        default: "false"
+      ci-debug-mode:
+        description: "Enable debug logging for reusable checks."
+        required: false
+        type: string
+        default: "false"
+      coding-standards-path-pattern:
+        description: "Path pattern used to discover coding standards directories."
+        required: false
+        type: string
+        default: "^([^/.]+)\/" 
+      default-branch:
+        description: "Default branch used when calculating the base ref."
+        required: false
+        type: string
+        default: "main"
+      enable-coding-standards:
+        description: "Enable coding standards checks."
+        required: false
+        type: string
+        default: "true"
+      enable-linting:
+        description: "Enable CSharpier linting."
+        required: false
+        type: string
+        default: "true"
+      enable-testing:
+        description: "Enable test discovery and execution."
+        required: false
+        type: string
+        default: "true"
+      head-ref:
+        description: "Head ref or SHA to compare for changed-file detection."
+        required: true
+        type: string
+        default: ""
+      nuget-names:
+        description: "Comma-separated NuGet source names used for package restore."
+        required: false
+        type: string
+        default: ""
+      nuget-urls:
+        description: "Comma-separated NuGet source URLs used for package restore."
+        required: false
+        default: ""
+        type: string
+      roslyn-analyzer-version:
+        description: "Roslyn analyzer package version used by coding standards."
+        required: false
+        type: string
+        default: "latest"
+      test-project-regex:
+        description: "Regex used to identify test projects."
+        required: false
+        type: string
+        default: "Tests.*\\.csproj\\s*$"
+      testing-path-pattern:
+        description: "Path pattern used to discover test directories."
+        required: false
+        type: string
+        default: "^([^/]+)\/(?:(src|tests?)\/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
+      workflow-name:
+        description: "Workflow filename used when looking up the last successful run."
+        required: false
+        type: string
+        default: "checks.yml"
+    secrets:
+      token_github_packages:
+        description: "PAT used to authenticate to GitHub Packages."
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coding-standards-setup:
+    runs-on: ubuntu-22.04
+    if: ${{ inputs['enable-coding-standards'] == 'true' }}
+    outputs:
+      directories_to_check: ${{ steps.unique-dirs.outputs.unique_root_directories }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          # Fetch full history so that before and after commits exist locally
+          fetch-depth: 0
+
+      - name: Get Changed Files
+        uses: Now-Micro/actions/get-changed-files@v1
+        id: changed-files
+        with:
+          base-ref: ${{ inputs['base-ref'] }}
+          head-ref: ${{ inputs['head-ref'] }}
+
+      - name: Get Unique Root Directories
+        id: unique-dirs
+        uses: Now-Micro/actions/get-unique-root-directories@v1
+        with:
+          debug-mode: ${{ inputs['ci-debug-mode'] }}
+          paths: ${{ steps.changed-files.outputs.changed_files }}
+          pattern: ${{ inputs['coding-standards-path-pattern'] }}
+
+  code-standards:
+    runs-on: ubuntu-22.04
+    needs: coding-standards-setup
+    if: needs.coding-standards-setup.outputs.directories_to_check != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.coding-standards-setup.outputs.directories_to_check) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Code Standards
+        uses: Now-Micro/actions/dotnet/coding-standards@v1
+        with:
+          directory: ${{ matrix.directory }}
+          nuget-names: ${{ inputs['nuget-names'] }}
+          nuget-passwords: ${{ secrets.token_github_packages }}
+          nuget-urls: ${{ inputs['nuget-urls'] }}
+          nuget-usernames: ${{ github.actor }}
+          roslyn-version: ${{ inputs['roslyn-analyzer-version'] }}
+
+  lint:
+    runs-on: ubuntu-22.04
+    if: ${{ inputs['enable-linting'] == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: CSharpier Linting
+        uses: Now-Micro/actions/dotnet/lint@v1
+
+  test-setup:
+    runs-on: ubuntu-22.04
+    if: ${{ inputs['enable-testing'] == 'true' }}
+    outputs:
+      directories_to_test: ${{ steps.unique-dirs.outputs.unique_project_directories }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          # Fetch full history so that before and after commits exist locally
+          fetch-depth: 0
+
+      - name: Find Last Successful Checks Run on Branch
+        id: last-success
+        if: ${{ inputs['checks-optimize-base-ref'] == 'true' }}
+        uses: Now-Micro/actions/get-last-workflow-success-sha@v1
+        with:
+          branch: ${{ inputs['head-ref'] }}
+          default-branch: ${{ inputs['default-branch'] }}
+          github-token: ${{ github.token }}
+          job-names-that-must-succeed: "test"
+          main-job-name: "test-setup"
+          request-size: 50
+          retry-attempts: 3
+          workflow-name: ${{ inputs['workflow-name'] }}
+
+      - name: Get Changed Files
+        uses: Now-Micro/actions/get-changed-files@v1
+        id: changed-files
+        with:
+          base-ref: ${{ inputs['base-ref'] }}
+          head-ref: ${{ inputs['head-ref'] }}
+
+      - name: Get Unique Project Directories
+        id: unique-dirs
+        uses: Now-Micro/actions/get-unique-project-directories@v1
+        with:
+          debug-mode: ${{ inputs['ci-debug-mode'] }}
+          fallback-regex: ${{ inputs['testing-path-pattern'] }}
+          paths: ${{ steps.changed-files.outputs.changed_files }}
+          pattern: ${{ inputs['testing-path-pattern'] }}
+          transformer: ${{ inputs['checks-transformer-pattern'] }}
+          use-original-if-missing: ${{ inputs['checks-use-original-if-missing'] }}
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: test-setup
+    if: needs.test-setup.outputs.directories_to_test != '[]'
+    strategy:
+      fail-fast: ${{ inputs['checks-fail-fast'] == 'true' }}
+      matrix:
+        directory: ${{ fromJson(needs.test-setup.outputs.directories_to_test) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure NuGet sources
+        uses: Now-Micro/actions/nuget/configure-sources@v1
+        with:
+          names: ${{ inputs['nuget-names'] }}
+          passwords: ${{ secrets.token_github_packages }}
+          urls: ${{ inputs['nuget-urls'] }}
+          usernames: ${{ github.actor }}
+
+      - name: Run tests
+        uses: Now-Micro/actions/dotnet/test@v1
+        with:
+          args: ${{ inputs['checks-test-args'] }}
+          directory: ${{ matrix.directory }}
+          dotnet-version: ${{ inputs['checks-dotnet-sdk-version'] }}
+          prefer-solution: ${{ inputs['checks-prefer-solution'] }}
+          project-regex: ${{ inputs['test-project-regex'] }}
+
+      - name: Build safe artifact name
+        id: artifact-name
+        shell: bash
+        run: |
+          safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\\/:*?"<>|]#-#g')
+          echo "value=Test Results - ${safe_dir}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Test Results
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact-name.outputs.value }}
+          path: test-results/**

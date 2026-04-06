@@ -145,6 +145,9 @@ test('multiple entries keep order and skip empty names', () => {
 
     assert.strictEqual(entries.length, 2);
     assert.deepStrictEqual(entries.map(e => e.name), ['Primary', 'Backup']);
+    assert.deepStrictEqual(entries.map(entry => entry.username), ['puser', 'xuser']);
+    assert.deepStrictEqual(entries.map(entry => entry.password), ['ppass', 'xpass']);
+    assert.deepStrictEqual(entries.map(entry => entry.url), ['https://primary/', 'https://extra/']);
     assert.strictEqual(execStub.calls.length, 4); // two list/add pairs
 });
 
