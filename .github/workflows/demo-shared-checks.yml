@@ -30,10 +30,12 @@ jobs:
     uses: ./.github/workflows/shared-checks.yml
     with:
       base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
+      coding-standards-path-pattern: ".*"
       head-ref: ${{ needs.resolve-base-ref.outputs.head_ref }}
       nuget-names: "CodeBits"
       nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       roslyn-analyzer-version: "latest"
+      testing-path-pattern: ".*"
       test-project-regex: ".*Tests.*\\.csproj$"
       workflow-name: "demo-shared-checks.yml"
     secrets:
