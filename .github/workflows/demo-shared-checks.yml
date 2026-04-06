@@ -24,14 +24,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "base_ref=$(git rev-parse HEAD~0)" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
 
   shared-checks:
     name: Shared checks demo
     needs: resolve-base-ref
     uses: ./.github/workflows/shared-checks.yml
     with:
-      base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
+      base-ref: "main"
+    #   base-ref: ${{ needs.resolve-base-ref.outputs.base_ref }}
       checks-dotnet-sdk-version: "8.0.x"
       checks-fail-fast: "true"
       checks-optimize-base-ref: "false"
