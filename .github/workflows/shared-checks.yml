@@ -52,7 +52,7 @@ on:
         description: "Path pattern used to discover coding standards directories."
         required: false
         type: string
-        default: "^([^/.]+)\/" 
+        default: '^([^/.]+)\\/'
       default-branch:
         description: "Default branch used when calculating the base ref."
         required: false
