@@ -1,5 +1,9 @@
 const fs = require('fs');
 
+function isDebugEnabled() {
+    return /^(true|1|yes|on)$/i.test(process.env.INPUT_DEBUG_MODE || '');
+}
+
 function parseVersions(input) {
     if (!input) return [];
     return input.split(',').map(s => s.trim()).filter(Boolean);
@@ -23,16 +27,25 @@ function run() {
         process.exit(1);
     }
 
+    const newlineVersion = versions.find(version => /[\r\n]/.test(version));
+    if (newlineVersion) {
+        console.error(`Invalid .NET version contains a newline: ${JSON.stringify(newlineVersion)}`);
+        process.exit(1);
+    }
+
     const ghOutput = process.env.GITHUB_OUTPUT;
     if (!ghOutput) {
         console.error('GITHUB_OUTPUT not set');
         process.exit(1);
     }
 
+    const debugEnabled = isDebugEnabled();
     const lines = [`version_count=${versions.length}`];
     versions.forEach((version, index) => {
         lines.push(`version_${index + 1}=${version}`);
-        console.log(`Resolved .NET SDK ${index + 1}: ${version}`);
+        if (debugEnabled) {
+            console.log(`Resolved .NET SDK ${index + 1}: ${version}`);
+        }
     });
 
     fs.appendFileSync(ghOutput, `${lines.join('\n')}\n`);
@@ -40,4 +53,4 @@ function run() {
 
 if (require.main === module) run();
 
-module.exports = { run, parseVersions };
+module.exports = { run, parseVersions, isDebugEnabled };

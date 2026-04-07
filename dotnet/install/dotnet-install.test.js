@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { run, parseVersions } = require('./dotnet-install');
+const { run, parseVersions, isDebugEnabled } = require('./dotnet-install');
 
 function withEnv(env, fn) {
     const prev = { ...process.env };
@@ -52,6 +52,18 @@ test('parseVersions returns an empty array for falsy input', () => {
     assert.deepStrictEqual(parseVersions(undefined), []);
 });
 
+test('isDebugEnabled recognizes common truthy values', () => {
+    withEnv({ INPUT_DEBUG_MODE: 'true' }, () => {
+        assert.strictEqual(isDebugEnabled(), true);
+    });
+    withEnv({ INPUT_DEBUG_MODE: '1' }, () => {
+        assert.strictEqual(isDebugEnabled(), true);
+    });
+    withEnv({ INPUT_DEBUG_MODE: 'false' }, () => {
+        assert.strictEqual(isDebugEnabled(), false);
+    });
+});
+
 test('errors when INPUT_DOTNET_VERSION missing', () => {
     const { ghOutput } = createOutputFile();
     const code = captureExit(() => withEnv({ GITHUB_OUTPUT: ghOutput }, () => run()));
@@ -67,6 +79,39 @@ test('writes parsed versions to GITHUB_OUTPUT', () => {
     assert.match(content, /version_count=2/);
     assert.match(content, /version_1=8\.0\.x/);
     assert.match(content, /version_2=10\.0\.x/);
+});
+
+test('does not log resolved versions when debug mode is disabled', () => {
+    const { ghOutput } = createOutputFile();
+    const logged = [];
+    const originalLog = console.log;
+    console.log = (...args) => logged.push(args.join(' '));
+
+    try {
+        withEnv({ INPUT_DOTNET_VERSION: '8.0.x,10.0.x', GITHUB_OUTPUT: ghOutput }, () => run());
+    } finally {
+        console.log = originalLog;
+    }
+
+    assert.deepStrictEqual(logged, []);
+});
+
+test('logs resolved versions when debug mode is enabled', () => {
+    const { ghOutput } = createOutputFile();
+    const logged = [];
+    const originalLog = console.log;
+    console.log = (...args) => logged.push(args.join(' '));
+
+    try {
+        withEnv({ INPUT_DOTNET_VERSION: '8.0.x,10.0.x', INPUT_DEBUG_MODE: 'true', GITHUB_OUTPUT: ghOutput }, () => run());
+    } finally {
+        console.log = originalLog;
+    }
+
+    assert.deepStrictEqual(logged, [
+        'Resolved .NET SDK 1: 8.0.x',
+        'Resolved .NET SDK 2: 10.0.x',
+    ]);
 });
 
 test('runs as a CLI and writes parsed versions to GITHUB_OUTPUT', () => {
@@ -97,6 +142,20 @@ test('errors when more than five versions are provided', () => {
     const { ghOutput } = createOutputFile();
     const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '1,2,3,4,5,6', GITHUB_OUTPUT: ghOutput }, () => run()));
     assert.strictEqual(code, 1);
+});
+
+test('errors when a parsed version contains a newline', () => {
+    const { ghOutput } = createOutputFile();
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '8.0.x,10.0.x\ninjected', GITHUB_OUTPUT: ghOutput }, () => run()));
+    assert.strictEqual(code, 1);
+    assert.strictEqual(fs.readFileSync(ghOutput, 'utf8'), '');
+});
+
+test('errors when a parsed version contains a carriage return', () => {
+    const { ghOutput } = createOutputFile();
+    const code = captureExit(() => withEnv({ INPUT_DOTNET_VERSION: '8.0.x,10.0.x\rinjected', GITHUB_OUTPUT: ghOutput }, () => run()));
+    assert.strictEqual(code, 1);
+    assert.strictEqual(fs.readFileSync(ghOutput, 'utf8'), '');
 });
 
 test('errors when GITHUB_OUTPUT is not set', () => {
