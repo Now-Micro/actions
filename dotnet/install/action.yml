@@ -13,6 +13,11 @@ runs:
     - name: Setup Node.js
       uses: Now-Micro/actions/setup-node@v1
 
+    - name: Set .NET install directory
+      shell: bash
+      run: |
+        echo "DOTNET_INSTALL_DIR=$RUNNER_TEMP/.dotnet" >> "$GITHUB_ENV"
+
     - name: Parse SDK versions
       id: parse_versions
       shell: bash
