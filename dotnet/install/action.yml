@@ -5,7 +5,7 @@ inputs:
   dotnet-install-directory:
     description: 'Directory where .NET SDKs are installed.'
     required: false
-    default: "$RUNNER_TEMP/.dotnet"
+    default: ""
   dotnet-version:
     description: 'Comma-separated list of .NET SDK versions or channels (e.g. "6.0.x,7.0.100")'
     required: true
@@ -19,8 +19,10 @@ runs:
 
     - name: Set .NET install directory
       shell: bash
+      env:
+        DOTNET_INSTALL_DIRECTORY: ${{ inputs['dotnet-install-directory'] != '' && inputs['dotnet-install-directory'] || format('{0}/.dotnet', runner.temp) }}
       run: |
-        echo "DOTNET_INSTALL_DIR=${{ inputs.dotnet-install-directory }}" >> "$GITHUB_ENV"
+        echo "DOTNET_INSTALL_DIR=$DOTNET_INSTALL_DIRECTORY" >> "$GITHUB_ENV"
 
     - name: Parse SDK versions
       id: parse_versions
