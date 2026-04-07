@@ -52,7 +52,7 @@ on:
         description: "Path pattern used to discover coding standards directories."
         required: false
         type: string
-        default: "^([^/.]+)\/" 
+        default: '^([^/.]+)\\/'
       default-branch:
         description: "Default branch used when calculating the base ref."
         required: false
@@ -102,7 +102,7 @@ on:
         description: "Path pattern used to discover test directories."
         required: false
         type: string
-        default: "^([^/]+)\/(?:(src|tests?)\/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
+        default: "^([^/]+)\\/(?:(src|tests?)\\/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
       workflow-name:
         description: "Workflow filename used when looking up the last successful run."
         required: false
