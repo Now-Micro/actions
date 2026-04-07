@@ -39,7 +39,7 @@ runs:
       uses: Now-Micro/actions/setup-node@v1
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
 
     - name: Get Project and Solution Files
       id: get-project-and-solution-files
