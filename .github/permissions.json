@@ -11,8 +11,13 @@
             "Test123"
         ]
     },
-    "testing.yml": {
+    "auth-success.yml": {
         "aspire-demo": [
+            "Beschuetzer"
+        ]
+    },
+    "auth-failure.yml": {
+        "wrong-repo-name": [
             "Beschuetzer"
         ]
     }
