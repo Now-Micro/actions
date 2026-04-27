@@ -15,8 +15,7 @@ function run() {
     const repository = process.env.INPUT_REPOSITORY;
     const workflowRef = process.env.INPUT_WORKFLOW_REF;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, true);
-    const permissionsFile = process.env.INPUT_PERMISSIONS_FILE ||
-        path.join(process.env.GITHUB_ACTION_PATH || __dirname, '..', '.github', 'permissions.json');
+    const permissionsFile = path.join(process.env.GITHUB_ACTION_PATH || __dirname, '..', '.github', 'permissions.json');
 
     if (!actor) {
         console.error('❌ INPUT_ACTOR is required');
@@ -74,7 +73,7 @@ function run() {
 
     if (!Array.isArray(allowedActors) || !allowedActors.includes(actor)) {
         console.error(`❌ Actor '${actor}' is not authorized to run '${workflowFilename}' in '${repository}'.`);
-        console.error(`   Allowed actors: ${Array.isArray(allowedActors) ? allowedActors.join(', ') : '(none)'}`);
+        console.error(`   Allowed actors: ${Array.isArray(allowedActors) && allowedActors.length > 0 ? allowedActors.join(', ') : '(none)'}`);
         process.exit(1);
     }
 

@@ -61,14 +61,23 @@ const VALID_WORKFLOW_REF = 'Now-Micro/CodeBits/.github/workflows/release.yml@ref
 const VALID_REPOSITORY = 'Now-Micro/CodeBits';
 const VALID_ACTOR = 'Beschuetzer';
 
-function makeEnv(overrides = {}) {
+function makeActionDir(permissions) {
     const tmpDir = makeTempDir();
-    const permFile = writePermissions(tmpDir, BASE_PERMISSIONS);
+    const actionDir = path.join(tmpDir, 'authorize');
+    const githubDir = path.join(tmpDir, '.github');
+    fs.mkdirSync(actionDir, { recursive: true });
+    fs.mkdirSync(githubDir, { recursive: true });
+    if (permissions) writePermissions(githubDir, permissions);
+    return { tmpDir, actionDir, githubDir };
+}
+
+function makeEnv(overrides = {}) {
+    const { actionDir } = makeActionDir(BASE_PERMISSIONS);
     return {
         INPUT_ACTOR: VALID_ACTOR,
         INPUT_REPOSITORY: VALID_REPOSITORY,
         INPUT_WORKFLOW_REF: VALID_WORKFLOW_REF,
-        INPUT_PERMISSIONS_FILE: permFile,
+        GITHUB_ACTION_PATH: actionDir,
         ...overrides
     };
 }
@@ -128,16 +137,16 @@ test('repository not in workflow permissions exits 1 with helpful message', () =
 });
 
 test('permissions file not found exits 1', () => {
-    const r = runWith(makeEnv({ INPUT_PERMISSIONS_FILE: '/nonexistent/path/permissions.json' }));
+    const { actionDir } = makeActionDir(null); // no .github/permissions.json written
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /Permissions file not found/);
 });
 
 test('malformed permissions JSON exits 1', () => {
-    const tmpDir = makeTempDir();
-    const badFile = path.join(tmpDir, 'permissions.json');
-    fs.writeFileSync(badFile, '{ this is not json }');
-    const r = runWith(makeEnv({ INPUT_PERMISSIONS_FILE: badFile }));
+    const { actionDir, githubDir } = makeActionDir(null);
+    fs.writeFileSync(path.join(githubDir, 'permissions.json'), '{ this is not json }');
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /Failed to parse permissions file/);
 });
@@ -184,41 +193,17 @@ test('workflow ref with branch ref suffix is parsed correctly', () => {
 });
 
 test('permissions with empty actor list exits 1', () => {
-    const tmpDir = makeTempDir();
-    const permFile = writePermissions(tmpDir, {
-        'release.yml': { 'CodeBits': [] }
-    });
-    const r = runWith(makeEnv({ INPUT_PERMISSIONS_FILE: permFile }));
+    const { actionDir } = makeActionDir({ 'release.yml': { 'CodeBits': [] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /not authorized/);
 });
 
-test('uses GITHUB_ACTION_PATH default path when INPUT_PERMISSIONS_FILE not set', () => {
-    // Simulate the composite action layout: GITHUB_ACTION_PATH/../../.github/permissions.json
-    const tmpDir = makeTempDir();
-    const actionDir = path.join(tmpDir, 'authorize');
-    const githubDir = path.join(tmpDir, '.github');
-    fs.mkdirSync(actionDir, { recursive: true });
-    fs.mkdirSync(githubDir, { recursive: true });
-    // path.join(GITHUB_ACTION_PATH, '..', '.github', 'permissions.json')
-    // = path.join(actionDir, '..', '.github', 'permissions.json') = tmpDir/.github/permissions.json
-    writePermissions(githubDir, BASE_PERMISSIONS);
-    const env = makeEnv();
-    delete env.INPUT_PERMISSIONS_FILE;
-    const tmpOut = path.join(tmpDir, 'github_output.txt');
-    fs.writeFileSync(tmpOut, '');
-    const r = withEnv({ ...env, GITHUB_ACTION_PATH: actionDir, GITHUB_OUTPUT: tmpOut }, () => run());
-    r.outputContent = fs.readFileSync(tmpOut, 'utf8');
-    assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
-});
-
 test('non-array allowedActors exits 1 with (none) in message', () => {
-    const tmpDir = makeTempDir();
-    const permFile = writePermissions(tmpDir, {
+    const { actionDir } = makeActionDir({
         'release.yml': { 'CodeBits': 'Beschuetzer' } // string, not array
     });
-    const r = runWith(makeEnv({ INPUT_PERMISSIONS_FILE: permFile }));
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /not authorized/);
     assert.match(r.err, /\(none\)/);
