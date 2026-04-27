@@ -1,10 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 
+function parseBool(val, def) {
+    if (val === undefined || val === null) return def;
+    if (typeof val === 'boolean') return val;
+    const s = String(val).trim().toLowerCase();
+    if (['false', '0', 'no', 'off'].includes(s)) return false;
+    if (['true', '1', 'yes', 'on'].includes(s)) return true;
+    return def;
+}
+
 function run() {
     const actor = process.env.INPUT_ACTOR;
     const repository = process.env.INPUT_REPOSITORY;
     const workflowRef = process.env.INPUT_WORKFLOW_REF;
+    const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, true);
     const permissionsFile = process.env.INPUT_PERMISSIONS_FILE ||
         path.join(process.env.GITHUB_ACTION_PATH || __dirname, '..', '.github', 'permissions.json');
 
@@ -27,11 +37,13 @@ function run() {
     // "Now-Micro/CodeBits/.github/workflows/release.yml@refs/heads/main" → "release.yml"
     const workflowFilename = workflowRef.split('@')[0].split('/').pop();
 
-    console.log(`🔍 Checking authorization...`);
-    console.log(`🔍 Actor:        ${actor}`);
-    console.log(`🔍 Repository:   ${repository} → ${repoName}`);
-    console.log(`🔍 Workflow ref: ${workflowRef} → ${workflowFilename}`);
-    console.log(`🔍 Permissions:  ${permissionsFile}`);
+    if (debugMode) {
+        console.log(`🔍 Checking authorization...`);
+        console.log(`🔍 Actor:        ${actor}`);
+        console.log(`🔍 Repository:   ${repository} → ${repoName}`);
+        console.log(`🔍 Workflow ref: ${workflowRef} → ${workflowFilename}`);
+        console.log(`🔍 Permissions:  ${permissionsFile}`);
+    }
 
     if (!fs.existsSync(permissionsFile)) {
         console.error(`❌ Permissions file not found: ${permissionsFile}`);
@@ -66,7 +78,7 @@ function run() {
         process.exit(1);
     }
 
-    console.log(`✅ Actor '${actor}' is authorized to run '${workflowFilename}' in '${repository}'.`);
+    console.log(`✅ Actor '${actor}' is authorized to run '${workflowFilename}' in '${repository}'.`); // always visible
 
     const githubOutput = process.env.GITHUB_OUTPUT;
     if (!githubOutput) {

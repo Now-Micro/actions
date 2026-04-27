@@ -223,3 +223,21 @@ test('non-array allowedActors exits 1 with (none) in message', () => {
     assert.match(r.err, /not authorized/);
     assert.match(r.err, /\(none\)/);
 });
+
+test('debug mode disabled suppresses 🔍 logs but still prints ✅', () => {
+    const r = runWith(makeEnv({ INPUT_DEBUG_MODE: 'false' }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.ok(!r.out.includes('🔍'), 'debug lines should not appear when debug mode is off');
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+    assert.match(r.outputContent, /authorized=true/);
+});
+
+test('debug mode enabled prints 🔍 logs', () => {
+    const r = runWith(makeEnv({ INPUT_DEBUG_MODE: 'true' }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /🔍 Checking authorization/);
+    assert.match(r.out, /🔍 Actor:/);
+    assert.match(r.out, /🔍 Repository:/);
+    assert.match(r.out, /🔍 Workflow ref:/);
+    assert.match(r.out, /🔍 Permissions:/);
+});
