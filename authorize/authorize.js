@@ -51,7 +51,11 @@ function run() {
 
     let permissions;
     try {
-        permissions = JSON.parse(fs.readFileSync(permissionsFile, 'utf8'));
+        const raw = fs.readFileSync(permissionsFile, 'utf8');
+        if (debugMode) {
+            console.log(`🔍 Permissions file contents:\n${raw}`);
+        }
+        permissions = JSON.parse(raw);
     } catch (e) {
         console.error(`❌ Failed to parse permissions file: ${e.message}`);
         process.exit(1);
