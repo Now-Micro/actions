@@ -35,7 +35,7 @@ jobs:
               uses: Now-Micro/actions/authorize@v1
               with:
                   actor: ${{ github.actor }}
-                  debug-mode: ${{ inputs.debug-mode }}
+                  debug-mode: ${{ inputs['debug-mode'] || '' }}
                   repository: ${{ github.repository }}
                   workflow-ref: ${{ github.workflow_ref }}
               
