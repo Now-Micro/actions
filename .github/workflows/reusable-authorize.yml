@@ -9,6 +9,7 @@ on:
             debug-mode:
                 description: "Enable debug mode for additional logging."
                 required: false
+                default: 'false'
                 type: string
         outputs:
             authorized:
