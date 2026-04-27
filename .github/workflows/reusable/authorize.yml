@@ -1,0 +1,34 @@
+name: Authorize Workflow
+
+permissions:
+    contents: read
+
+on:
+    workflow_call:
+        outputs:
+            authorized:
+                description: 'Whether the actor is authorized to run the calling workflow.'
+                value: ${{ jobs.authorize.outputs.authorized }}
+
+jobs:
+    authorize:
+        runs-on: ubuntu-22.04
+        outputs:
+            authorized: ${{ steps.check.outputs.authorized }}
+        steps:
+            - name: Log workflow context
+              run: |
+                  echo "actor=${{ github.actor }}"
+                  echo "triggering_actor=${{ github.triggering_actor }}"
+                  echo "repository=${{ github.repository }}"
+                  echo "repository_owner=${{ github.repository_owner }}"
+                  echo "workflow_ref=${{ github.workflow_ref }}"
+
+            - name: Authorize workflow
+              id: check
+              uses: Now-Micro/actions/authorize@v1
+              with:
+                  actor: ${{ github.actor }}
+                  repository: ${{ github.repository }}
+                  workflow-ref: ${{ github.workflow_ref }}
+              

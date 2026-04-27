@@ -1,0 +1,19 @@
+{
+    "release.yml": {
+        "CodeBits": [
+            "Beschuetzer",
+            "Test123"
+        ],
+        "WarrantyService": [
+            "Test123"
+        ],
+        "aspire-demo": [
+            "Test123"
+        ]
+    },
+    "testing.yml": {
+        "aspire-demo": [
+            "Beschuetzer"
+        ]
+    }
+}
