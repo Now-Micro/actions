@@ -5,6 +5,12 @@ permissions:
 
 on:
     workflow_call:
+        inputs:
+            debug-mode:
+                description: "Enable debug mode for additional logging."
+                required: false
+                default: 'false'
+                type: string
         outputs:
             authorized:
                 description: 'Whether the actor is authorized to run the calling workflow.'
@@ -29,6 +35,7 @@ jobs:
               uses: Now-Micro/actions/authorize@v1
               with:
                   actor: ${{ github.actor }}
+                  debug-mode: ${{ inputs['debug-mode'] || '' }}
                   repository: ${{ github.repository }}
                   workflow-ref: ${{ github.workflow_ref }}
               
