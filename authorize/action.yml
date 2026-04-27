@@ -1,0 +1,38 @@
+name: 'Authorize'
+description: >
+  Checks whether the workflow actor is permitted to run the calling workflow,
+  based on a central permissions.json policy file. Exits with code 1 and a
+  descriptive message when the actor is not authorized.
+author: 'Now-Micro'
+
+inputs:
+  actor:
+    description: 'The GitHub actor (user) initiating the workflow. Use github.actor.'
+    required: true
+  repository:
+    description: 'The calling repository in owner/repo format. Use github.repository.'
+    required: true
+  workflow-ref:
+    description: 'The full workflow ref of the calling workflow. Use github.workflow_ref.'
+    required: true
+ 
+outputs:
+  authorized:
+    description: 'Whether the actor is authorized (true). Not set on denial — the step exits with code 1 instead.'
+    value: ${{ steps.authorize.outputs.authorized }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Check authorization
+      id: authorize
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/authorize.js"
+      env:
+        INPUT_ACTOR: ${{ inputs.actor }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_WORKFLOW_REF: ${{ inputs.workflow-ref }}
+        INPUT_PERMISSIONS_FILE: ".github\\permissions.json"
