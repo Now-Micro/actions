@@ -10,11 +10,11 @@
             "Test123"
         ]
     },
-    "aspire-demo": {
-        "release.yml": [
+    "aSpIRe-DEMO": {
+        "relEAse.yml": [
             "Test123"
         ],
-        "auth-success.yml": [
+        "auth-sucCEss.yml": [
             "Beschuetzer"
         ]
     }
