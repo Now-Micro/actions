@@ -1,23 +1,20 @@
 {
-    "release.yml": {
-        "CodeBits": [
+    "CodeBits": {
+        "release.yml": [
             "Beschuetzer",
             "Test123"
-        ],
-        "WarrantyService": [
-            "Test123"
-        ],
-        "aspire-demo": [
+        ]
+    },
+    "WarrantyService": {
+        "release.yml": [
             "Test123"
         ]
     },
-    "auth-success.yml": {
-        "aspire-demo": [
-            "Beschuetzer"
-        ]
-    },
-    "auth-failure.yml": {
-        "wrong-repo-name": [
+    "aspire-demo": {
+        "release.yml": [
+            "Test123"
+        ],
+        "auth-success.yml": [
             "Beschuetzer"
         ]
     }

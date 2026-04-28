@@ -51,9 +51,11 @@ function runWith(env) {
 }
 
 const BASE_PERMISSIONS = {
-    'release.yml': {
-        'CodeBits': ['Beschuetzer', 'Test123'],
-        'WarrantyService': ['Test123']
+    'CodeBits': {
+        'release.yml': ['Beschuetzer', 'Test123']
+    },
+    'WarrantyService': {
+        'release.yml': ['Test123']
     }
 };
 
@@ -193,7 +195,7 @@ test('workflow ref with branch ref suffix is parsed correctly', () => {
 });
 
 test('permissions with empty actor list exits 1', () => {
-    const { actionDir } = makeActionDir({ 'release.yml': { 'CodeBits': [] } });
+    const { actionDir } = makeActionDir({ 'CodeBits': { 'release.yml': [] } });
     const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /not authorized/);
@@ -201,12 +203,35 @@ test('permissions with empty actor list exits 1', () => {
 
 test('non-array allowedActors exits 1 with (none) in message', () => {
     const { actionDir } = makeActionDir({
-        'release.yml': { 'CodeBits': 'Beschuetzer' } // string, not array
+        'CodeBits': { 'release.yml': 'Beschuetzer' } // string, not array
     });
     const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /not authorized/);
     assert.match(r.err, /\(none\)/);
+});
+
+test('actor lookup is case-insensitive', () => {
+    const r = runWith(makeEnv({ INPUT_ACTOR: 'beschuetzer' })); // lowercase
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /authorized=true/);
+});
+
+test('repository lookup is case-insensitive', () => {
+    const r = runWith(makeEnv({
+        INPUT_REPOSITORY: 'Now-Micro/CODEBITS',
+        INPUT_WORKFLOW_REF: 'Now-Micro/CODEBITS/.github/workflows/release.yml@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /authorized=true/);
+});
+
+test('workflow filename lookup is case-insensitive', () => {
+    const r = runWith(makeEnv({
+        INPUT_WORKFLOW_REF: 'Now-Micro/CodeBits/.github/workflows/RELEASE.YML@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.outputContent, /authorized=true/);
 });
 
 test('debug mode disabled suppresses 🔍 logs but still prints ✅', () => {
