@@ -10,6 +10,12 @@ function parseBool(val, def) {
     return def;
 }
 
+function findCaseInsensitive(obj, key) {
+    const lower = key.toLowerCase();
+    const found = Object.keys(obj).find(k => k.toLowerCase() === lower);
+    return found !== undefined ? obj[found] : undefined;
+}
+
 function run() {
     const actor = process.env.INPUT_ACTOR;
     const repository = process.env.INPUT_REPOSITORY;
@@ -61,21 +67,21 @@ function run() {
         process.exit(1);
     }
 
-    const workflowPerms = permissions[workflowFilename];
-    if (!workflowPerms) {
-        console.error(`❌ No permissions defined for workflow '${workflowFilename}'.`);
-        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${workflowFilename}' in permissions.json.`);
+    const repoPerms = findCaseInsensitive(permissions, repoName);
+    if (!repoPerms) {
+        console.error(`❌ No permissions defined for repository '${repoName}'.`);
+        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${repoName}' in permissions.json.`);
         process.exit(1);
     }
 
-    const allowedActors = workflowPerms[repoName];
+    const allowedActors = findCaseInsensitive(repoPerms, workflowFilename);
     if (!allowedActors) {
-        console.error(`❌ No permissions defined for repository '${repoName}' under workflow '${workflowFilename}'.`);
-        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${repoName}' under '${workflowFilename}' in permissions.json.`);
+        console.error(`❌ No permissions defined for workflow '${workflowFilename}' under repository '${repoName}'.`);
+        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${workflowFilename}' under '${repoName}' in permissions.json.`);
         process.exit(1);
     }
 
-    if (!Array.isArray(allowedActors) || !allowedActors.includes(actor)) {
+    if (!Array.isArray(allowedActors) || !allowedActors.some(a => a.toLowerCase() === actor.toLowerCase())) {
         console.error(`❌ Actor '${actor}' is not authorized to run '${workflowFilename}' in '${repository}'.`);
         console.error(`   Allowed actors: ${Array.isArray(allowedActors) && allowedActors.length > 0 ? allowedActors.join(', ') : '(none)'}`);
         process.exit(1);
