@@ -137,7 +137,7 @@ runs:
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
         paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
-        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        pattern: "^.*/src/.*"
         transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
         throw-if-transformed-not-found: "false"
 
