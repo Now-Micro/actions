@@ -92,7 +92,17 @@ runs:
         ignore-casing: ${{ inputs['ignore-casing'] }}
         debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
 
-    - name: Validate outputs
+    - name: Extract Changelog
+      id: extract-changelog
+      uses: Now-Micro/actions/extract-changelog@v1
+      with:
+        library-directory: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
+        library-name: ${{ steps.get-version.outputs.library_name }}
+        changelog-content-path: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}/CHANGELOG-EXTRACTED.md
+        create-artifact: "false"
+        version: ${{ steps.get-version.outputs.version }}
+
+    - name: Validate outputs and changelog existence
       shell: bash
       env:
         MATCHED_DIRS_JSON: ${{ steps.path-finder.outputs.matched-dirs-absolute || '[]' }}
@@ -120,6 +130,10 @@ runs:
         if [ "${{ inputs['dry-run'] }}" != "true" ] && [ -z "${{ inputs['github-token'] }}" ]; then  
           echo "Input 'github-token' is required when 'dry-run' is not 'true'.";  
           exit 1;  
+        fi
+        if [ -z "${{ steps.extract-changelog.outputs.changelog-content }}" ]; then
+          echo "No changelog content found for version ${{ steps.get-version.outputs.version }}. Ensure a CHANGELOG.md exists and contains an entry for this version.";
+          exit 1;
         fi
 
     - name: Get Project File (Main)
