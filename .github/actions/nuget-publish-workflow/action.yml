@@ -133,12 +133,13 @@ runs:
 
     - name: Get Unique Root Directory
       id: get-root-directory
-      uses: Now-Micro/actions/get-unique-root-directories@v1
+      uses: Now-Micro/actions/get-unique-project-directories@v1
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
-        output-is-json: "false"
-        pattern: '^([^/]+)/'
         paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
+        pattern: "^.*/src/.*\\.(cs|csproj|sln|slnx)$"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        throw-if-transformed-not-found: "false"
 
     - name: Get Project File (Test)
       id: extract-project-test
