@@ -140,7 +140,7 @@ runs:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
         paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
         pattern: "^.*/src/.*"
-        transformer: "s#^(.*?)/src/(.*)$#$1/tests/$2#"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests#"
         throw-if-transformed-not-found: "false"
 
     - name: Get Project File (Test)
@@ -148,7 +148,7 @@ runs:
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
-        directory: ${{ inputs['tests-directory'] != '' && inputs['tests-directory'] || format('{0}', fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0]) }}
+        directory: ${{ inputs['tests-directory'] != '' && inputs['tests-directory'] || format('{0}', fromJSON(steps.get-root-directory.outputs.unique-project-directories || '[]')[0]) }}
         find-project: true
         find-solution: false
         project-regex: format('{0}.Tests.csproj', ${{ steps.get-version.outputs.library_name }})
