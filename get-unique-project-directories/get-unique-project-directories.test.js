@@ -487,10 +487,13 @@ test('findNearestCsproj tolerates missing directories', () => {
 
 test('findNearestCsproj resolves when input is a directory containing a csproj', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gu-dir-'));
-    const projectDir = path.join(root, 'src', 'Api');
-    fs.mkdirSync(projectDir, { recursive: true });
-    fs.writeFileSync(path.join(projectDir, 'Api.csproj'), '<Project />');
-    const result = findNearestCsproj(projectDir);
-    assert.ok(result.endsWith('Api.csproj'), `expected csproj path, got '${result}'`);
-    fs.rmSync(root, { recursive: true, force: true });
+    try {
+        const projectDir = path.join(root, 'src', 'Api');
+        fs.mkdirSync(projectDir, { recursive: true });
+        fs.writeFileSync(path.join(projectDir, 'Api.csproj'), '<Project />');
+        const result = findNearestCsproj(projectDir);
+        assert.ok(result.endsWith('Api.csproj'), `expected csproj path, got '${result}'`);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
 });

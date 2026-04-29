@@ -159,6 +159,7 @@ runs:
 
     - name: Get Project File (Test)
       id: extract-project-test
+      if: ${{ inputs['tests-directory'] != '' || (steps.get-root-directory.outputs.unique_project_directories != '' && steps.get-root-directory.outputs.unique_project_directories != '[]') }}
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
@@ -179,7 +180,7 @@ runs:
         nuget-usernames: ${{ github.actor }}
         project-file: ${{ steps.extract-project-main.outputs.project-found }}
         package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}
-        test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
+        test-project-file: ${{ steps.extract-project-test.outputs.project-found || '' }}
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
