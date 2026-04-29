@@ -131,15 +131,25 @@ runs:
         find-project: true
         find-solution: false
 
+    - name: Get Unique Root Directory
+      id: get-root-directory
+      uses: Now-Micro/actions/get-unique-root-directories@v1
+      with:
+        debug-mode: ${{ inputs['ci-debug-mode'] }}
+        output-is-json: "false"
+        pattern: '^src/([^/]+)/'
+        paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
+
     - name: Get Project File (Test)
       id: extract-project-test
-      if: ${{ inputs['tests-directory'] != '' }}
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
-        directory: ${{ inputs['tests-directory'] }}
         debug-mode: ${{ inputs['ci-debug-mode'] }}
+        directory: ${{ inputs['tests-directory'] != '' && inputs['tests-directory'] || format('{0}', fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0]) }}
         find-project: true
         find-solution: false
+        project-regex: format('{0}.Tests.csproj', ${{ steps.get-version.outputs.library_name }})
+        max-depth: 5
 
     - name: Nuget Publish
       uses: Now-Micro/actions/nuget/publish@v1
