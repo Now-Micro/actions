@@ -463,6 +463,8 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     assert.strictEqual(parseBool(null, true), true);
     assert.strictEqual(parseBool('maybe', true), true);
     assert.strictEqual(normalizePath('  "C\\\\Temp\\Proj\\File.cs"  '), 'C/Temp/Proj/File.cs');
+    assert.strictEqual(normalizePath('/home/runner/work/repo/src/Api'), '/home/runner/work/repo/src/Api');
+    assert.strictEqual(normalizePath('/home/runner/work/repo/src/Api/'), '/home/runner/work/repo/src/Api');
     assert.strictEqual(toDirectoryOnly(''), '');
     assert.strictEqual(toDirectoryOnly('App.csproj'), '.');
     assert.strictEqual(toDirectoryOnly('README.md'), '.');

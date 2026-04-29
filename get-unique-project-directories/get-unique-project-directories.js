@@ -17,7 +17,9 @@ function normalizePath(input) {
     const stripped = input.trim().replace(/['"\[\]]/g, '');
     const withSlashes = stripped.replace(/\\/g, '/');
     const collapsed = withSlashes.replace(/\/\/+/g, '/');
-    return collapsed.replace(/^\/+/g, '').replace(/\/+$/g, '').trim();
+    const isAbsolute = collapsed.startsWith('/');
+    const trimmed = collapsed.replace(/^\/+/g, '').replace(/\/+$/g, '').trim();
+    return isAbsolute ? '/' + trimmed : trimmed;
 }
 
 function parseTransformer(spec) {

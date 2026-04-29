@@ -133,7 +133,9 @@ runs:
 
     - name: Get Unique Root Directory
       id: get-root-directory
-      uses: Now-Micro/actions/get-unique-project-directories@v1
+      # TODO: uncomment this before merging, currently using a local path for testing
+      # uses:  Now-Micro/actions/get-unique-project-directories@v1
+      uses: ./get-unique-project-directories
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
         paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
