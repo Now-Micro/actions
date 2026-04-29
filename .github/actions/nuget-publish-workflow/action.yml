@@ -137,7 +137,7 @@ runs:
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
         output-is-json: "false"
-        pattern: '^src/([^/]+)/'
+        pattern: '^([^/]+)/'
         paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
 
     - name: Get Project File (Test)
