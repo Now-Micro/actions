@@ -99,7 +99,13 @@ function findNearestCsproj(inputPath) {
     if (!normalized) return '';
 
     const absoluteFile = path.resolve(normalized);
-    let currentDir = path.dirname(absoluteFile);
+    let currentDir;
+    try {
+        const stat = fs.statSync(absoluteFile);
+        currentDir = stat.isDirectory() ? absoluteFile : path.dirname(absoluteFile);
+    } catch {
+        currentDir = path.dirname(absoluteFile);
+    }
     const rootDir = path.parse(absoluteFile).root;
 
     while (true) {
