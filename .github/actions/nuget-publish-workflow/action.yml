@@ -165,7 +165,6 @@ runs:
         directory: ${{ inputs['tests-directory'] != '' && inputs['tests-directory'] || format('{0}', fromJSON(steps.get-root-directory.outputs.unique-project-directories || '[]')[0]) }}
         find-project: true
         find-solution: false
-        max-depth: 5
 
     - name: Nuget Publish
       uses: Now-Micro/actions/nuget/publish@v1
