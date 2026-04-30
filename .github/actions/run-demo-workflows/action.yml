@@ -19,6 +19,16 @@ runs:
       with:
         fetch-depth: 0
 
+    - name: Inject demo changelog entry
+      shell: bash
+      run: |
+        VERSION="0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
+        CHANGELOG="src/demo/dotnet/src/Api/CHANGELOG.md"
+        ENTRY="## [${VERSION}] - $(date -u +%Y-%m-%d)\n\n### Added\n\n- Demo CI release for run ${{ github.run_id }}\n"
+        # Insert after the first line that starts with "## ["
+        awk -v entry="$ENTRY" '/^## \[/{if(!done){printf "%s\n", entry; done=1}} {print}' "$CHANGELOG" > "${CHANGELOG}.tmp"
+        mv "${CHANGELOG}.tmp" "$CHANGELOG"
+
     - name: Demo - nuget publish workflow
       uses: ./.github/actions/nuget-publish-workflow
       with:

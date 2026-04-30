@@ -17,7 +17,9 @@ function normalizePath(input) {
     const stripped = input.trim().replace(/['"\[\]]/g, '');
     const withSlashes = stripped.replace(/\\/g, '/');
     const collapsed = withSlashes.replace(/\/\/+/g, '/');
-    return collapsed.replace(/^\/+/g, '').replace(/\/+$/g, '').trim();
+    const isAbsolute = collapsed.startsWith('/');
+    const trimmed = collapsed.replace(/^\/+/g, '').replace(/\/+$/g, '').trim();
+    return isAbsolute ? '/' + trimmed : trimmed;
 }
 
 function parseTransformer(spec) {
@@ -97,7 +99,13 @@ function findNearestCsproj(inputPath) {
     if (!normalized) return '';
 
     const absoluteFile = path.resolve(normalized);
-    let currentDir = path.dirname(absoluteFile);
+    let currentDir;
+    try {
+        const stat = fs.statSync(absoluteFile);
+        currentDir = stat.isDirectory() ? absoluteFile : path.dirname(absoluteFile);
+    } catch {
+        currentDir = path.dirname(absoluteFile);
+    }
     const rootDir = path.parse(absoluteFile).root;
 
     while (true) {

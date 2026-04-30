@@ -463,6 +463,8 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
     assert.strictEqual(parseBool(null, true), true);
     assert.strictEqual(parseBool('maybe', true), true);
     assert.strictEqual(normalizePath('  "C\\\\Temp\\Proj\\File.cs"  '), 'C/Temp/Proj/File.cs');
+    assert.strictEqual(normalizePath('/home/runner/work/repo/src/Api'), '/home/runner/work/repo/src/Api');
+    assert.strictEqual(normalizePath('/home/runner/work/repo/src/Api/'), '/home/runner/work/repo/src/Api');
     assert.strictEqual(toDirectoryOnly(''), '');
     assert.strictEqual(toDirectoryOnly('App.csproj'), '.');
     assert.strictEqual(toDirectoryOnly('README.md'), '.');
@@ -481,4 +483,17 @@ test('helpers cover parseBool and normalizePath edge cases', () => {
 test('findNearestCsproj tolerates missing directories', () => {
     const result = findNearestCsproj('no/such/dir/file.cs');
     assert.strictEqual(result, '');
+});
+
+test('findNearestCsproj resolves when input is a directory containing a csproj', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gu-dir-'));
+    try {
+        const projectDir = path.join(root, 'src', 'Api');
+        fs.mkdirSync(projectDir, { recursive: true });
+        fs.writeFileSync(path.join(projectDir, 'Api.csproj'), '<Project />');
+        const result = findNearestCsproj(projectDir);
+        assert.ok(result.endsWith('Api.csproj'), `expected csproj path, got '${result}'`);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
 });

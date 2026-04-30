@@ -92,7 +92,17 @@ runs:
         ignore-casing: ${{ inputs['ignore-casing'] }}
         debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
 
-    - name: Validate outputs
+    - name: Extract Changelog
+      id: extract-changelog
+      uses: Now-Micro/actions/extract-changelog@v1
+      with:
+        library-directory: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
+        library-name: ${{ steps.get-version.outputs.library_name }}
+        changelog-content-path: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}/CHANGELOG-EXTRACTED.md
+        create-artifact: "false"
+        version: ${{ steps.get-version.outputs.version }}
+
+    - name: Validate outputs and changelog existence
       shell: bash
       env:
         MATCHED_DIRS_JSON: ${{ steps.path-finder.outputs.matched-dirs-absolute || '[]' }}
@@ -121,6 +131,10 @@ runs:
           echo "Input 'github-token' is required when 'dry-run' is not 'true'.";  
           exit 1;  
         fi
+        if [ -z "${{ steps.extract-changelog.outputs.changelog-content }}" ]; then
+          echo "No changelog content found for version ${{ steps.get-version.outputs.version }}. Ensure a CHANGELOG.md exists and contains an entry for this version.";
+          exit 1;
+        fi
 
     - name: Get Project File (Main)
       id: extract-project-main
@@ -131,13 +145,23 @@ runs:
         find-project: true
         find-solution: false
 
+    - name: Get Unique Root Directory
+      id: get-root-directory
+      uses:  Now-Micro/actions/get-unique-project-directories@v1
+      with:
+        debug-mode: ${{ inputs['ci-debug-mode'] }}
+        paths: ${{ fromJSON(steps.path-finder.outputs.matched-dirs-absolute || '[]')[0] }}
+        pattern: "^.*/src/.*"
+        transformer: "s#^(.*?)/src/(.*)$#$1/tests#"
+        throw-if-transformed-not-found: "false"
+
     - name: Get Project File (Test)
       id: extract-project-test
-      if: ${{ inputs['tests-directory'] != '' }}
+      if: ${{ inputs['tests-directory'] != '' || (steps.get-root-directory.outputs.unique_project_directories != '' && steps.get-root-directory.outputs.unique_project_directories != '[]') }}
       uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
       with:
-        directory: ${{ inputs['tests-directory'] }}
         debug-mode: ${{ inputs['ci-debug-mode'] }}
+        directory: ${{ inputs['tests-directory'] != '' && inputs['tests-directory'] || format('{0}', fromJSON(steps.get-root-directory.outputs.unique_project_directories || '[]')[0]) }}
         find-project: true
         find-solution: false
 
@@ -154,7 +178,7 @@ runs:
         nuget-usernames: ${{ github.actor }}
         project-file: ${{ steps.extract-project-main.outputs.project-found }}
         package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}
-        test-project-file: ${{ inputs['tests-directory'] != '' && steps.extract-project-test.outputs.project-found || '' }}
+        test-project-file: ${{ steps.extract-project-test.outputs.project-found || '' }}
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
