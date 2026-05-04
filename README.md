@@ -25,6 +25,7 @@ To add a new reusable action:
 5. **Add tests**: `my-new-action.test.js` covering success, error, and edge cases. Use mocks for filesystem/git/network. Aim for 100% line/branch coverage.
 6. **Handle inputs/outputs**: Read from `process.env.INPUT_*`, write to `process.env.GITHUB_OUTPUT`.
 7. **Test locally**: Run `node --test my-new-action/*.test.js` and check coverage with `npx c8 -r text node --test`.
+8. **Add README.md**: Add a readme file in the composite action directory, which shows at least one example of how to use the composite action and a description of what the intended use case is.
 
 Ensure the action is self-contained, with no external dependencies beyond Node.js standard library.
 

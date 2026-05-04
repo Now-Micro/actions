@@ -8,8 +8,6 @@
 
 ## Non-Functional Requirements
 
-*(Mark "N/A" for categories that don't apply.)*
-
 - **Performance:** N/A
 - **Availability:** N/A
 - **Security:** No authentication needed for the pre-release workflow at the moment
