@@ -159,9 +159,9 @@ jobs:
                   fi
 
             - name: Run shared nuget publish workflow
-              uses: ./.github/actions/reusable-pre-release
+              uses: ./.github/actions/reusable-pre-release-workflow
               #   TODO: Uncomment this when done
-              #   uses: Now-Micro/actions/.github/actions/reusable-pre-release@v1
+              #   uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] != '' &&
                       inputs['artifact-retention-days'] || '1' }}
