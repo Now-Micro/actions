@@ -24,7 +24,7 @@ inputs:
     required: false
     default: "8.0.x"
   github-token:
-    description: "GitHub token with permissions to delete packages."
+    description: "GitHub token with permissions to publish packages."
     required: true
   nuget-urls:
     description: "NuGet feed URL to publish to."
