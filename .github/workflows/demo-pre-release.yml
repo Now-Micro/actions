@@ -34,10 +34,10 @@ on:
                 type: string
                 default: "8.0.x"
             nuget-urls:
-                description: "NuGet feed URLs to publish to, separated by commas."
+                description: "NuGet feed URLs needed to build the projects. Should be a comma-separated list of URLs."
                 required: false
                 type: string
-                default: "https://nuget.pkg.github.com/actions/index.json"
+                default: ""
             prerelease-identifier:
                 description: "Pre-release identifier."
                 required: false
