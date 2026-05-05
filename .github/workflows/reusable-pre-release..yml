@@ -14,7 +14,8 @@ on:
                 default: "1"
             base-ref:
                 description: "Base ref to compare changes against for determining which packages
-                    to publish.  If empty, the workflow will use the default branch of the repository as the base ref."
+                    to publish.  If empty, the workflow will use the default
+                    branch of the repository as the base ref."
                 required: false
                 type: string
             ci-debug-mode:
@@ -22,6 +23,12 @@ on:
                 required: false
                 type: string
                 default: "false"
+            directory:
+                description: "Directory to use.  If given, only this directory will be published
+                    for pre-release.  If you want to publish all projects with
+                    matching changes, leave this empty."
+                required: false
+                type: string
             dotnet-version:
                 description: "The versions of .NET to install before running this workflow.
                     Should be a comma-separated list of versions (e.g.
@@ -75,46 +82,36 @@ on:
 
 jobs:
     detect-changed-libraries:
+        if: ${{ inputs.directory == '' }}
         runs-on: ubuntu-22.04
         outputs:
             changed_dirs: ${{ steps.unique-dirs.outputs.unique_project_directories }}
-        steps:
-          - name: Check out code
-            uses: actions/checkout@v6
-            with:
-                fetch-depth: 0
-  
-          - name: Get Changed Files between branch and main
-            id: get-changed-files
-            uses: Now-Micro/actions/get-changed-files@v1
-            with:
-                head-ref: ${{ github.sha }}
-                base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
-  
-          - name: Get Unique Project Directories
-            id: unique-dirs
-            uses: Now-Micro/actions/get-unique-project-directories@v1
-            with:
-                paths: ${{ steps.get-changed-files.outputs.changed_files }}
-                pattern: ${{ inputs['nuget-pattern-to-match'] }}
-                debug-mode: ${{ inputs['ci-debug-mode'] }}
-                fallback-regex: ${{ inputs['nuget-pattern-to-match'] }}
-                use-original-if-missing: false
-
-    nuget-publish:
-        runs-on: ubuntu-22.04
-        needs: [ detect-changed-libraries ]
-        if: needs.detect-changed-libraries.outputs.changed_dirs != '[]'
-        strategy:
-          fail-fast: false
-          matrix:
-            directory: ${{ fromJson(needs.detect-changed-libraries.outputs.changed_dirs) }}
         steps:
             - name: Check out code
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
+            - name: Get Changed Files between branch and main
+              id: get-changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ github.sha }}
+                  base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
+
+            - name: Get Unique Project Directories
+              id: unique-dirs
+              uses: Now-Micro/actions/get-unique-project-directories@v1
+              with:
+                  paths: ${{ steps.get-changed-files.outputs.changed_files }}
+                  pattern: ${{ inputs['nuget-pattern-to-match'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  fallback-regex: ${{ inputs['nuget-pattern-to-match'] }}
+                  use-original-if-missing: false
+
+    validate-inputs:
+        runs-on: ubuntu-22.04
+        steps:
             - name: Validate inputs
               shell: bash
               env:
@@ -125,7 +122,6 @@ jobs:
                   valid_identifiers="alpha beta preview rc"
                   valid_increments="major minor patch none"
 
-                  base_ref="${{ inputs['base-ref'] || github.event.repository.default_branch }}"
                   identifier="${{ inputs['prerelease-identifier'] }}"
                   increment="${{ inputs['version-increment-type'] }}"
 
@@ -154,7 +150,12 @@ jobs:
                     exit 1
                   fi
 
-            - name: Run shared nuget publish workflow
+    nuget-publish-per-directory:
+        runs-on: ubuntu-22.04
+        needs: [ validate-inputs ]
+        if: ${{ inputs.directory != '' }}
+        steps:
+            - name: Run shared nuget publish workflow using provided directory
               uses: ./.github/actions/reusable-pre-release-workflow
               #   TODO: Uncomment this when done
               #   uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
@@ -162,6 +163,35 @@ jobs:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
                   base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  dotnet-version: ${{ inputs['dotnet-version'] }}
+                  directory: ${{ inputs['directory'] }}
+                  github-token: ${{ secrets['github-token'] }}
+                  nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
+                  nuget-pattern-to-match: ${{ inputs['nuget-pattern-to-match'] }}
+                  nuget-project-regex: ${{ inputs['nuget-project-regex'] }}
+                  nuget-urls: ${{ inputs['nuget-urls'] }}
+                  prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
+                  token-github-packages: ${{ secrets['token-github-packages'] }}
+                  version-increment-type: ${{ inputs['version-increment-type'] }}
+
+    nuget-publish-per-changes:
+        runs-on: ubuntu-22.04
+        needs: [ detect-changed-libraries, validate-inputs ]
+        if: needs.detect-changed-libraries.outputs.changed_dirs != '[]'
+        strategy:
+            fail-fast: false
+            matrix:
+                directory: ${{ fromJson(needs.detect-changed-libraries.outputs.changed_dirs) }}
+        steps:
+            - name: Run shared nuget publish workflow for each directory with changes
+              uses: ./.github/actions/reusable-pre-release-workflow
+              #   TODO: Uncomment this when done
+              #   uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
+              with:
+                  artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
+                  base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  directory: ${{ matrix.directory }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   github-token: ${{ secrets['github-token'] }}
                   nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
@@ -171,7 +201,7 @@ jobs:
                   prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
                   token-github-packages: ${{ secrets['token-github-packages'] }}
                   version-increment-type: ${{ inputs['version-increment-type'] }}
-    
+
     summary:
         runs-on: ubuntu-22.04
         needs: [ detect-changed-libraries, nuget-publish ]
