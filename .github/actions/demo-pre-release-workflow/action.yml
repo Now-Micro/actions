@@ -3,16 +3,44 @@ description: Demonstrates the reusable-pre-release-workflow composite action by 
 author: Trafera
 
 inputs:
+  base-ref:
+    description: "Base ref to compare changes against. Defaults to the repository default branch."
+    required: false
+    default: ""
+  ci-debug-mode:
+    description: "Enable debug mode for project discovery and publish steps."
+    required: false
+    default: "true"
+  delete-published-package:
+    description: "When true, deletes the published pre-release package version after the run."
+    required: false
+    default: "true"
+  directory:
+    description: "Directory to publish."
+    required: false
+    default: "src/demo/dotnet/src/Api"
+  dotnet-version:
+    description: "The .NET version(s) to install, comma-separated (e.g. '8.0.x,10.0.x')."
+    required: false
+    default: "8.0.x"
   github-token:
     description: "GitHub token with permissions to delete packages."
-    required: true
-  token-github-packages:
-    description: "PAT used to authenticate to GitHub Packages."
     required: true
   nuget-urls:
     description: "NuGet feed URL to publish to."
     required: false
     default: "https://nuget.pkg.github.com/Now-Micro/index.json"
+  prerelease-identifier:
+    description: "Pre-release identifier (alpha, beta, preview, rc)."
+    required: false
+    default: "alpha"
+  token-github-packages:
+    description: "PAT used to authenticate to GitHub Packages."
+    required: true
+  version-increment-type:
+    description: "Version increment type (major, minor, patch, or none)."
+    required: false
+    default: "patch"
 
 runs:
   using: composite
@@ -28,18 +56,18 @@ runs:
       uses: ./.github/actions/reusable-pre-release-workflow
       with:
         artifact-retention-days: "1"
-        base-ref: ${{ github.event.repository.default_branch }}
-        ci-debug-mode: "true"
-        directory: "src/demo/dotnet/src/Api"
-        dotnet-version: "8.0.x"
+        base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
+        ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+        directory: ${{ inputs['directory'] }}
+        dotnet-version: ${{ inputs['dotnet-version'] }}
         github-token: ${{ inputs['github-token'] }}
         nuget-urls: ${{ inputs['nuget-urls'] }}
-        prerelease-identifier: "alpha"
+        prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
         token-github-packages: ${{ inputs['token-github-packages'] }}
-        version-increment-type: "patch"
+        version-increment-type: ${{ inputs['version-increment-type'] }}
 
     - name: Delete published pre-release package version
-      if: always() && steps.pre-release.outputs.version-number != ''
+      if: always() && inputs['delete-published-package'] == 'true' && steps.pre-release.outputs.version-number != ''
       uses: actions/github-script@v8
       with:
         github-token: ${{ inputs['github-token'] }}
