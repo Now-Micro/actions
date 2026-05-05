@@ -51,7 +51,7 @@ on:
                 default: ".*\\.csproj$"
             nuget-urls:
                 description: "Nuget feed URLs to publish to, separated by commas."
-                required: false
+                required: true
                 type: string
                 default: ""
             prerelease-identifier:
@@ -89,16 +89,16 @@ jobs:
             uses: Now-Micro/actions/get-changed-files@v1
             with:
                 head-ref: ${{ github.sha }}
-                base-ref: ${{ github.event.repository.default_branch }}
+                base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
   
           - name: Get Unique Project Directories
             id: unique-dirs
             uses: Now-Micro/actions/get-unique-project-directories@v1
             with:
                 paths: ${{ steps.get-changed-files.outputs.changed_files }}
-                pattern: ${{ vars.NUGET_PATTERN_TO_MATCH }}
-                debug-mode: ${{ vars.CI_DEBUG_MODE }}
-                fallback-regex: ${{ vars.NUGET_PATTERN_TO_MATCH }}
+                pattern: ${{ inputs['nuget-pattern-to-match'] }}
+                debug-mode: ${{ inputs['ci-debug-mode'] }}
+                fallback-regex: ${{ inputs['nuget-pattern-to-match'] }}
                 use-original-if-missing: false
 
     nuget-publish:
@@ -117,13 +117,32 @@ jobs:
 
             - name: Validate inputs
               shell: bash
+              env:
+                  NUGET_URLS: ${{ inputs['nuget-urls'] }}
+                  GITHUB_TOKEN_INPUT: ${{ secrets['github-token'] }}
+                  TOKEN_GITHUB_PACKAGES: ${{ secrets['token-github-packages'] }}
               run: |
                   valid_identifiers="alpha beta preview rc"
                   valid_increments="major minor patch none"
 
-                  base_ref="${{ inputs['base-ref'] }}"
+                  base_ref="${{ inputs['base-ref'] || github.event.repository.default_branch }}"
                   identifier="${{ inputs['prerelease-identifier'] }}"
                   increment="${{ inputs['version-increment-type'] }}"
+
+                  if [[ -z "$NUGET_URLS" ]]; then
+                    echo "❌ Required input 'nuget-urls' is empty."
+                    exit 1
+                  fi
+
+                  if [[ -z "$GITHUB_TOKEN_INPUT" ]]; then
+                    echo "❌ Required secret 'github-token' is empty."
+                    exit 1
+                  fi
+
+                  if [[ -z "$TOKEN_GITHUB_PACKAGES" ]]; then
+                    echo "❌ Required secret 'token-github-packages' is empty."
+                    exit 1
+                  fi
 
                   if [[ ! " $valid_identifiers " =~ " $identifier " ]]; then
                     echo "❌ Invalid prerelease-identifier: '$identifier'. Must be one of: $valid_identifiers"
