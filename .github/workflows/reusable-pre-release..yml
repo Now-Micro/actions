@@ -105,11 +105,12 @@ on:
                 description: "Nuget feed URLs to publish to, separated by commas."
                 required: false
                 type: string
+                default: ""
             prerelease-identifier:
                 description: "Pre-release identifier (alpha, beta, preview, rc)"
                 required: false
                 type: string
-                default: "beta"
+                default: "alpha"
             version-increment-type:
                 description: "Version increment type (major, minor, patch, or none)"
                 required: false
@@ -164,13 +165,9 @@ jobs:
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] != '' &&
                       inputs['artifact-retention-days'] || '1' }}
-                    base-ref: ${{ inputs['base-ref'] }}
-                  ci-debug-mode: ${{ inputs['ci-debug-mode'] != '' && inputs['ci-debug-mode'] ||
-                      'false' }}
-                  cleanup-release: "false"
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  ignore-casing: ${{ inputs['ignore-casing'] != '' && inputs['ignore-casing'] ||
-                      'true' }}
+                  base-ref: ${{ inputs['base-ref'] }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  github-token: ${{ inputs['github-token'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
                   package: ${{ inputs.package }}
                   package-directory: ${{ inputs['package-directory'] != '' &&
