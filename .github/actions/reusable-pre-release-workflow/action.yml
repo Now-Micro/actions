@@ -1,0 +1,203 @@
+name: Pre-Release - Publish NuGet Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease_identifier:
+        description: "Pre-release identifier (alpha, beta, preview, rc)"
+        required: false
+        type: choice
+        default: "beta"
+        options:
+          - alpha
+          - beta
+          - preview
+          - rc
+      version-increment-type:
+        description: "Version increment type (major, minor, patch, or none)"
+        required: false
+        type: choice
+        default: "none"
+        options:
+          - major
+          - minor
+          - patch
+          - none
+env:
+  NUGET_PACKAGE_DIR: nupkgs
+
+jobs:
+  detect-changed-libraries:
+    runs-on: ubuntu-22.04
+    outputs:
+      changed_dirs: ${{ steps.unique-dirs.outputs.unique_project_directories }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get Changed Files between branch and main
+        id: get-changed-files
+        uses: Now-Micro/actions/get-changed-files@v1
+        with:
+          head-ref: ${{ github.sha }}
+          base-ref: ${{ github.event.repository.default_branch }}
+          
+      - name: Get Unique Project Directories
+        id: unique-dirs
+        uses: Now-Micro/actions/get-unique-project-directories@v1
+        with:
+          paths: ${{ steps.get-changed-files.outputs.changed_files }}
+          pattern: ${{ vars.NUGET_PATTERN_TO_MATCH }}
+          debug-mode: ${{ vars.CI_DEBUG_MODE }}
+          fallback-regex: ${{ vars.NUGET_PATTERN_TO_MATCH }}
+          use-original-if-missing: false
+
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    needs: [detect-changed-libraries]
+    if: needs.detect-changed-libraries.outputs.changed_dirs != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.detect-changed-libraries.outputs.changed_dirs) }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Derive top-level dir
+        id: lib
+        run: |
+          p="${{ matrix.directory }}"
+          p="${p//\\//}"           # normalize backslashes -> slashes
+          root="${p%%/*}"          # take text before first '/'
+          echo "project-found=${{ matrix.directory }}" >> $GITHUB_OUTPUT
+          echo "root: $root"
+          echo "root=$root" >> $GITHUB_OUTPUT
+
+      - name: Compute directory slug
+        id: slug
+        run: |
+          d="${{ matrix.directory }}"
+          d="${d//\\//}"         # normalize backslashes -> slashes
+          slug="${d//\//-}"       # replace '/' with '-'
+          # basic whitespace to dash as extra safety
+          slug="$(echo "$slug" | tr ' ' '-')"
+          echo "dir_slug=$slug" >> $GITHUB_OUTPUT
+
+      - name: Get Project File
+        id: extract-project
+        uses: Now-Micro/actions/get-project-and-solution-files-from-directory@v1
+        with:
+          directory: ${{ matrix.directory }}
+          debug-mode: ${{ vars.CI_DEBUG_MODE }}
+          find-project: true
+          find-solution: false
+          project-regex: ${{ vars.NUGET_PROJECT_REGEX }}
+
+      - name: Calculate pre-release version
+        id: calc-version
+        uses: Now-Micro/actions/generate-version@v1
+        with:
+          infix-value: ${{ github.event.inputs.prerelease_identifier }}
+          release-keyword: ${{ steps.lib.outputs.root }}
+          project-file: ${{ steps.extract-project.outputs.project-found }}
+          increment-type: ${{ github.event.inputs.version-increment-type }}
+          
+      - name: Nuget Publish
+        uses: Now-Micro/actions/nuget/publish@v1
+        with:
+          additional-build-args: --property WarningLevel=0 /p:VersionSuffix=${{ steps.calc-version.outputs.version-number }}
+          additional-pack-args: /p:VersionSuffix=${{ steps.calc-version.outputs.version-number }} /p:PackageVersion=${{ steps.calc-version.outputs.version-number }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
+          dotnet-version: ${{ vars.PRE_RELEASE_DOTNET_VERSION }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          nuget-names: "github"
+          nuget-passwords: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          nuget-usernames: ${{ github.actor }}
+          project-file: ${{ steps.extract-project.outputs.project-found }}
+          package-directory: ${{ matrix.directory }}/${{ env.NUGET_PACKAGE_DIR }}
+
+      - name: Upload pre-release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.extract-project.outputs.project_name }}-${{ steps.calc-version.outputs.version-number }}-${{ steps.slug.outputs.dir_slug }}
+          path: |
+            ${{ matrix.directory }}/${{ env.NUGET_PACKAGE_DIR }}/*.nupkg
+            ${{ matrix.directory }}/${{ env.NUGET_PACKAGE_DIR }}/*.snupkg
+            ${{ matrix.directory }}/${{ env.NUGET_PACKAGE_DIR }}/*.symbols.nupkg
+          retention-days: ${{ vars.NUGET_ARTIFACT_RETENTION_DAYS }}
+
+  summary:
+    runs-on: ubuntu-22.04
+    needs: [detect-changed-libraries, build-and-publish]
+    if: ${{ always() }}
+    steps:
+      - name: Download all artifacts
+        if: needs.detect-changed-libraries.outputs.changed_dirs != '[]'
+        uses: actions/download-artifact@v8
+        with:
+          path: prerelease-artifacts
+
+      - name: Generate summary
+        run: |
+          echo "# Pre-Release Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-release Identifier:** \`${{ github.event.inputs.prerelease_identifier }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.detect-changed-libraries.outputs.changed_dirs }}" = "[]" ]; then
+            echo "ℹ️ **No libraries with changes detected between branch and main**" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          echo "## 📦 Pre-release Packages Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -d "prerelease-artifacts" ]; then
+            found_pkg=0
+            while read pkg; do
+              if [ -f "$pkg" ]; then
+                file_name="$(basename "$pkg")"
+                base_no_ext="${file_name%.nupkg}"
+                # Extract SemVer (with optional pre-release) from end of filename
+                version="$(echo "$base_no_ext" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9\.-]+)?$' || true)"
+                if [ -n "$version" ]; then
+                  package_id="${base_no_ext%.$version}"
+                else
+                  # Fallback: best-effort split at last dot
+                  package_id="${base_no_ext%.*}"
+                  version="${base_no_ext##*.}"
+                fi
+
+                # List with link to GitHub Packages page
+                echo "- [\`$file_name\`](https://github.com/${{ github.repository_owner }}/CodeBits/pkgs/nuget/$package_id)" >> $GITHUB_STEP_SUMMARY
+                # Add install command for this specific package/version
+                echo '  ```bash' >> $GITHUB_STEP_SUMMARY
+                echo "  dotnet add package $package_id --version $version --source github" >> $GITHUB_STEP_SUMMARY
+                echo '  ```' >> $GITHUB_STEP_SUMMARY
+                echo '' >> $GITHUB_STEP_SUMMARY
+                found_pkg=1
+              fi
+            done < <(find prerelease-artifacts -name "*.nupkg")
+            if [ "$found_pkg" -eq 0 ]; then
+              echo "No packages were generated." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "No packages were generated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📥 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Configure your NuGet source:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Then install packages using the commands listed above for each package." >> $GITHUB_STEP_SUMMARY
