@@ -5,6 +5,61 @@ permissions:
     packages: write
 
 on:
+    workflow_dispatch:
+        inputs:
+            artifact-retention-days:
+                description: "Artifact retention period in days."
+                required: false
+                type: string
+                default: "1"
+            base-ref:
+                description: "Base ref to compare changes against for determining which packages
+                    to publish."
+                required: true
+                type: string
+            ci-debug-mode:
+                description: "Debug mode for project discovery and publish steps."
+                required: false
+                type: string
+                default: "false"
+            dotnet-version:
+                description: "The versions of .NET to install before running this workflow.
+                    Should be a comma-separated list of versions (e.g. '8.0.x,10.0.x')."
+                required: false
+                type: string
+                default: "8.0.x"
+            nuget-package-dir:
+                description: "Directory to store generated package artifacts."
+                required: false
+                type: string
+                default: "nupkgs"
+            nuget-pattern-to-match:
+                description: "Glob pattern to match for determining which changed files should
+                    trigger a package publish. Should include a capture group for the project
+                    directory (e.g. '^(.*\/src)\/.*\\.(cs|csproj|sln)$')."
+                required: false
+                type: string
+                default: "^(.*\/src)\/.*\\.(cs|csproj|sln)$"
+            nuget-project-regex:
+                description: "Regex pattern to extract project name from the .csproj file path. Should
+                    include a capture group for the project name (e.g. '.*\\.csproj$')."
+                required: false
+                type: string
+                default: ".*\\.csproj$"
+            nuget-urls:
+                description: "Nuget feed URLs to publish to, separated by commas."
+                required: false
+                type: string
+            prerelease-identifier:
+                description: "Pre-release identifier (alpha, beta, preview, rc)"
+                required: false
+                type: string
+                default: "beta"
+            version-increment-type:
+                description: "Version increment type (major, minor, patch, or none)"
+                required: false
+                type: string
+                default: "none"
     workflow_call:
         inputs:
             artifact-retention-days:
