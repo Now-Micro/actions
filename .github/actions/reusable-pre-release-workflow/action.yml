@@ -57,6 +57,14 @@ inputs:
     required: false
     default: "none"
 
+outputs:
+  version-number:
+    description: "The full pre-release version number that was published (e.g. 1.2.3-alpha-202505051430)."
+    value: ${{ steps.calc-version.outputs.version_number }}
+  package-name:
+    description: "The NuGet package name that was published."
+    value: ${{ steps.extract-project.outputs.project_name }}
+
 runs:
   using: "composite"
   steps:
