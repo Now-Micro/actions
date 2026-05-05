@@ -79,7 +79,6 @@ jobs:
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
                   delete-published-package: ${{ inputs['delete-published-package'] }}
                   directory: ${{ inputs['directory'] }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
                   prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
