@@ -22,7 +22,7 @@ on:
                 required: false
                 type: string
             nuget-urls:
-                description: "Nuget feed URLs to publish to, separated by commas."
+                description: "Nuget feed URLs needed to build the projects. Should be a comma-separated list of URLs."
                 required: false
                 type: string
             package:

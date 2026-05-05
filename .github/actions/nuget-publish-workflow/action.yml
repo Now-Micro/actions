@@ -27,7 +27,7 @@ inputs:
     required: false
     default: "true"
   nuget-urls:
-    description: "Nuget feed URLs to publish to, separated by commas. Required if token-github-packages is provided."
+    description: "Nuget feed URLs needed to build the projects. Should be a comma-separated list of URLs."
     required: false
     default: ""
   package:
