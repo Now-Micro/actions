@@ -27,7 +27,7 @@ on:
                     Should be a comma-separated list of versions (e.g. '8.0.x,10.0.x')."
                 required: false
                 type: string
-                default: "8.0.x"
+                default: "6.0.x,8.0.x,10.0.x"
             nuget-package-dir:
                 description: "Directory to store generated package artifacts."
                 required: false
