@@ -14,7 +14,7 @@ inputs:
   delete-published-package:
     description: "When true, deletes the published pre-release package version after the run."
     required: false
-    default: "true"
+    default: "false"
   directory:
     description: "Directory to publish."
     required: false
