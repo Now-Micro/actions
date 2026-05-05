@@ -257,7 +257,7 @@ jobs:
                           version="${base_no_ext##*.}"
                       fi  
                       # List with link to GitHub Packages page
-                      echo "- [\`$file_name\`](https://github.com/${{ github.repository_owner }}/CodeBits/pkgs/nuget/$package_id)" >> $GITHUB_STEP_SUMMARY
+                      echo "- [\`$file_name\`](https://github.com/${{ github.repository }}/pkgs/nuget/$package_id)" >> $GITHUB_STEP_SUMMARY
                       # Add install command for this specific package/version
                       echo '  ```bash' >> $GITHUB_STEP_SUMMARY
                       echo "  dotnet add package $package_id --version $version --source github" >> $GITHUB_STEP_SUMMARY
