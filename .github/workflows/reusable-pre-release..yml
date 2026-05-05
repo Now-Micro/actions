@@ -5,64 +5,6 @@ permissions:
     packages: write
 
 on:
-    workflow_dispatch:
-        inputs:
-            artifact-retention-days:
-                description: "Artifact retention period in days."
-                required: false
-                type: string
-                default: "1"
-            base-ref:
-                description: "Base ref to compare changes against for determining which packages
-                    to publish."
-                required: true
-                type: string
-            ci-debug-mode:
-                description: "Debug mode for project discovery and publish steps."
-                required: false
-                type: string
-                default: "false"
-            dotnet-version:
-                description: "The versions of .NET to install before running this workflow.
-                    Should be a comma-separated list of versions (e.g.
-                    '8.0.x,10.0.x')."
-                required: false
-                type: string
-                default: "6.0.x,8.0.x,10.0.x"
-            nuget-package-dir:
-                description: "Directory to store generated package artifacts."
-                required: false
-                type: string
-                default: "nupkgs"
-            nuget-pattern-to-match:
-                description: "Glob pattern to match for determining which changed files should
-                    trigger a package publish. Should include a capture group
-                    for the project directory (e.g.
-                    '^(.*/src)/.*\\.(cs|csproj|sln)$')."
-                required: false
-                type: string
-                default: "^(.*/src)/.*\\.(cs|csproj|sln)$"
-            nuget-project-regex:
-                description: "Regex pattern to extract project name from the .csproj file path.
-                    Should include a capture group for the project name (e.g.
-                    '.*\\.csproj$')."
-                required: false
-                type: string
-                default: ".*\\.csproj$"
-            nuget-urls:
-                description: "Nuget feed URLs to publish to, separated by commas."
-                required: false
-                type: string
-            prerelease-identifier:
-                description: "Pre-release identifier (alpha, beta, preview, rc)"
-                required: false
-                type: string
-                default: "beta"
-            version-increment-type:
-                description: "Version increment type (major, minor, patch, or none)"
-                required: false
-                type: string
-                default: "none"
     workflow_call:
         inputs:
             artifact-retention-days:
@@ -72,8 +14,8 @@ on:
                 default: "1"
             base-ref:
                 description: "Base ref to compare changes against for determining which packages
-                    to publish."
-                required: true
+                    to publish.  If empty, the workflow will use the default branch of the repository as the base ref."
+                required: false
                 type: string
             ci-debug-mode:
                 description: "Debug mode for project discovery and publish steps."
@@ -183,11 +125,6 @@ jobs:
                   identifier="${{ inputs['prerelease-identifier'] }}"
                   increment="${{ inputs['version-increment-type'] }}"
 
-                  if [[ -z "$base_ref" ]]; then
-                    echo "❌ base-ref is required. Pass the ref to compare changed files against (e.g. \${{ github.event.repository.default_branch }} is the safest approach)."
-                    exit 1
-                  fi
-
                   if [[ ! " $valid_identifiers " =~ " $identifier " ]]; then
                     echo "❌ Invalid prerelease-identifier: '$identifier'. Must be one of: $valid_identifiers"
                     exit 1
@@ -204,7 +141,7 @@ jobs:
               #   uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
-                  base-ref: ${{ inputs['base-ref'] }}
+                  base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   github-token: ${{ secrets['github-token'] }}
@@ -233,6 +170,7 @@ jobs:
                   echo "" >> $GITHUB_STEP_SUMMARY
                   echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
                   echo "**Pre-release Identifier:** \`${{ inputs['prerelease-identifier'] || github.event.inputs.prerelease-identifier }}\`" >> $GITHUB_STEP_SUMMARY
+                  echo "**Base Ref:** \`${{ inputs['base-ref'] || github.event.repository.default_branch }}\`" >> $GITHUB_STEP_SUMMARY
                   echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
                   echo "" >> $GITHUB_STEP_SUMMARY  
                   if [ "${{ needs.detect-changed-libraries.outputs.changed_dirs }}" = "[]" ]; then
