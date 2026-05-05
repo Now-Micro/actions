@@ -157,9 +157,7 @@ jobs:
         if: ${{ inputs.directory != '' }}
         steps:
             - name: Run shared nuget publish workflow using provided directory
-              uses: ./.github/actions/reusable-pre-release-workflow
-              #   TODO: Uncomment this when done
-              #   uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
+              uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
                   base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
@@ -176,7 +174,7 @@ jobs:
                   version-increment-type: ${{ inputs['version-increment-type'] }}
 
             - name: Generate pre-release summary
-              uses: ./.github/actions/github/pre-release-summary
+              uses: Now-Micro/actions/github/summary/pre-release@v1
               with:
                   base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
                   changed-dirs: ""
@@ -193,9 +191,7 @@ jobs:
                 directory: ${{ fromJson(needs.detect-changed-libraries.outputs.changed_dirs) }}
         steps:
             - name: Run shared nuget publish workflow for each directory with changes
-              uses: ./github/summary/pre-release
-              #   TODO: Uncomment this when done
-              #   uses: Now-Micro/actions/github/summary/pre-release@v1
+              uses: Now-Micro/actions/.github/actions/reusable-pre-release-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
                   base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
@@ -212,9 +208,7 @@ jobs:
                   version-increment-type: ${{ inputs['version-increment-type'] }}
 
             - name: Generate pre-release summary
-            #   TODO: Uncomment this when done
-            #   uses: Now-Micro/actions/github/summary/pre-release@v1
-              uses: ./github/summary/pre-release
+              uses: Now-Micro/actions/github/summary/pre-release@v1
               with:
                   base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
                   changed-dirs: ${{ needs.detect-changed-libraries.outputs.changed_dirs }}
