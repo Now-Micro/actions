@@ -72,10 +72,6 @@ on:
                 type: string
                 default: "none"
         secrets:
-            github-token:
-                description: "GitHub token with permissions to read from the repository and
-                    publish packages."
-                required: true
             token-github-packages:
                 description: "PAT used to authenticate to GitHub Packages."
                 required: true
@@ -88,7 +84,6 @@ jobs:
               shell: bash
               env:
                   NUGET_URLS: ${{ inputs['nuget-urls'] }}
-                  GITHUB_TOKEN_INPUT: ${{ secrets['github-token'] }}
                   TOKEN_GITHUB_PACKAGES: ${{ secrets['token-github-packages'] }}
               run: |
                   valid_identifiers="alpha beta preview rc"
@@ -99,11 +94,6 @@ jobs:
 
                   if [[ -z "$NUGET_URLS" ]]; then
                     echo "❌ Required input 'nuget-urls' is empty."
-                    exit 1
-                  fi
-
-                  if [[ -z "$GITHUB_TOKEN_INPUT" ]]; then
-                    echo "❌ Required secret 'github-token' is empty."
                     exit 1
                   fi
 
@@ -164,7 +154,6 @@ jobs:
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   directory: ${{ inputs['directory'] }}
-                  github-token: ${{ secrets['github-token'] }}
                   nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
                   nuget-pattern-to-match: ${{ inputs['nuget-pattern-to-match'] }}
                   nuget-project-regex: ${{ inputs['nuget-project-regex'] }}
@@ -198,7 +187,6 @@ jobs:
                   ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
                   directory: ${{ matrix.directory }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
-                  github-token: ${{ secrets['github-token'] }}
                   nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
                   nuget-pattern-to-match: ${{ inputs['nuget-pattern-to-match'] }}
                   nuget-project-regex: ${{ inputs['nuget-project-regex'] }}
