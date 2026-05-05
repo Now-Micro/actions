@@ -1,0 +1,87 @@
+name: Demo - Pre-Release NuGet Package
+
+on:
+    workflow_dispatch:
+        inputs:
+            base-ref:
+                description: "Base ref to compare changes against. This can be something like
+                    'main' or 'origin/main'. If left empty, the workflow will
+                    default to using the repository's default branch."
+                required: false
+                type: string
+                default: ""
+            ci-debug-mode:
+                description: "Enable debug mode for project discovery and publish steps."
+                required: false
+                type: string
+                default: "true"
+            delete-published-package:
+                description: "When true, deletes the published pre-release package version after
+                    the run."
+                required: false
+                type: string
+                default: "false"
+            directory:
+                description: "Directory to publish. Leave empty to auto-detect from changed
+                    files."
+                required: false
+                type: string
+                default: "src/demo/dotnet/src/Api"
+            dotnet-version:
+                description: "The .NET version(s) to install, comma-separated (e.g.
+                    '8.0.x,10.0.x')."
+                required: false
+                type: string
+                default: "8.0.x"
+            nuget-urls:
+                description: "NuGet feed URLs to publish to, separated by commas."
+                required: false
+                type: string
+                default: "https://nuget.pkg.github.com/actions/index.json"
+            prerelease-identifier:
+                description: "Pre-release identifier."
+                required: false
+                type: choice
+                default: "alpha"
+                options:
+                    - alpha
+                    - beta
+                    - preview
+                    - rc
+            version-increment-type:
+                description: "Version increment type."
+                required: false
+                type: choice
+                default: "patch"
+                options:
+                    - major
+                    - minor
+                    - patch
+                    - none
+
+permissions:
+    contents: write
+    packages: write
+
+jobs:
+    demo-pre-release:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run demo pre-release workflow composite
+              uses: ./.github/actions/demo-pre-release-workflow
+              with:
+                  base-ref: ${{ inputs['base-ref'] }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  delete-published-package: ${{ inputs['delete-published-package'] }}
+                  directory: ${{ inputs['directory'] }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  dotnet-version: ${{ inputs['dotnet-version'] }}
+                  nuget-urls: ${{ inputs['nuget-urls'] }}
+                  prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
+                  token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+                  version-increment-type: ${{ inputs['version-increment-type'] }}

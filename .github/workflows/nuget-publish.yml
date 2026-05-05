@@ -1,4 +1,4 @@
-name: Nuget Package
+name: NuGet Package
 
 permissions:
     contents: write

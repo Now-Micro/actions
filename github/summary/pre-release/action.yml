@@ -1,0 +1,55 @@
+name: "GitHub Summary - Pre-Release"
+description: "Generates a GitHub step summary for a pre-release NuGet publish
+  run. Works for both the directory-specified and change-detected publish
+  modes."
+author: "Trafera"
+
+inputs:
+  artifacts-dir:
+    description: "Local directory to scan for .nupkg artifacts."
+    required: false
+    default: "prerelease-artifacts"
+  base-ref:
+    description: "Base ref that was compared against when detecting changes."
+    required: true
+  changed-dirs:
+    description: "JSON array string of changed directories from
+      detect-changed-libraries. Pass an empty string when a specific directory
+      was provided via the directory input (directory mode)."
+    required: false
+    default: ""
+  debug-mode:
+    description: "Enable debug logging."
+    required: false
+    default: "false"
+  prerelease-identifier:
+    description: "Pre-release identifier used (e.g. alpha, beta, preview, rc)."
+    required: true
+  skip-artifact-download:
+    description: "When true, skips downloading run artifacts (useful when artifacts
+      are already present locally)."
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Download pre-release artifacts
+      if: ${{ inputs.skip-artifact-download != 'true' }}
+      uses: actions/download-artifact@v8
+      continue-on-error: true
+      with:
+        path: ${{ inputs.artifacts-dir }}
+
+    - name: Generate pre-release summary
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/pre-release-summary.js"
+      env:
+        INPUT_PRERELEASE_IDENTIFIER: ${{ inputs.prerelease-identifier }}
+        INPUT_BASE_REF: ${{ inputs.base-ref }}
+        INPUT_CHANGED_DIRS: ${{ inputs.changed-dirs }}
+        INPUT_ARTIFACTS_DIR: ${{ inputs.artifacts-dir }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}

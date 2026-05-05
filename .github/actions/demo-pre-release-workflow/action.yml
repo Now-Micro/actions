@@ -1,0 +1,110 @@
+name: Demo - Pre-Release Workflow
+description: Demonstrates the reusable-pre-release-workflow composite action by publishing a pre-release package for the Api demo project, then cleans up the published package version.
+author: Trafera
+
+inputs:
+  base-ref:
+    description: "Base ref to compare changes against. Defaults to the repository default branch."
+    required: false
+    default: ""
+  ci-debug-mode:
+    description: "Enable debug mode for project discovery and publish steps."
+    required: false
+    default: "true"
+  delete-published-package:
+    description: "When true, deletes the published pre-release package version after the run."
+    required: false
+    default: "false"
+  directory:
+    description: "Directory to publish."
+    required: false
+    default: "src/demo/dotnet/src/Api"
+  dotnet-version:
+    description: "The .NET version(s) to install, comma-separated (e.g. '8.0.x,10.0.x')."
+    required: false
+    default: "8.0.x"
+  github-token:
+    description: "GitHub token with permissions to delete packages."
+    required: true
+  nuget-urls:
+    description: "NuGet feed URL to publish to."
+    required: false
+    default: "https://nuget.pkg.github.com/Now-Micro/index.json"
+  prerelease-identifier:
+    description: "Pre-release identifier (alpha, beta, preview, rc)."
+    required: false
+    default: "alpha"
+  token-github-packages:
+    description: "PAT used to authenticate to GitHub Packages."
+    required: true
+  version-increment-type:
+    description: "Version increment type (major, minor, patch, or none)."
+    required: false
+    default: "patch"
+
+runs:
+  using: composite
+  steps:
+    - name: Title - Pre-Release Workflow Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Pre-Release Workflow Demo
+        path: ./.github/actions/demo-pre-release-workflow
+
+    - name: Run pre-release publish for Api demo package
+      id: pre-release
+      uses: ./.github/actions/reusable-pre-release-workflow
+      with:
+        artifact-retention-days: "1"
+        base-ref: ${{ inputs['base-ref'] || github.event.repository.default_branch }}
+        ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+        directory: ${{ inputs['directory'] }}
+        dotnet-version: ${{ inputs['dotnet-version'] }}
+        github-token: ${{ inputs['github-token'] }}
+        nuget-urls: ${{ inputs['nuget-urls'] }}
+        prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+        version-increment-type: ${{ inputs['version-increment-type'] }}
+
+    - name: Delete published pre-release package version
+      if: always() && inputs['delete-published-package'] == 'true' && steps.pre-release.outputs.version-number != ''
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['github-token'] }}
+        script: |
+          const packageName = '${{ steps.pre-release.outputs.package-name }}';
+          const versionNumber = '${{ steps.pre-release.outputs.version-number }}';
+          const org = context.repo.owner;
+
+          core.info(`🔍 Looking for package '${packageName}' version '${versionNumber}' in org '${org}'`);
+
+          let versions;
+          try {
+            const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+              org,
+              package_type: 'nuget',
+              package_name: packageName,
+            });
+            versions = resp.data;
+          } catch (err) {
+            core.warning(`Could not list package versions: ${err.message}`);
+            return;
+          }
+
+          const match = versions.find(v => v.name === versionNumber);
+          if (!match) {
+            core.info(`ℹ️ Version '${versionNumber}' not found in package '${packageName}' — nothing to delete.`);
+            return;
+          }
+
+          try {
+            await github.rest.packages.deletePackageVersionForOrg({
+              org,
+              package_type: 'nuget',
+              package_name: packageName,
+              package_version_id: match.id,
+            });
+            core.info(`✅ Deleted NuGet package version: ${packageName}@${versionNumber}`);
+          } catch (err) {
+            core.warning(`Failed to delete package version: ${err.message}`);
+          }
