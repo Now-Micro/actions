@@ -57,10 +57,10 @@ inputs:
 outputs:
   version-number:
     description: "The full pre-release version number that was published (e.g. 1.2.3-alpha-202505051430)."
-    value: ${{ steps.calc-version.outputs.version_number }}
+    value: ${{ steps.calc-version.outputs.version-number }}
   package-name:
     description: "The NuGet package name that was published."
-    value: ${{ steps.extract-project.outputs.project_name }}
+    value: ${{ steps.extract-project.outputs.project-name }}
 
 runs:
   using: "composite"
@@ -132,7 +132,7 @@ runs:
     - name: Upload pre-release artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: ${{ steps.extract-project.outputs.project_name }}-${{
+        name: ${{ steps.extract-project.outputs.project-name }}-${{
           steps.calc-version.outputs.version-number }}-${{
           steps.slug.outputs.dir_slug }}
         path: |
