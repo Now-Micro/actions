@@ -2,9 +2,9 @@
 
 **Acceptance Criteria:**
 
-- [ ] [the checks workflow can be implemented in any GitHub workflow]
-- [ ] [there is a demo workflow in this repository that runs as part of the ]
-- [ ] [there is an easy-to-understand README.md around the resuable workflow]
+- [ X ] [the checks workflow can be implemented in any GitHub workflow]
+- [ X ] [there is a demo workflow in this repository that runs as part of the ]
+- [ X ] [there is an easy-to-understand README.md around the resuable workflow]
 
 ## Non-Functional Requirements
 

@@ -126,7 +126,7 @@ on:
             token-github-packages:
                 description: "PAT with read:packages permission for restoring NuGet packages
                     from GitHub Packages."
-                required: true
+                required: false
 
 jobs:
     lint:
