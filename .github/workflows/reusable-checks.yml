@@ -30,14 +30,15 @@ on:
                 type: string
                 default: "false"
             directory:
-                description: "Directory to run the tests in.  If this is given, only this
+                description: "Directory to run the tests in. If this is given, only this
                     directory will be checked for changes and used for the
-                    respective checks.  If you want to check all changed
+                    respective checks. If you want to check all changed
                     directories, leave this empty and use the respective pattern
                     inputs to specify which files should trigger checks and how
                     to extract the relevant directories."
                 required: false
                 type: string
+                default: ""
             head-ref:
                 description: "The head commit SHA to compare against the base. Defaults to
                     github.sha."
@@ -47,7 +48,7 @@ on:
             # Coding standards
             coding-standards-path-pattern:
                 description: "Regex pattern (with capture group) for identifying changed
-                    directories to run coding standards against.  Default is
+                    directories to run coding standards against. Default is
                     '^([^/.]+)/'."
                 required: false
                 type: string
@@ -58,7 +59,7 @@ on:
                 required: false
                 type: string
                 default: ""
-            # Testing – change detection
+            # Testing - change detection
             optimize-base-ref:
                 description: "When true, compares against the SHA of the last successful run on
                     this branch instead of the default branch."
@@ -73,7 +74,7 @@ on:
                 default: "^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
             transformer:
                 description: "sed-style transformer for converting source directories to test
-                    directories.  This is only relevant when "
+                    directories."
                 required: false
                 type: string
                 default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
@@ -83,7 +84,7 @@ on:
                 required: false
                 type: string
                 default: "false"
-            # Testing – run options
+            # Testing - run options
             fail-fast:
                 description: "Cancel remaining matrix jobs when any test job fails."
                 required: false
@@ -142,23 +143,45 @@ jobs:
 
     coding-standards-setup:
         runs-on: ubuntu-22.04
-        if: ${{ inputs['enable-coding-standards'] == 'true' }}
         outputs:
-            directories_to_check: ${{ steps.unique-dirs.outputs.unique_root_directories }}
+            directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
         steps:
+            - name: Determine coding standards mode
+              id: mode
+              shell: bash
+              env:
+                  ENABLE_CODING_STANDARDS: ${{ inputs['enable-coding-standards'] }}
+                  DIRECTORY: ${{ inputs.directory }}
+              run: |
+                  if [ "$ENABLE_CODING_STANDARDS" != 'true' ]; then
+                    echo "mode=disabled" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
             - name: Check out code
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
             - name: Get Changed Files
-              uses: Now-Micro/actions/get-changed-files@v1
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               id: changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
               with:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ github.event.repository.default_branch }}
 
             - name: Get Unique Root Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               id: unique-dirs
               uses: Now-Micro/actions/get-unique-root-directories@v1
               with:
@@ -166,10 +189,35 @@ jobs:
                   pattern: ${{ inputs['coding-standards-path-pattern'] }}
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
 
+            - name: Resolve coding standards directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_root_directories || '[]'
+                      }}
+              run: |
+                  case "$MODE" in
+                    disabled)
+                      echo "directories_to_check=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                    directory)
+                      echo "directories_to_check=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_check=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_check=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
+
     code-standards:
         runs-on: ubuntu-22.04
         needs: coding-standards-setup
-        if: needs.coding-standards-setup.outputs.directories_to_check != '[]'
+        if: ${{ inputs['enable-coding-standards'] == 'true' &&
+            needs.coding-standards-setup.outputs.directories_to_check != '[]' }}
         strategy:
             fail-fast: false
             matrix:
@@ -195,19 +243,39 @@ jobs:
 
     test-setup:
         runs-on: ubuntu-22.04
-        if: ${{ inputs['enable-testing'] == 'true' }}
         outputs:
-            directories_to_test: ${{ steps.unique-dirs.outputs.unique_project_directories }}
+            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
+            - name: Determine test mode
+              id: mode
+              shell: bash
+              env:
+                  ENABLE_TESTING: ${{ inputs['enable-testing'] }}
+                  DIRECTORY: ${{ inputs.directory }}
+              run: |
+                  if [ "$ENABLE_TESTING" != 'true' ]; then
+                    echo "mode=disabled" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
             - name: Check out code
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
             - name: Find Last Successful Checks Run on Branch
               id: last-success
-              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
-                  }}
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['optimize-base-ref'] ==
+                  'true' && inputs['workflow-name'] != '' }}
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
                   branch: ${{ github.head_ref }}
@@ -220,14 +288,16 @@ jobs:
                   workflow-name: ${{ inputs['workflow-name'] }}
 
             - name: Get Changed Files
-              uses: Now-Micro/actions/get-changed-files@v1
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               id: changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
               with:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ steps.last-success.outputs.last_success_sha ||
                       github.event.repository.default_branch }}
 
             - name: Get Unique Project Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
               id: unique-dirs
               uses: Now-Micro/actions/get-unique-project-directories@v1
               with:
@@ -238,10 +308,35 @@ jobs:
                   transformer: ${{ inputs.transformer }}
                   use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
 
+            - name: Resolve test directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_project_directories ||
+                      '[]' }}
+              run: |
+                  case "$MODE" in
+                    disabled)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                    directory)
+                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
+
     test:
         runs-on: ubuntu-22.04
         needs: test-setup
-        if: needs.test-setup.outputs.directories_to_test != '[]'
+        if: ${{ inputs['enable-testing'] == 'true' &&
+            needs.test-setup.outputs.directories_to_test != '[]' }}
         strategy:
             fail-fast: ${{ inputs['fail-fast'] == 'true' }}
             matrix:
@@ -273,7 +368,7 @@ jobs:
               id: artifact-name
               shell: bash
               run: |
-                  safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\\/:*?"<>|]#-#g')
+                  safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\/:*?"<>|]#-#g')
                   echo "value=Test Results - ${safe_dir}" >> "$GITHUB_OUTPUT"
 
             - name: Upload Test Results
