@@ -1,4 +1,4 @@
-name: Pre-Release NuGet Package
+name: Reusable - Pre-Release NuGet Package
 
 permissions:
     contents: write

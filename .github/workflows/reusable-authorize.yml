@@ -1,4 +1,4 @@
-name: Authorize Workflow
+name: Reusable - Authorize Workflow
 
 permissions:
     contents: read

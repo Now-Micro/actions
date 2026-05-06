@@ -1,4 +1,4 @@
-name: NuGet Package
+name: Reusable - NuGet Package
 
 permissions:
     contents: write
