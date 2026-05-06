@@ -1,38 +1,44 @@
-name: 'Coding Standards'
-description: 'Ensure coding standards are met using analyzers'
-author: 'Trafera'
+name: "Coding Standards"
+description: "Ensure coding standards are met using analyzers"
+author: "Trafera"
 
 inputs:
   code-analyzers-name:
-    description: 'Name of the code analyzers project.  DO NOT CHANGE THIS UNLESS YOU KNOW WHAT YOU ARE DOING.  IT MUST MATCH THE NAME OF THE FOLDER CONTAINING THE .CSPROJ FILE.'
+    description: "Name of the code analyzers project.  DO NOT CHANGE THIS UNLESS YOU
+      KNOW WHAT YOU ARE DOING.  IT MUST MATCH THE NAME OF THE FOLDER CONTAINING
+      THE .CSPROJ FILE."
     required: false
-    default: 'CodingStandards.Analyzers'
+    default: "CodingStandards.Analyzers"
   debug-mode:
-    description: 'Enable debug mode for additional logging.'
+    description: "Enable debug mode for additional logging."
     required: false
-    default: 'false'
+    default: "false"
   directory:
-    description: 'Directory to run coding standards checks in.  This should be the root directory of your .NET solution.'
+    description: "Directory to run coding standards checks in.  This should be the
+      root directory of your .NET solution."
     required: true
-  nuget-names: 
-    description: 'Names of the NuGet source (comma-separated)'
+  nuget-names:
+    description: "Names of the NuGet source (comma-separated)"
     required: false
   nuget-passwords:
-    description: 'Personal Access Tokens for authentication (comma-separated)'
+    description: "Personal Access Tokens for authentication (comma-separated)"
     required: false
   nuget-urls:
-    description: 'URLs of the NuGet feed (comma-separated)'
+    description: "URLs of the NuGet feed (comma-separated)"
     required: false
   nuget-usernames:
-    description: 'Usernames for source authentication (comma-separated)'
+    description: "Usernames for source authentication (comma-separated)"
     required: false
   roslyn-version:
-    description: 'Optional override for Microsoft.CodeAnalysis.CSharp package version used by the analyzers project . If empty, the bundled version is used (see ./analyzers/CodingStandards.Analyzers/CodingStandards.Analyzers.csproj).'
+    description: "Optional override for Microsoft.CodeAnalysis.CSharp package
+      version used by the analyzers project . If empty, the bundled version is
+      used (see
+      ./analyzers/CodingStandards.Analyzers/CodingStandards.Analyzers.csproj)."
     required: false
-    default: ''
+    default: ""
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Setup Node.js
       if: inputs.node-project-path != ''
@@ -47,10 +53,10 @@ runs:
       with:
         directory: ${{ inputs.directory }}
         debug-mode: ${{ inputs.debug-mode }}
-        find-project: 'true'
-        max-depth: '3'
+        find-project: "true"
+        max-depth: "3"
 
-    - name: Copy Project File 
+    - name: Copy Project File
       id: copy-project-file
       shell: bash
       run: |
@@ -63,16 +69,17 @@ runs:
       id: get-solution-root-directory
       uses: Now-Micro/actions/get-unique-root-directories@v1
       with:
-        pattern: '^(.*)\/.+\.sln$'
+        pattern: "^(.*)\\/.+\\.sln$"
         paths: ${{ steps.get-project-and-solution-files.outputs.solution-found }}
         debug-mode: ${{ inputs.debug-mode }}
-        output-is-json: 'false'
+        output-is-json: "false"
 
     - name: Copy Relevant Files
       shell: bash
       run: node "$GITHUB_ACTION_PATH/copy-relevant-files.js"
       env:
-        INPUT_UNIQUE_ROOT_DIRECTORIES: ${{ steps.get-solution-root-directory.outputs.unique_root_directories }}
+        INPUT_UNIQUE_ROOT_DIRECTORIES: ${{
+          steps.get-solution-root-directory.outputs.unique_root_directories }}
         INPUT_DIRECTORY: ${{ inputs.directory }}
         INPUT_CODE_ANALYZERS_NAME: ${{ inputs.code-analyzers-name }}
         INPUT_SOURCE_DIR: ./dotnet/coding-standards
@@ -82,7 +89,7 @@ runs:
       id: get-relative-path
       shell: bash
       run: node "$GITHUB_ACTION_PATH/relative-path-finder.js"
-      env: 
+      env:
         INPUT_ROOT_FILE: ${{ steps.get-project-and-solution-files.outputs.solution-found }}
         INPUT_SUBDIRECTORY_FILE: ${{ steps.get-project-and-solution-files.outputs.project-found }}
 
@@ -92,7 +99,8 @@ runs:
       env:
         INPUT_CODE_ANALYZERS_NAME: ${{ inputs.code-analyzers-name }}
         INPUT_PROJECT_FILE: ${{ steps.get-project-and-solution-files.outputs.project-found }}
-        INPUT_INCLUDE_PATH: ${{ steps.get-relative-path.outputs.relative_path }}${{ inputs.code-analyzers-name }}/${{ inputs.code-analyzers-name }}.csproj
+        INPUT_INCLUDE_PATH: ${{ steps.get-relative-path.outputs.relative_path }}${{
+          inputs.code-analyzers-name }}/${{ inputs.code-analyzers-name }}.csproj
 
     - name: Print File Root Directory
       shell: bash
@@ -123,23 +131,26 @@ runs:
     - name: Configure Nuget
       uses: Now-Micro/actions/nuget/configure-sources@v1
       with:
-        nuget-names: ${{ inputs.nuget-names }}
-        nuget-passwords: ${{ inputs.nuget-passwords }}
-        nuget-urls: ${{ inputs.nuget-urls }}
-        nuget-usernames: ${{ inputs.nuget-usernames }}
+        names: ${{ inputs.nuget-names }}
+        passwords: ${{ inputs.nuget-passwords }}
+        urls: ${{ inputs.nuget-urls }}
+        usernames: ${{ inputs.nuget-usernames }}
 
     - name: Restore
       shell: bash
       id: restore
       continue-on-error: true
-      run: dotnet restore ${{ steps.get-project-and-solution-files.outputs.solution-found }} -v:q
+      run: dotnet restore ${{
+        steps.get-project-and-solution-files.outputs.solution-found }} -v:q
 
     - name: Build Solution
       id: build
       shell: bash
       if: steps.restore.outcome == 'success'
       continue-on-error: true
-      run: dotnet build ${{ steps.get-project-and-solution-files.outputs.solution-found }} --no-restore -v:q
+      run: dotnet build ${{
+        steps.get-project-and-solution-files.outputs.solution-found }}
+        --no-restore -v:q
 
     - name: Clean Up
       shell: bash
@@ -147,7 +158,7 @@ runs:
         set -e
         # Restore original project file from temp copy
         cp $GITHUB_WORKSPACE/project-file-copy/${{ steps.get-project-and-solution-files.outputs.project-name }} ${{ steps.get-project-and-solution-files.outputs.project-found }}
-        
+
         # Remove analyzers directory that was copied in
         ROOT_DIR="${{ steps.get-solution-root-directory.outputs.unique_root_directories }}"
         ANALYZERS_DIR="$ROOT_DIR/${{ inputs.code-analyzers-name }}"

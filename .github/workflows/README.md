@@ -143,7 +143,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 
 | Name | Required | Description |
 |---|---|---|
-| `token-github-packages` | Yes | PAT with `read:packages` permission for restoring NuGet packages from GitHub Packages. |
+| `token-github-packages` | No | Optionally required depending on project.  PAT with `read:packages` permission for restoring NuGet packages from GitHub Packages. |
 
 **Usage — called from a PR workflow**
 
