@@ -22,7 +22,8 @@ runs:
     - name: Demo - pre-release-workflow
       uses: ./.github/actions/demo-pre-release-workflow
       with:
-        github-token: ${{ inputs.github-token }}
+        delete-published-package: "true"
+        directory: "src/demo/dotnet/src/Api"
         token-github-packages: ${{ inputs.github-token }}
 
     - name: Inject demo changelog entry
