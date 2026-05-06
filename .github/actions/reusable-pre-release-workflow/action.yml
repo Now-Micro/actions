@@ -60,7 +60,7 @@ outputs:
     value: ${{ steps.calc-version.outputs.version-number }}
   package-name:
     description: "The NuGet package name that was published."
-    value: ${{ steps.extract-project.outputs.project-name }}
+    value: ${{ steps.pkg-name.outputs.package-name }}
 
 runs:
   using: "composite"
@@ -102,6 +102,14 @@ runs:
         find-solution: false
         project-regex: ${{ inputs.nuget-project-regex }}
 
+    - name: Derive package name
+      id: pkg-name
+      shell: bash
+      run: |
+        name="${{ steps.extract-project.outputs.project-name }}"
+        name="${name%.csproj}"
+        echo "package-name=$name" >> "$GITHUB_OUTPUT"
+
     - name: Calculate pre-release version
       id: calc-version
       uses: Now-Micro/actions/generate-version@v1
@@ -132,7 +140,7 @@ runs:
     - name: Upload pre-release artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: ${{ steps.extract-project.outputs.project-name }}-${{
+        name: ${{ steps.pkg-name.outputs.package-name }}-${{
           steps.calc-version.outputs.version-number }}-${{
           steps.slug.outputs.dir_slug }}
         path: |
