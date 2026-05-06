@@ -1,0 +1,56 @@
+name: Demo - Checks Workflow
+description: Demonstrates the reusable-checks workflow by running lint, coding standards, and tests against the demo .NET projects.
+author: Trafera
+
+runs:
+  using: composite
+  steps:
+    - name: Title - Checks Workflow Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Checks Workflow Demo
+        path: ./.github/actions/demo-checks-workflow
+
+    - name: Lint
+      uses: ./dotnet/lint
+
+    - name: Run code standards (expected to fail)
+      id: coding-standards-fail
+      continue-on-error: true
+      uses: ./dotnet/coding-standards
+      with:
+        directory: ./src/demo/coding-standards-fail
+
+    - name: Assert coding standards failure
+      if: ${{ steps.coding-standards-fail.outcome != 'failure' }}
+      shell: bash
+      run: |
+        echo "Expected coding standards to fail on coding-standards-fail directory, but result was: ${{ steps.coding-standards-fail.outcome }}" >&2
+        exit 1
+
+    - name: Run code standards with roslyn version (expected to fail)
+      id: coding-standards-fail-roslyn
+      continue-on-error: true
+      uses: ./dotnet/coding-standards
+      with:
+        directory: ./src/demo/coding-standards-fail
+        roslyn-version: "4.9.2"
+
+    - name: Assert coding standards failure with roslyn version
+      if: ${{ steps.coding-standards-fail-roslyn.outcome != 'failure' }}
+      shell: bash
+      run: |
+        echo "Expected coding standards (roslyn 4.9.2) to fail on coding-standards-fail directory, but result was: ${{ steps.coding-standards-fail-roslyn.outcome }}" >&2
+        exit 1
+
+    - name: Run code standards (expected to succeed)
+      uses: ./dotnet/coding-standards
+      with:
+        directory: ./src/demo/coding-standards-success
+
+    - name: Run tests
+      uses: ./dotnet/test
+      with:
+        directory: src/demo/dotnet
+        dotnet-version: "8.0.x"
+        project-regex: '.*Tests\.csproj\s*$'

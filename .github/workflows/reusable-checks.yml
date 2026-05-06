@@ -1,0 +1,402 @@
+name: Reusable - Checks for PRs into main
+
+permissions:
+    contents: read
+    actions: read
+
+on:
+    workflow_call:
+        inputs:
+            # Feature flags
+            enable-linting:
+                description: "Run CSharpier linting. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            enable-coding-standards:
+                description: "Run coding standards checks. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            enable-testing:
+                description: "Run tests. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            # Shared
+            ci-debug-mode:
+                description: "Enable verbose debug logging for discovery steps."
+                required: false
+                type: string
+                default: "false"
+            directory:
+                description: "Directory to run the tests in. If this is given, only this
+                    directory will be checked for changes and used for the
+                    respective checks. If you want to check all changed
+                    directories, leave this empty and use the respective pattern
+                    inputs to specify which files should trigger checks and how
+                    to extract the relevant directories."
+                required: false
+                type: string
+                default: ""
+            head-ref:
+                description: "The head commit SHA to compare against the base. Defaults to
+                    github.sha."
+                required: false
+                type: string
+                default: ""
+            # Coding standards
+            coding-standards-path-pattern:
+                description: "Regex pattern (with capture group) for identifying changed
+                    directories to run coding standards against. Default is
+                    '^([^/.]+)/'."
+                required: false
+                type: string
+                default: "^([^/.]+)/"
+            roslyn-version:
+                description: "Optional override for the Microsoft.CodeAnalysis.CSharp package
+                    version used by the analyzers."
+                required: false
+                type: string
+                default: ""
+            # Testing - change detection
+            optimize-base-ref:
+                description: "When true, compares against the SHA of the last successful run on
+                    this branch instead of the default branch."
+                required: false
+                type: string
+                default: "false"
+            testing-path-pattern:
+                description: "Regex pattern (with capture group) for identifying changed
+                    directories to run tests against."
+                required: false
+                type: string
+                default: "^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
+            transformer:
+                description: "sed-style transformer for converting source directories to test
+                    directories."
+                required: false
+                type: string
+                default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
+            use-original-if-missing:
+                description: "Fall back to the original path if the transformed test directory
+                    does not exist."
+                required: false
+                type: string
+                default: "false"
+            # Testing - run options
+            fail-fast:
+                description: "Cancel remaining matrix jobs when any test job fails."
+                required: false
+                type: string
+                default: "false"
+            test-args:
+                description: "Additional arguments passed to dotnet test."
+                required: false
+                type: string
+                default: ""
+            dotnet-version:
+                description: ".NET SDK version(s) to use when running tests. Comma-separated for
+                    multiple."
+                required: false
+                type: string
+                default: ""
+            test-project-regex:
+                description: "Regex to identify the test project file within the test
+                    directory."
+                required: false
+                type: string
+                default: ""
+            prefer-solution:
+                description: "Prefer a .sln file over individual project files when running
+                    tests."
+                required: false
+                type: string
+                default: "false"
+            # Other
+            workflow-name:
+                description: "Filename of this checks workflow. Used when looking up the last
+                    successful run for base-ref optimization. If omitted, the
+                    workflow will not be able to optimize the base ref and will
+                    always compare against the default branch."
+                required: false
+                type: string
+                default: ""
+            overridden-changed-files:
+                description: "JSON array of file paths to treat as changed. When set, skips
+                    git change detection entirely and uses these paths for pattern
+                    matching. Intended for testing and demo scenarios."
+                required: false
+                type: string
+                default: ""
+        secrets:
+            token-github-packages:
+                description: "PAT with read:packages permission for restoring NuGet packages
+                    from GitHub Packages."
+                required: false
+
+jobs:
+    lint:
+        runs-on: ubuntu-22.04
+        if: ${{ inputs['enable-linting'] == 'true' }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: CSharpier Linting
+              uses: Now-Micro/actions/dotnet/lint@v1
+
+    validate:
+        runs-on: ubuntu-22.04
+        if: ${{ inputs['enable-coding-standards'] == 'true' || inputs['enable-testing'] == 'true' }}
+        steps:
+            - name: Validate token-github-packages secret
+              shell: bash
+              env:
+                  TOKEN: ${{ secrets['token-github-packages'] }}
+              run: |
+                  if [ -z "$TOKEN" ]; then
+                    echo "::error::The 'token-github-packages' secret is required when 'enable-coding-standards' or 'enable-testing' is true, but it was not provided or is empty." >&2
+                    exit 1
+                  fi
+                  echo "✅ token-github-packages secret is present."
+
+    coding-standards-setup:
+        runs-on: ubuntu-22.04
+        outputs:
+            directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
+        steps:
+            - name: Determine coding standards mode
+              id: mode
+              shell: bash
+              env:
+                  ENABLE_CODING_STANDARDS: ${{ inputs['enable-coding-standards'] }}
+                  DIRECTORY: ${{ inputs.directory }}
+              run: |
+                  if [ "$ENABLE_CODING_STANDARDS" != 'true' ]; then
+                    echo "mode=disabled" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
+            - name: Check out code
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Get Changed Files
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              id: changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ github.event.repository.default_branch }}
+
+            - name: Get Unique Root Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
+              id: unique-dirs
+              uses: Now-Micro/actions/get-unique-root-directories@v1
+              with:
+                  paths: ${{ inputs['overridden-changed-files'] || steps.changed-files.outputs.changed_files }}
+                  pattern: ${{ inputs['coding-standards-path-pattern'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+
+            - name: Resolve coding standards directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_root_directories || '[]'
+                      }}
+              run: |
+                  case "$MODE" in
+                    disabled)
+                      echo "directories_to_check=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                    directory)
+                      echo "directories_to_check=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_check=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_check=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
+
+    code-standards:
+        runs-on: ubuntu-22.04
+        needs: [coding-standards-setup, validate]
+        if: ${{ inputs['enable-coding-standards'] == 'true' &&
+            needs.coding-standards-setup.outputs.directories_to_check != '[]' }}
+        strategy:
+            fail-fast: false
+            matrix:
+                directory: ${{
+                    fromJson(needs.coding-standards-setup.outputs.directories_to_check)
+                    }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run Code Standards
+              uses: Now-Micro/actions/dotnet/coding-standards@v1
+              with:
+                  directory: ${{ matrix.directory }}
+                  roslyn-version: ${{ inputs['roslyn-version'] }}
+                  nuget-names: "Now-Micro"
+                  nuget-passwords: ${{ secrets['token-github-packages'] }}
+                  nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner
+                      }}/index.json"
+                  nuget-usernames: ${{ github.actor }}
+
+    test-setup:
+        runs-on: ubuntu-22.04
+        outputs:
+            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
+        steps:
+            - name: Determine test mode
+              id: mode
+              shell: bash
+              env:
+                  ENABLE_TESTING: ${{ inputs['enable-testing'] }}
+                  DIRECTORY: ${{ inputs.directory }}
+              run: |
+                  if [ "$ENABLE_TESTING" != 'true' ]; then
+                    echo "mode=disabled" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
+            - name: Check out code
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Find Last Successful Checks Run on Branch
+              id: last-success
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['optimize-base-ref'] ==
+                  'true' && inputs['workflow-name'] != '' }}
+              uses: Now-Micro/actions/get-last-workflow-success-sha@v1
+              with:
+                  branch: ${{ github.head_ref }}
+                  default-branch: ${{ github.event.repository.default_branch }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  job-names-that-must-succeed: "test"
+                  main-job-name: "test-setup"
+                  request-size: 50
+                  retry-attempts: 3
+                  workflow-name: ${{ inputs['workflow-name'] }}
+
+            - name: Get Changed Files
+              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              id: changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ steps.last-success.outputs.last_success_sha ||
+                      github.event.repository.default_branch }}
+
+            - name: Get Unique Project Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
+              id: unique-dirs
+              uses: Now-Micro/actions/get-unique-project-directories@v1
+              with:
+                  paths: ${{ inputs['overridden-changed-files'] || steps.changed-files.outputs.changed_files }}
+                  pattern: ${{ inputs['testing-path-pattern'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  fallback-regex: ${{ inputs['testing-path-pattern'] }}
+                  transformer: ${{ inputs.transformer }}
+                  use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
+
+            - name: Resolve test directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_project_directories ||
+                      '[]' }}
+              run: |
+                  case "$MODE" in
+                    disabled)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                    directory)
+                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
+
+    test:
+        runs-on: ubuntu-22.04
+        needs: [test-setup, validate]
+        if: ${{ inputs['enable-testing'] == 'true' &&
+            needs.test-setup.outputs.directories_to_test != '[]' }}
+        strategy:
+            fail-fast: ${{ inputs['fail-fast'] == 'true' }}
+            matrix:
+                directory: ${{ fromJson(needs.test-setup.outputs.directories_to_test) }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Configure Github NuGet source
+              uses: Now-Micro/actions/nuget/configure-sources@v1
+              with:
+                  names: "Now-Micro"
+                  passwords: ${{ secrets['token-github-packages'] }}
+                  urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+                  usernames: ${{ github.actor }}
+
+            - name: Run tests
+              uses: Now-Micro/actions/dotnet/test@v1
+              with:
+                  args: ${{ inputs['test-args'] }}
+                  directory: ${{ matrix.directory }}
+                  dotnet-version: ${{ inputs['dotnet-version'] }}
+                  project-regex: ${{ inputs['test-project-regex'] }}
+                  prefer-solution: ${{ inputs['prefer-solution'] }}
+
+            - name: Build safe artifact name
+              id: artifact-name
+              shell: bash
+              run: |
+                  safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\/:*?"<>|]#-#g')
+                  echo "value=Test Results - ${safe_dir}" >> "$GITHUB_OUTPUT"
+
+            - name: Upload Test Results
+              if: ${{ always() }}
+              continue-on-error: true
+              uses: actions/upload-artifact@v7
+              with:
+                  name: ${{ steps.artifact-name.outputs.value }}
+                  path: test-results/**

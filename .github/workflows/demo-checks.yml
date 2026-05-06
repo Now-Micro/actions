@@ -1,0 +1,77 @@
+name: Demo - Checks Workflow
+
+on:
+    workflow_dispatch:
+
+jobs:
+    # ── Lint (via reusable workflow) ───────────────────────────────────────
+    lint:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-linting: "true"
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Coding standards expected-failure cases (via composite) ───────────
+    # Note: reusable workflow jobs do not support continue-on-error, so the
+    # expected-failure cases are handled inside the composite action where
+    # continue-on-error can be applied at the step level.
+    coding-standards-expected-failures:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run demo checks workflow composite
+              uses: ./.github/actions/demo-checks-workflow
+
+    # ── Coding standards (via reusable workflow) ───────────────────────────
+    coding-standards-success:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-coding-standards: "true"
+            directory: ./src/demo/coding-standards-success
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Tests (via reusable workflow) ──────────────────────────────────────
+    test:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-testing: "true"
+            directory: src/demo/dotnet
+            dotnet-version: "8.0.x"
+            test-project-regex: '.*Tests\.csproj\s*$'
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Coding standards – change detection (via reusable workflow) ────────
+    # Injects a known demo file path so the change-detection path is exercised
+    # end-to-end without depending on which files happened to change on this branch.
+    coding-standards-change-detection:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-coding-standards: "true"
+            coding-standards-path-pattern: "^(src/demo/coding-standards-success)/"
+            overridden-changed-files: '["src/demo/coding-standards-success/src/Demo.Linting/Program.cs"]'
+            ci-debug-mode: "true"
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Tests – change detection (via reusable workflow) ───────────────────
+    # Same approach: inject a known demo file path so the change-detection path
+    # detects src/demo/dotnet and runs tests there.
+    test-change-detection:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-testing: "true"
+            testing-path-pattern: "^(src/demo/dotnet)/.*\\.(cs|csproj|sln|slnx)$"
+            use-original-if-missing: "true"
+            overridden-changed-files: '["src/demo/dotnet/src/Api/Api.csproj"]'
+            dotnet-version: "8.0.x"
+            test-project-regex: '.*Tests\.csproj\s*$'
+            ci-debug-mode: "true"
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}

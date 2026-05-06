@@ -104,6 +104,88 @@ jobs:
 
 ---
 
+### `reusable-checks.yml` — Reusable Checks for PRs into main
+
+Runs the repo's shared PR checks: linting, coding standards, and tests. It is designed to be called from PR workflows so consumers can pass in the branch context and, optionally, a specific directory to check.
+
+**What it does:**
+
+1. Runs CSharpier linting when `enable-linting` is `true`.
+2. Resolves the directories to check for coding standards and tests.
+3. Runs coding standards checks for each resolved directory.
+4. Runs tests for each resolved directory.
+5. Uploads test result artifacts for each test matrix entry.
+
+**Inputs**
+
+| Name | Required | Default | Description |
+|---|---|---|---|
+| `enable-linting` | No | `false` | Run CSharpier linting. |
+| `enable-coding-standards` | No | `false` | Run coding standards checks. |
+| `enable-testing` | No | `false` | Run tests. |
+| `ci-debug-mode` | No | `false` | Enable verbose debug logging for discovery steps. |
+| `directory` | No | `""` | Specific directory to check. When empty, the workflow detects changed directories. |
+| `head-ref` | No | `""` | Head commit SHA to compare against the base. Pass `github.event.pull_request.head.sha` from PR workflows. |
+| `coding-standards-path-pattern` | No | `^([^/.]+)/` | Regex used to find changed directories for coding standards checks. |
+| `roslyn-version` | No | `""` | Optional override for the Roslyn analyzer package version. |
+| `optimize-base-ref` | No | `false` | Compare test changes against the last successful run on the branch when possible. |
+| `testing-path-pattern` | No | `^([^/]+)/(?:(src|tests?)/.*\.(cs|csproj|sln|slnx)|.*\.(sln|slnx))$` | Regex used to find changed directories for tests. |
+| `transformer` | No | `s#(^|/)src/(.*)$#$1tests/$2.Tests#` | Transform source directories into test directories. |
+| `use-original-if-missing` | No | `false` | Keep the original path when the transformed test directory does not exist. |
+| `fail-fast` | No | `false` | Cancel remaining test matrix jobs when one fails. |
+| `test-args` | No | `""` | Additional arguments passed to `dotnet test`. |
+| `dotnet-version` | No | `""` | .NET SDK version(s) to use when running tests. |
+| `test-project-regex` | No | `""` | Regex used to identify the test project file. |
+| `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
+| `workflow-name` | No | `""` | Workflow filename used when looking up the last successful run for optimization. |
+
+**Secrets**
+
+| Name | Required | Description |
+|---|---|---|
+| `token-github-packages` | No | Optionally required depending on project.  PAT with `read:packages` permission for restoring NuGet packages from GitHub Packages. |
+
+**Usage — called from a PR workflow**
+
+```yaml
+jobs:
+  checks:
+    uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
+    with:
+      dotnet-version: "8.0.x"
+      enable-linting: "true"
+      enable-coding-standards: "true"
+      enable-testing: "true"
+      head-ref: ${{ github.event.pull_request.head.sha }}
+      roslyn-version: "4.9.2"
+      test-project-regex: '.*Tests\.csproj\s*$'
+      workflow-name: checks.yml
+    secrets:
+      token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+```
+
+**Usage — check one directory explicitly**
+
+```yaml
+jobs:
+  checks:
+    uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
+    with:
+      directory: "src/demo/dotnet/src/Api" # this changes the mode
+      dotnet-version: "8.0.x"
+      enable-linting: "true"
+      enable-coding-standards: "true"
+      enable-testing: "true"
+      head-ref: ${{ github.event.pull_request.head.sha }}
+      test-project-regex: '.*Tests\.csproj\s*$'
+      roslyn-version: "4.9.2"
+      workflow-name: checks.yml
+    secrets:
+      token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+```
+
+---
+
 ### `nuget-publish.yml` — Reusable NuGet Package
 
 Builds, packs, and publishes a versioned NuGet package from a release branch, then creates a GitHub release with the generated artifacts. Intended to run automatically when a `release/**` branch is pushed, or to be called explicitly from another workflow.
