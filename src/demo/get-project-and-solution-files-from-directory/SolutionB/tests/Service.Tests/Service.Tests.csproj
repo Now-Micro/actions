@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Service\Service.csproj" />

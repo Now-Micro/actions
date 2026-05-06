@@ -22,9 +22,6 @@ inputs:
       Should be a comma-separated list of versions (e.g. '8.0.x,10.0.x')."
     required: false
     default: "8.0.x"
-  github-token:
-    description: "GitHub token with permissions to create packages and upload artifacts."
-    required: true
   nuget-package-dir:
     description: "Directory to store generated package artifacts."
     required: false
@@ -42,7 +39,7 @@ inputs:
     required: false
     default: ".*\\.csproj$"
   nuget-urls:
-    description: "Nuget feed URLs to publish to, separated by commas."
+    description: "Nuget feed URLs needed to build the projects.  Should be a comma-separated list of URLs."
     required: false
     default: ""
   prerelease-identifier:
@@ -60,10 +57,10 @@ inputs:
 outputs:
   version-number:
     description: "The full pre-release version number that was published (e.g. 1.2.3-alpha-202505051430)."
-    value: ${{ steps.calc-version.outputs.version_number }}
+    value: ${{ steps.calc-version.outputs.version-number }}
   package-name:
     description: "The NuGet package name that was published."
-    value: ${{ steps.extract-project.outputs.project_name }}
+    value: ${{ steps.pkg-name.outputs.package-name }}
 
 runs:
   using: "composite"
@@ -105,6 +102,14 @@ runs:
         find-solution: false
         project-regex: ${{ inputs.nuget-project-regex }}
 
+    - name: Derive package name
+      id: pkg-name
+      shell: bash
+      run: |
+        name="${{ steps.extract-project.outputs.project-name }}"
+        name="${name%.csproj}"
+        echo "package-name=$name" >> "$GITHUB_OUTPUT"
+
     - name: Calculate pre-release version
       id: calc-version
       uses: Now-Micro/actions/generate-version@v1
@@ -124,7 +129,7 @@ runs:
           steps.calc-version.outputs.version-number }} -p:IncludeSymbols=true
           -p:SymbolPackageFormat=snupkg
         dotnet-version: ${{ inputs.dotnet-version }}
-        github-token: ${{ inputs.github-token }}
+        github-token: ${{ inputs.token-github-packages }}
         nuget-names: "github"
         nuget-passwords: ${{ inputs.token-github-packages }}
         nuget-urls: ${{ inputs.nuget-urls }}
@@ -135,7 +140,7 @@ runs:
     - name: Upload pre-release artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: ${{ steps.extract-project.outputs.project_name }}-${{
+        name: ${{ steps.pkg-name.outputs.package-name }}-${{
           steps.calc-version.outputs.version-number }}-${{
           steps.slug.outputs.dir_slug }}
         path: |

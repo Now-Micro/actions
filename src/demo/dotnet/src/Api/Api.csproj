@@ -18,6 +18,7 @@
     <Copyright>Copyright © Trafera</Copyright>
     <PackageTags>csi;erp;api;client;trafera</PackageTags>
     <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>

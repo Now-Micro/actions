@@ -23,9 +23,6 @@ inputs:
     description: "The .NET version(s) to install, comma-separated (e.g. '8.0.x,10.0.x')."
     required: false
     default: "8.0.x"
-  github-token:
-    description: "GitHub token with permissions to delete packages."
-    required: true
   nuget-urls:
     description: "NuGet feed URL to publish to."
     required: false
@@ -60,17 +57,25 @@ runs:
         ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
         directory: ${{ inputs['directory'] }}
         dotnet-version: ${{ inputs['dotnet-version'] }}
-        github-token: ${{ inputs['github-token'] }}
         nuget-urls: ${{ inputs['nuget-urls'] }}
         prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
         token-github-packages: ${{ inputs['token-github-packages'] }}
         version-increment-type: ${{ inputs['version-increment-type'] }}
 
+    - name: Debug - pre-release delete condition values
+      if: always()
+      shell: bash
+      run: |
+        echo "delete-published-package = '${{ inputs['delete-published-package'] }}'"
+        echo "steps.pre-release.outputs.version-number = '${{ steps.pre-release.outputs.version-number }}'"
+        echo "steps.pre-release.outputs.package-name = '${{ steps.pre-release.outputs.package-name }}'"
+        echo "steps.pre-release outcome = '${{ steps.pre-release.outcome }}'"
+
     - name: Delete published pre-release package version
       if: always() && inputs['delete-published-package'] == 'true' && steps.pre-release.outputs.version-number != ''
       uses: actions/github-script@v8
       with:
-        github-token: ${{ inputs['github-token'] }}
+        github-token: ${{ inputs['token-github-packages'] }}
         script: |
           const packageName = '${{ steps.pre-release.outputs.package-name }}';
           const versionNumber = '${{ steps.pre-release.outputs.version-number }}';
