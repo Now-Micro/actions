@@ -12,6 +12,8 @@
     <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Trafera messaging abstractions and base exceptions.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />

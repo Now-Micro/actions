@@ -12,6 +12,8 @@
     <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Trafera MediatR messaging behaviors and transaction pipeline.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.11.0" />

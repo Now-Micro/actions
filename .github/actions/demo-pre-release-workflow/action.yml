@@ -23,9 +23,6 @@ inputs:
     description: "The .NET version(s) to install, comma-separated (e.g. '8.0.x,10.0.x')."
     required: false
     default: "8.0.x"
-  github-token:
-    description: "GitHub token with permissions to publish packages."
-    required: true
   nuget-urls:
     description: "NuGet feed URL to publish to."
     required: false
@@ -60,7 +57,6 @@ runs:
         ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
         directory: ${{ inputs['directory'] }}
         dotnet-version: ${{ inputs['dotnet-version'] }}
-        github-token: ${{ inputs['github-token'] }}
         nuget-urls: ${{ inputs['nuget-urls'] }}
         prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
         token-github-packages: ${{ inputs['token-github-packages'] }}
@@ -70,7 +66,7 @@ runs:
       if: always() && inputs['delete-published-package'] == 'true' && steps.pre-release.outputs.version-number != ''
       uses: actions/github-script@v8
       with:
-        github-token: ${{ inputs['github-token'] }}
+        github-token: ${{ inputs['token-github-packages'] }}
         script: |
           const packageName = '${{ steps.pre-release.outputs.package-name }}';
           const versionNumber = '${{ steps.pre-release.outputs.version-number }}';

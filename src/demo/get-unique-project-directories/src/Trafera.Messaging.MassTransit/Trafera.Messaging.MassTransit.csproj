@@ -12,6 +12,8 @@
     <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Trafera MassTransit integration with RabbitMQ and MongoDB outbox support.</Description>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MassTransit" Version="8.3.1" />

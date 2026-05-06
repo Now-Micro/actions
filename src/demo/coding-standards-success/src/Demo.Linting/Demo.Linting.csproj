@@ -7,6 +7,8 @@
     <!-- <AnalysisLevel>latest-all</AnalysisLevel> -->
     <!-- <EnableNETAnalyzers>true</EnableNETAnalyzers> -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Now-Micro/actions</RepositoryUrl>
   </PropertyGroup>
   <!-- Uncomment below when trying to build locally (dotnet build .\src\demo\coding-standards-success\).  You have to run 2 times to get the full list of errors due to where the .editorconfig is located -->
   <!-- <Target Name="UseSharedEditorConfig" BeforeTargets="CoreCompile">
