@@ -18,6 +18,9 @@ runs:
       uses: actions/checkout@v6
       with:
         fetch-depth: 0
+
+    - name: Demo - checks-workflow
+      uses: ./.github/actions/demo-checks-workflow
     
     - name: Demo - pre-release-workflow
       uses: ./.github/actions/demo-pre-release-workflow
@@ -70,22 +73,6 @@ runs:
 
     - name: Demo - generate-https-cert
       uses: ./.github/actions/demo-generate-https-cert
-
-    - name: Demo - code standards (fail)
-      uses: ./.github/actions/demo-code-standards
-      with:
-        directory: "./src/demo/coding-standards-fail"
-
-    - name: Demo - code standards (fail, roslyn version)
-      uses: ./.github/actions/demo-code-standards
-      with:
-        directory: "./src/demo/coding-standards-fail"
-        roslyn-version: "4.9.2"
-
-    - name: Demo - code standards (success)
-      uses: ./.github/actions/demo-code-standards
-      with:
-        directory: "./src/demo/coding-standards-success"
 
     - name: Demo - dotnet actions
       uses: ./.github/actions/demo-dotnet-actions

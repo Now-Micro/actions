@@ -1,0 +1,16 @@
+name: Demo - Checks Workflow
+
+on:
+    workflow_dispatch:
+
+jobs:
+    demo-checks:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run demo checks workflow composite
+              uses: ./.github/actions/demo-checks-workflow
