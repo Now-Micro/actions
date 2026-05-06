@@ -63,7 +63,7 @@ runs:
         additional-pack-args: ${{ inputs.additional-pack-args }}
         directory: ${{ inputs.directory }}
         dotnet-version: "8.0.x"
-        github-token: ${{ inputs.github-token }}
+        github-token: ""
         project-regex: 'Api\.csproj$'
 
     - name: Assert remote publish without token failed
