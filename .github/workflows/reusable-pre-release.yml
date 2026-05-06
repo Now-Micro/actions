@@ -45,10 +45,10 @@ on:
                 description: "Glob pattern to match for determining which changed files should
                     trigger a package publish. Should include a capture group
                     for the project directory (e.g.
-                    '^(.*\/src)\/.*\\.(cs|csproj|sln)$')."
+                    '^(.*/src)/.*\\.(cs|csproj|sln)$')."
                 required: false
                 type: string
-                default: "^(.*\/src)\/.*\\.(cs|csproj|sln)$"
+                default: "^(.*/src)/.*\\.(cs|csproj|sln)$"
             nuget-project-regex:
                 description: "Regex pattern to extract project name from the .csproj file path.
                     Should include a capture group for the project name (e.g.
@@ -111,7 +111,7 @@ jobs:
                     echo "❌ Invalid version-increment-type: '$increment'. Must be one of: $valid_increments"
                     exit 1
                   fi
-    
+
     detect-changed-libraries:
         needs: [ validate-inputs ]
         if: ${{ inputs.directory == '' }}
@@ -140,7 +140,6 @@ jobs:
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
                   fallback-regex: ${{ inputs['nuget-pattern-to-match'] }}
                   use-original-if-missing: false
-
 
     nuget-publish-per-directory:
         runs-on: ubuntu-22.04
