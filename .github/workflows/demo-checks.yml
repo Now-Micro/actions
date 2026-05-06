@@ -46,3 +46,32 @@ jobs:
             test-project-regex: '.*Tests\.csproj\s*$'
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Coding standards – change detection (via reusable workflow) ────────
+    # Injects a known demo file path so the change-detection path is exercised
+    # end-to-end without depending on which files happened to change on this branch.
+    coding-standards-change-detection:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-coding-standards: "true"
+            coding-standards-path-pattern: "^(src/demo/coding-standards-success)/"
+            overridden-changed-files: '["src/demo/coding-standards-success/src/Demo.Linting/Program.cs"]'
+            ci-debug-mode: "true"
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Tests – change detection (via reusable workflow) ───────────────────
+    # Same approach: inject a known demo file path so the change-detection path
+    # detects src/demo/dotnet and runs tests there.
+    test-change-detection:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-testing: "true"
+            testing-path-pattern: "^(src/demo/dotnet)/.*\\.(cs|csproj|sln|slnx)$"
+            use-original-if-missing: "true"
+            overridden-changed-files: '["src/demo/dotnet/src/Api/Api.csproj"]'
+            dotnet-version: "8.0.x"
+            test-project-regex: '.*Tests\.csproj\s*$'
+            ci-debug-mode: "true"
+        secrets:
+            token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
