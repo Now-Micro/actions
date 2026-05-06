@@ -135,6 +135,7 @@ runs:
       run: dotnet restore ${{ steps.get-project-and-solution-files.outputs.solution-found }} -v:q
 
     - name: Build Solution
+      id: build
       shell: bash
       if: steps.restore.outcome == 'success'
       continue-on-error: true
@@ -164,3 +165,10 @@ runs:
         # Remove temp project copy folder
         echo "Removing temporary project copy folder"
         rm -rf $GITHUB_WORKSPACE/project-file-copy
+
+    - name: Fail if build failed
+      shell: bash
+      if: steps.restore.outcome != 'success' || steps.build.outcome == 'failure'
+      run: |
+        echo "Coding standards check failed." >&2
+        exit 1
