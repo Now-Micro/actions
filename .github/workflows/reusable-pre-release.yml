@@ -113,6 +113,7 @@ jobs:
                   fi
     
     detect-changed-libraries:
+        needs: [ validate-inputs ]
         if: ${{ inputs.directory == '' }}
         runs-on: ubuntu-22.04
         outputs:
