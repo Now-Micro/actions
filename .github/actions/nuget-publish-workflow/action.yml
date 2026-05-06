@@ -234,3 +234,46 @@ runs:
               throw error;
             }
           }
+
+    - name: Delete published NuGet package version
+      if: ${{ always() && inputs['cleanup-release'] == 'true' && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['token-github-packages'] }}
+        script: |
+          const packageName = '${{ steps.get-version.outputs.library_name }}';
+          const versionNumber = '${{ steps.get-version.outputs.version }}';
+          const org = context.repo.owner;
+
+          core.info(`🔍 Looking for package '${packageName}' version '${versionNumber}' in org '${org}'`);
+
+          let versions;
+          try {
+            const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+              org,
+              package_type: 'nuget',
+              package_name: packageName,
+            });
+            versions = resp.data;
+          } catch (err) {
+            core.warning(`Could not list package versions: ${err.message}`);
+            return;
+          }
+
+          const match = versions.find(v => v.name === versionNumber);
+          if (!match) {
+            core.info(`ℹ️ Version '${versionNumber}' not found in package '${packageName}' — nothing to delete.`);
+            return;
+          }
+
+          try {
+            await github.rest.packages.deletePackageVersionForOrg({
+              org,
+              package_type: 'nuget',
+              package_name: packageName,
+              package_version_id: match.id,
+            });
+            core.info(`✅ Deleted NuGet package version: ${packageName}@${versionNumber}`);
+          } catch (err) {
+            core.warning(`Failed to delete package version: ${err.message}`);
+          }

@@ -62,6 +62,15 @@ runs:
         token-github-packages: ${{ inputs['token-github-packages'] }}
         version-increment-type: ${{ inputs['version-increment-type'] }}
 
+    - name: Debug - pre-release delete condition values
+      if: always()
+      shell: bash
+      run: |
+        echo "delete-published-package = '${{ inputs['delete-published-package'] }}'"
+        echo "steps.pre-release.outputs.version-number = '${{ steps.pre-release.outputs.version-number }}'"
+        echo "steps.pre-release.outputs.package-name = '${{ steps.pre-release.outputs.package-name }}'"
+        echo "steps.pre-release outcome = '${{ steps.pre-release.outcome }}'"
+
     - name: Delete published pre-release package version
       if: always() && inputs['delete-published-package'] == 'true' && steps.pre-release.outputs.version-number != ''
       uses: actions/github-script@v8
