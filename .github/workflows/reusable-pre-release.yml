@@ -45,10 +45,10 @@ on:
                 description: "Glob pattern to match for determining which changed files should
                     trigger a package publish. Should include a capture group
                     for the project directory (e.g.
-                    '^(.*/src)/.*\\.(cs|csproj|sln)$')."
+                    '^(.*\/src)\/.*\\.(cs|csproj|sln)$')."
                 required: false
                 type: string
-                default: "^(.*/src)/.*\\.(cs|csproj|sln)$"
+                default: "^(.*\/src)\/.*\\.(cs|csproj|sln)$"
             nuget-project-regex:
                 description: "Regex pattern to extract project name from the .csproj file path.
                     Should include a capture group for the project name (e.g.

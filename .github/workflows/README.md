@@ -175,7 +175,7 @@ Detects which project directories have changed and publishes a timestamped pre-r
 When `directory` is **not** provided:
 
 1. Gets the list of changed files between the current commit and the base ref.
-2. Extracts unique `src/` project directories from that file list.
+2. Extracts unique `src/` project directories from that file list based on the `nuget-pattern-to-match` input.
 3. Fans out into a matrix job — one publish job per changed directory.
 
 When `directory` **is** provided:
@@ -184,7 +184,7 @@ When `directory` **is** provided:
 
 In both cases, for each directory:
 
-1. Finds the `.csproj` file.
+1. Finds the `.csproj` file based on the `nuget-project-regex` input value.
 2. Calculates a pre-release version (e.g. `1.2.4-alpha-202506011200`) by incrementing the current version and appending an identifier and UTC timestamp.
 3. Builds, packs, and pushes the package to the NuGet feed.
 4. Uploads the artifacts and generates a pre-release summary.
