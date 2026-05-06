@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    # ── Lint ──────────────────────────────────────────────────────────────
+    # ── Lint (via reusable workflow) ───────────────────────────────────────
     lint:
         uses: ./.github/workflows/reusable-checks.yml
         with:
@@ -12,11 +12,11 @@ jobs:
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 
-    # ── Coding standards – expected to FAIL ───────────────────────────────
-    # Note: reusable workflow jobs do not support continue-on-error, so these
-    # expected-failure cases call the composite action directly so that
+    # ── Coding standards expected-failure cases (via composite) ───────────
+    # Note: reusable workflow jobs do not support continue-on-error, so the
+    # expected-failure cases are handled inside the composite action where
     # continue-on-error can be applied at the step level.
-    coding-standards-fail:
+    coding-standards-expected-failures:
         runs-on: ubuntu-22.04
         steps:
             - name: Check out code
@@ -24,45 +24,10 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Run code standards (expected to fail)
-              id: run
-              continue-on-error: true
-              uses: ./dotnet/coding-standards
-              with:
-                  directory: ./src/demo/coding-standards-fail
+            - name: Run demo checks workflow composite
+              uses: ./.github/actions/demo-checks-workflow
 
-            - name: Assert coding standards failed
-              if: ${{ steps.run.outcome != 'failure' }}
-              shell: bash
-              run: |
-                  echo "Expected coding standards to fail on coding-standards-fail directory, but result was: ${{ steps.run.outcome }}" >&2
-                  exit 1
-
-    # ── Coding standards – expected to FAIL (explicit roslyn version) ──────
-    coding-standards-fail-roslyn:
-        runs-on: ubuntu-22.04
-        steps:
-            - name: Check out code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            - name: Run code standards with roslyn version (expected to fail)
-              id: run
-              continue-on-error: true
-              uses: ./dotnet/coding-standards
-              with:
-                  directory: ./src/demo/coding-standards-fail
-                  roslyn-version: "4.9.2"
-
-            - name: Assert coding standards failed with roslyn version
-              if: ${{ steps.run.outcome != 'failure' }}
-              shell: bash
-              run: |
-                  echo "Expected coding standards (roslyn 4.9.2) to fail on coding-standards-fail directory, but result was: ${{ steps.run.outcome }}" >&2
-                  exit 1
-
-    # ── Coding standards – expected to SUCCEED ────────────────────────────
+    # ── Coding standards (via reusable workflow) ───────────────────────────
     coding-standards-success:
         uses: ./.github/workflows/reusable-checks.yml
         with:
@@ -71,7 +36,7 @@ jobs:
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 
-    # ── Tests ─────────────────────────────────────────────────────────────
+    # ── Tests (via reusable workflow) ──────────────────────────────────────
     test:
         uses: ./.github/workflows/reusable-checks.yml
         with:
