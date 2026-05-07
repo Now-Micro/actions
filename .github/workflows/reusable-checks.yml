@@ -312,7 +312,7 @@ jobs:
 
             - name: Find Last Successful Checks Run on Branch
               id: last-success
-              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
+              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != '' && inputs['caller-job-name'] != ''
                   }}
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
