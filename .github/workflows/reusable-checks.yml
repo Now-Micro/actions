@@ -173,7 +173,6 @@ jobs:
               id: mode
               shell: bash
               env:
-                  ENABLE_CODING_STANDARDS: ${{ inputs['enable-coding-standards'] }}
                   DIRECTORY: ${{ inputs.directory }}
               run: |
                   if [ -n "$DIRECTORY" ]; then
@@ -266,7 +265,6 @@ jobs:
               id: mode
               shell: bash
               env:
-                  ENABLE_TESTING: ${{ inputs['enable-testing'] }}
                   DIRECTORY: ${{ inputs.directory }}
               run: |
                   if [ -n "$DIRECTORY" ]; then
