@@ -123,12 +123,15 @@ on:
                 default: "false"
             # Other
             caller-job-name:
-                description: "The name of the job in the calling workflow that invokes this
-                    reusable workflow (e.g. 'checks'). Required when
-                    optimize-base-ref is true. GitHub prefixes all reusable
-                    workflow job names with this value in the API (e.g. 'checks
-                    / test-setup'), so it must be provided for the last-success
-                    lookup to match correctly. Defaults to empty."
+                description: "The calling workflow job name prefix used by GitHub for this
+                    reusable workflow invocation. Pass the calling job's display
+                    name (`jobs.<id>.name`) when it is set; otherwise pass the
+                    job id/YAML key (`jobs.<id>`). You can find the exact value
+                    in the GitHub Actions UI/API job name. Required when
+                    optimize-base-ref is true. GitHub prefixes reusable
+                    workflow job names with this value (e.g. 'checks /
+                    test-setup'), so it must match for the last-success lookup
+                    to work correctly. Defaults to empty."
                 required: false
                 type: string
                 default: ""
