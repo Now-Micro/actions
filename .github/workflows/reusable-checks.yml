@@ -171,7 +171,6 @@ jobs:
             directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
         steps:
             - name: Check out code
-              if: ${{ inputs['overridden-changed-files'] == '' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
@@ -266,7 +265,6 @@ jobs:
             directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
             - name: Check out code
-              if: ${{ inputs['overridden-changed-files'] == '' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
