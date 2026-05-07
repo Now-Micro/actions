@@ -105,11 +105,10 @@ on:
                 default: ""
             dotnet-version:
                 description: ".NET SDK version(s) to use when running tests. Comma-separated for
-                    multiple. Defaults to empty (uses whatever SDK is available
-                    on the runner)."
+                    multiple. Defaults to 8.0.x."
                 required: false
                 type: string
-                default: ""
+                default: "8.0.x"
             test-project-regex:
                 description: "Regex to identify the test project file within the test directory.
                     Defaults to empty (first .csproj found is used)."
