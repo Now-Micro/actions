@@ -63,13 +63,16 @@ jobs:
     # ── Tests – change detection (via reusable workflow) ───────────────────
     # Same approach: inject a known demo file path so the change-detection path
     # detects src/demo/dotnet and runs tests there.
+    # We inject the test project file directly so get-unique-project-directories
+    # resolves to src/demo/dotnet/tests/Api.Tests (the transformer won't match
+    # a tests/ path to a valid directory, so use-original-if-missing kicks in).
     test-change-detection:
         uses: ./.github/workflows/reusable-checks.yml
         with:
             enable-testing: "true"
             testing-path-pattern: "^(src/demo/dotnet)/.*\\.(cs|csproj|sln|slnx)$"
             use-original-if-missing: "true"
-            overridden-changed-files: '["src/demo/dotnet/src/Api/Api.csproj"]'
+            overridden-changed-files: '["src/demo/dotnet/tests/Api.Tests/Api.Tests.csproj"]'
             dotnet-version: "8.0.x"
             test-project-regex: '.*Tests\.csproj\s*$'
             ci-debug-mode: "true"
