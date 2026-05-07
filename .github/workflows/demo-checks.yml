@@ -78,3 +78,126 @@ jobs:
             ci-debug-mode: "true"
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+
+    # ── Calculate Still-Changed Files – logic unit tests ──────────────────
+    # The still-changed-files intersection step in test-setup cannot be
+    # exercised end-to-end in a demo (it requires real git history with a
+    # last-success SHA). This job tests the bash/jq snippet directly with
+    # fixture data, covering both branches:
+    #   1. Fallback: AGAINST_MAIN is absent/empty → passthrough of SINCE_LAST
+    #   2. Intersection: return only files present in both arrays
+    test-still-changed-files-logic:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Check out code
+              uses: actions/checkout@v6
+
+            - name: Prepare summary file
+              id: pre
+              shell: bash
+              run: echo "summary_file=$(pwd)/still-changed-summary.txt" >> "$GITHUB_OUTPUT"
+
+            # ── T1: AGAINST_MAIN is empty → passthrough ───────────────────
+            - name: T1 - Empty AGAINST_MAIN
+              id: t1
+              shell: bash
+              env:
+                  SINCE_LAST: '["a.cs","b.cs"]'
+                  AGAINST_MAIN: ""
+              run: |
+                  if [ -z "$AGAINST_MAIN" ] || [ "$AGAINST_MAIN" = "[]" ]; then
+                    echo "changed_files=$SINCE_LAST" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+                  INTERSECTION=$(jq -nc --argjson since "$SINCE_LAST" --argjson main "$AGAINST_MAIN" \
+                    '[$since[] | select(. as $x | $main | index($x) != null)]')
+                  echo "changed_files=$INTERSECTION" >> "$GITHUB_OUTPUT"
+
+            - name: Assert T1
+              uses: ./src/testing/assert
+              with:
+                  test-name: "empty AGAINST_MAIN → passthrough of SINCE_LAST"
+                  summary-file: ${{ steps.pre.outputs.summary_file }}
+                  mode: exact
+                  expected: '["a.cs","b.cs"]'
+                  actual: ${{ steps.t1.outputs.changed_files }}
+
+            # ── T2: AGAINST_MAIN is "[]" → passthrough ────────────────────
+            - name: T2 - Empty-array AGAINST_MAIN
+              id: t2
+              shell: bash
+              env:
+                  SINCE_LAST: '["a.cs","b.cs"]'
+                  AGAINST_MAIN: "[]"
+              run: |
+                  if [ -z "$AGAINST_MAIN" ] || [ "$AGAINST_MAIN" = "[]" ]; then
+                    echo "changed_files=$SINCE_LAST" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+                  INTERSECTION=$(jq -nc --argjson since "$SINCE_LAST" --argjson main "$AGAINST_MAIN" \
+                    '[$since[] | select(. as $x | $main | index($x) != null)]')
+                  echo "changed_files=$INTERSECTION" >> "$GITHUB_OUTPUT"
+
+            - name: Assert T2
+              uses: ./src/testing/assert
+              with:
+                  test-name: "empty-array AGAINST_MAIN → passthrough of SINCE_LAST"
+                  summary-file: ${{ steps.pre.outputs.summary_file }}
+                  mode: exact
+                  expected: '["a.cs","b.cs"]'
+                  actual: ${{ steps.t2.outputs.changed_files }}
+
+            # ── T3: Partial overlap → intersection only ───────────────────
+            - name: T3 - Partial overlap
+              id: t3
+              shell: bash
+              env:
+                  SINCE_LAST: '["a.cs","b.cs","c.cs"]'
+                  AGAINST_MAIN: '["b.cs","c.cs","d.cs"]'
+              run: |
+                  if [ -z "$AGAINST_MAIN" ] || [ "$AGAINST_MAIN" = "[]" ]; then
+                    echo "changed_files=$SINCE_LAST" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+                  INTERSECTION=$(jq -nc --argjson since "$SINCE_LAST" --argjson main "$AGAINST_MAIN" \
+                    '[$since[] | select(. as $x | $main | index($x) != null)]')
+                  echo "changed_files=$INTERSECTION" >> "$GITHUB_OUTPUT"
+
+            - name: Assert T3
+              uses: ./src/testing/assert
+              with:
+                  test-name: "partial overlap → intersection only (b.cs, c.cs)"
+                  summary-file: ${{ steps.pre.outputs.summary_file }}
+                  mode: exact
+                  expected: '["b.cs","c.cs"]'
+                  actual: ${{ steps.t3.outputs.changed_files }}
+
+            # ── T4: No overlap → empty array ──────────────────────────────
+            - name: T4 - No overlap
+              id: t4
+              shell: bash
+              env:
+                  SINCE_LAST: '["a.cs","b.cs"]'
+                  AGAINST_MAIN: '["c.cs","d.cs"]'
+              run: |
+                  if [ -z "$AGAINST_MAIN" ] || [ "$AGAINST_MAIN" = "[]" ]; then
+                    echo "changed_files=$SINCE_LAST" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+                  INTERSECTION=$(jq -nc --argjson since "$SINCE_LAST" --argjson main "$AGAINST_MAIN" \
+                    '[$since[] | select(. as $x | $main | index($x) != null)]')
+                  echo "changed_files=$INTERSECTION" >> "$GITHUB_OUTPUT"
+
+            - name: Assert T4
+              uses: ./src/testing/assert
+              with:
+                  test-name: "no overlap → empty array"
+                  summary-file: ${{ steps.pre.outputs.summary_file }}
+                  mode: exact
+                  expected: "[]"
+                  actual: ${{ steps.t4.outputs.changed_files }}
+
+            - name: Print test summary
+              if: always()
+              shell: bash
+              run: cat "${{ steps.pre.outputs.summary_file }}" || true
