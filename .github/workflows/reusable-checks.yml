@@ -170,12 +170,19 @@ jobs:
         outputs:
             directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
         steps:
+            - name: Check out code
+              if: ${{ inputs['overridden-changed-files'] == '' }}
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
             - name: Determine coding standards mode
               id: mode
               shell: bash
               env:
                   DIRECTORY: ${{ inputs.directory }}
               run: |
+                  echo "Input directory: $DIRECTORY"
                   if [ -n "$DIRECTORY" ]; then
                     echo "mode=directory" >> "$GITHUB_OUTPUT"
                     echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
@@ -183,13 +190,6 @@ jobs:
                   fi
 
                   echo "mode=changes" >> "$GITHUB_OUTPUT"
-
-            - name: Check out code
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' }}
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
 
             - name: Get Changed Files
               if: ${{ steps.mode.outputs.mode == 'changes' &&
@@ -265,12 +265,19 @@ jobs:
         outputs:
             directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
+            - name: Check out code
+              if: ${{ inputs['overridden-changed-files'] == '' }}
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
             - name: Determine test mode
               id: mode
               shell: bash
               env:
                   DIRECTORY: ${{ inputs.directory }}
               run: |
+                  echo "Directory input: '$DIRECTORY'"
                   if [ -n "$DIRECTORY" ]; then
                     echo "mode=directory" >> "$GITHUB_OUTPUT"
                     echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
@@ -279,17 +286,10 @@ jobs:
 
                   echo "mode=changes" >> "$GITHUB_OUTPUT"
 
-            - name: Check out code
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' }}
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
             - name: Find Last Successful Checks Run on Branch
               id: last-success
-              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['optimize-base-ref'] ==
-                  'true' && inputs['workflow-name'] != '' }}
+              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
+                  }}
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
                   branch: ${{ github.head_ref }}
