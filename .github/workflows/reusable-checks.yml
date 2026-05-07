@@ -65,10 +65,10 @@ on:
             # Testing - change detection
             optimize-base-ref:
                 description: "When true, compares against the SHA of the last successful run on
-                    this branch instead of the default branch.  Default is true."
+                    this branch instead of the default branch.  Default is false."
                 required: false
                 type: string
-                default: "true"
+                default: "false"
             testing-path-pattern:
                 description: "Regex pattern (with capture group) for identifying changed
                     directories to run tests against. Defaults to
