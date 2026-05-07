@@ -148,10 +148,11 @@ jobs:
             - name: CSharpier Linting
               uses: Now-Micro/actions/dotnet/lint@v1
 
-    validate:
+    coding-standards-setup:
         runs-on: ubuntu-22.04
-        if: ${{ inputs['enable-coding-standards'] == 'true' || inputs['enable-testing']
-            == 'true' }}
+        if: ${{ inputs['enable-coding-standards'] == 'true' }}
+        outputs:
+            directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
         steps:
             - name: Validate token-github-packages secret
               shell: bash
@@ -163,13 +164,7 @@ jobs:
                     exit 1
                   fi
                   echo "✅ token-github-packages secret is present."
-
-    coding-standards-setup:
-        runs-on: ubuntu-22.04
-        if: ${{ inputs['enable-coding-standards'] == 'true' }}
-        outputs:
-            directories_to_check: ${{ steps.resolve-directories.outputs.directories_to_check }}
-        steps:
+            
             - name: Check out code
               uses: actions/checkout@v6
               with:
@@ -232,7 +227,7 @@ jobs:
 
     code-standards:
         runs-on: ubuntu-22.04
-        needs: [ coding-standards-setup, validate ]
+        needs: [ coding-standards-setup ]
         if: ${{ inputs['enable-coding-standards'] == 'true' &&
             needs.coding-standards-setup.outputs.directories_to_check != '[]' }}
         strategy:
@@ -264,6 +259,17 @@ jobs:
         outputs:
             directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
+            - name: Validate token-github-packages secret
+              shell: bash
+              env:
+                  TOKEN: ${{ secrets['token-github-packages'] }}
+              run: |
+                  if [ -z "$TOKEN" ]; then
+                    echo "::error::The 'token-github-packages' secret is required when 'enable-coding-standards' or 'enable-testing' is true, but it was not provided or is empty." >&2
+                    exit 1
+                  fi
+                  echo "✅ token-github-packages secret is present."
+
             - name: Check out code
               uses: actions/checkout@v6
               with:
@@ -345,7 +351,7 @@ jobs:
 
     test:
         runs-on: ubuntu-22.04
-        needs: [ test-setup, validate ]
+        needs: [ test-setup ]
         if: ${{ inputs['enable-testing'] == 'true' &&
             needs.test-setup.outputs.directories_to_test != '[]' }}
         strategy:
@@ -377,6 +383,7 @@ jobs:
 
             - name: Build safe artifact name
               id: artifact-name
+              if: ${{ always() }}
               shell: bash
               run: |
                   safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\/:*?"<>|]#-#g')

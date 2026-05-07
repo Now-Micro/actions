@@ -171,15 +171,17 @@ jobs:
   checks:
     uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
     with:
-      directory: "src/demo/dotnet/src/Api" # this changes the mode
-      dotnet-version: "8.0.x"
-      enable-linting: "true"
-      enable-coding-standards: "true"
-      enable-testing: "true"
-      head-ref: ${{ github.event.pull_request.head.sha }}
-      test-project-regex: '.*Tests\.csproj\s*$'
-      roslyn-version: "4.9.2"
-      workflow-name: checks.yml
+      ci-debug-mode: ${{ vars.ENABLE_TEST_DEBUGGING }}
+      directory: "./" # this is the trigger to change the mode
+      prefer-solution: "true" # test the solution file
+      dotnet-version: ${{ vars.CHECKS_DOTNET_SDK_VERSION }}
+      enable-linting: ${{ vars.ENABLE_LINTING }}
+      enable-coding-standards: ${{ vars.ENABLE_CODING_STANDARDS }}
+      enable-testing: ${{ vars.ENABLE_TESTING }}
+      head-ref: ${{ github.event.pull_request.head.sha }} # assumes the trigger for the workflow is a PR.  May differ based on exact use case
+      roslyn-version: ${{ vars.ROSLYN_ANALYZER_VERSION }}
+      test-args: ${{ vars.CHECK_TEST_ARGS }}
+      workflow-name: checks.yml # the name of the workflow yml file that this job is running in
     secrets:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
