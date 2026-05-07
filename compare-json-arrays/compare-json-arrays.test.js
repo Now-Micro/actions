@@ -362,6 +362,52 @@ test('missing GITHUB_OUTPUT exits 1', () => {
     assert.match(r.err, /GITHUB_OUTPUT not set/);
 });
 
+// ── debug mode ────────────────────────────────────────────────────────────────
+
+test('debug-mode true logs debug output', () => {
+    const r = runWith({
+        INPUT_MODE: 'intersection',
+        INPUT_ARRAY_A: '["a"]',
+        INPUT_ARRAY_B: '["a"]',
+        INPUT_DEBUG_MODE: 'true',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Debug mode is ON/);
+    assert.match(r.out, /Mode: intersection/);
+});
+
+test('debug-mode: parseBool accepts boolean true value', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '["a"]',
+        INPUT_ARRAY_B: '["b"]',
+        INPUT_DEBUG_MODE: '1',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Debug mode is ON/);
+});
+
+test('debug-mode: unknown value falls back to default (false)', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '["a"]',
+        INPUT_ARRAY_B: '["b"]',
+        INPUT_DEBUG_MODE: 'maybe',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.doesNotMatch(r.out, /Debug mode is ON/);
+});
+
+test('parseArray: empty string returns empty array', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '',
+        INPUT_ARRAY_B: '["b"]',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.deepStrictEqual(getResult(r), ['b']);
+});
+
 // ── output format ─────────────────────────────────────────────────────────────
 
 test('result is written as valid JSON array to GITHUB_OUTPUT', () => {
