@@ -123,8 +123,8 @@ on:
                 type: string
                 default: ""
             overridden-changed-files:
-                description: "JSON array of file paths to treat as changed. When set, skips
-                    git change detection entirely and uses these paths for pattern
+                description: "JSON array of file paths to treat as changed. When set, skips git
+                    change detection entirely and uses these paths for pattern
                     matching. Intended for testing and demo scenarios."
                 required: false
                 type: string
@@ -150,7 +150,8 @@ jobs:
 
     validate:
         runs-on: ubuntu-22.04
-        if: ${{ inputs['enable-coding-standards'] == 'true' || inputs['enable-testing'] == 'true' }}
+        if: ${{ inputs['enable-coding-standards'] == 'true' || inputs['enable-testing']
+            == 'true' }}
         steps:
             - name: Validate token-github-packages secret
               shell: bash
@@ -184,13 +185,15 @@ jobs:
                   echo "mode=changes" >> "$GITHUB_OUTPUT"
 
             - name: Check out code
-              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
             - name: Get Changed Files
-              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
               id: changed-files
               uses: Now-Micro/actions/get-changed-files@v1
               with:
@@ -202,7 +205,8 @@ jobs:
               id: unique-dirs
               uses: Now-Micro/actions/get-unique-root-directories@v1
               with:
-                  paths: ${{ inputs['overridden-changed-files'] || steps.changed-files.outputs.changed_files }}
+                  paths: ${{ inputs['overridden-changed-files'] ||
+                      steps.changed-files.outputs.changed_files }}
                   pattern: ${{ inputs['coding-standards-path-pattern'] }}
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
 
@@ -229,7 +233,7 @@ jobs:
 
     code-standards:
         runs-on: ubuntu-22.04
-        needs: [coding-standards-setup, validate]
+        needs: [ coding-standards-setup, validate ]
         if: ${{ inputs['enable-coding-standards'] == 'true' &&
             needs.coding-standards-setup.outputs.directories_to_check != '[]' }}
         strategy:
@@ -276,7 +280,8 @@ jobs:
                   echo "mode=changes" >> "$GITHUB_OUTPUT"
 
             - name: Check out code
-              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
               uses: actions/checkout@v6
               with:
                   fetch-depth: 0
@@ -297,7 +302,8 @@ jobs:
                   workflow-name: ${{ inputs['workflow-name'] }}
 
             - name: Get Changed Files
-              if: ${{ steps.mode.outputs.mode == 'changes' && inputs['overridden-changed-files'] == '' }}
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
               id: changed-files
               uses: Now-Micro/actions/get-changed-files@v1
               with:
@@ -310,7 +316,8 @@ jobs:
               id: unique-dirs
               uses: Now-Micro/actions/get-unique-project-directories@v1
               with:
-                  paths: ${{ inputs['overridden-changed-files'] || steps.changed-files.outputs.changed_files }}
+                  paths: ${{ inputs['overridden-changed-files'] ||
+                      steps.changed-files.outputs.changed_files }}
                   pattern: ${{ inputs['testing-path-pattern'] }}
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
                   fallback-regex: ${{ inputs['testing-path-pattern'] }}
@@ -340,7 +347,7 @@ jobs:
 
     test:
         runs-on: ubuntu-22.04
-        needs: [test-setup, validate]
+        needs: [ test-setup, validate ]
         if: ${{ inputs['enable-testing'] == 'true' &&
             needs.test-setup.outputs.directories_to_test != '[]' }}
         strategy:
