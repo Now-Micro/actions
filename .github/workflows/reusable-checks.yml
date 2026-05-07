@@ -341,7 +341,7 @@ jobs:
                   base-ref: ${{ steps.last-success.outputs.last_success_sha ||
                       github.event.repository.default_branch }}
 
-            - name: Get Changed Files Between Main and Head
+            - name: Get Changed Files Between Default Branch and Head
               if: ${{ steps.mode.outputs.mode == 'changes' &&
                   inputs['overridden-changed-files'] == '' &&
                   steps.last-success.outputs.last_success_sha != '' }}
