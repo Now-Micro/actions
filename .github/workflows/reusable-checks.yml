@@ -57,28 +57,31 @@ on:
                 default: "^([^/.]+)/"
             roslyn-version:
                 description: "Optional override for the Microsoft.CodeAnalysis.CSharp package
-                    version used by the analyzers. Defaults to empty (bundled version is
-                    used)."
+                    version used by the analyzers. Defaults to empty (bundled
+                    version is used)."
                 required: false
                 type: string
                 default: ""
             # Testing - change detection
             optimize-base-ref:
                 description: "When true, compares against the SHA of the last successful run on
-                    this branch instead of the default branch.  Default is false."
+                    this branch instead of the default branch.  Default is
+                    false."
                 required: false
                 type: string
                 default: "false"
             testing-path-pattern:
                 description: "Regex pattern (with capture group) for identifying changed
                     directories to run tests against. Defaults to
-                    '^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$'."
+                    '^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(s\
+                    ln|slnx))$'."
                 required: false
                 type: string
                 default: "^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
             transformer:
                 description: "sed-style transformer for converting source directories to test
-                    directories. Defaults to 's#(^|/)src/(.*)$#$1tests/$2.Tests#'."
+                    directories. Defaults to
+                    's#(^|/)src/(.*)$#$1tests/$2.Tests#'."
                 required: false
                 type: string
                 default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
@@ -90,8 +93,8 @@ on:
                 default: "false"
             # Testing - run options
             fail-fast:
-                description: "Cancel remaining matrix jobs when any test job fails. Defaults
-                    to false."
+                description: "Cancel remaining matrix jobs when any test job fails. Defaults to
+                    false."
                 required: false
                 type: string
                 default: "false"
@@ -101,15 +104,15 @@ on:
                 type: string
                 default: ""
             dotnet-version:
-                description: ".NET SDK version(s) to use when running tests. Comma-separated
-                    for multiple. Defaults to empty (uses whatever SDK is available on the
-                    runner)."
+                description: ".NET SDK version(s) to use when running tests. Comma-separated for
+                    multiple. Defaults to empty (uses whatever SDK is available
+                    on the runner)."
                 required: false
                 type: string
                 default: ""
             test-project-regex:
-                description: "Regex to identify the test project file within the test
-                    directory. Defaults to empty (first .csproj found is used)."
+                description: "Regex to identify the test project file within the test directory.
+                    Defaults to empty (first .csproj found is used)."
                 required: false
                 type: string
                 default: ""
@@ -132,8 +135,8 @@ on:
             overridden-changed-files:
                 description: "JSON array of file paths to treat as changed. When set, skips git
                     change detection entirely and uses these paths for pattern
-                    matching. Intended for testing and demo scenarios. Defaults to
-                    empty (git change detection is used)."
+                    matching. Intended for testing and demo scenarios. Defaults
+                    to empty (git change detection is used)."
                 required: false
                 type: string
                 default: ""
@@ -172,7 +175,7 @@ jobs:
                     exit 1
                   fi
                   echo "✅ token-github-packages secret is present."
-            
+
             - name: Check out code
               uses: actions/checkout@v6
               with:
@@ -305,6 +308,7 @@ jobs:
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
                   branch: ${{ github.head_ref }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
                   default-branch: ${{ github.event.repository.default_branch }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   job-names-that-must-succeed: "test"
