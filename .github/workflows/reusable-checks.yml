@@ -25,7 +25,8 @@ on:
                 default: "false"
             # Shared
             ci-debug-mode:
-                description: "Enable verbose debug logging for discovery steps."
+                description: "Enable verbose debug logging for discovery steps. Defaults to
+                    false."
                 required: false
                 type: string
                 default: "false"
@@ -35,7 +36,8 @@ on:
                     respective checks. If you want to check all changed
                     directories, leave this empty and use the respective pattern
                     inputs to specify which files should trigger checks and how
-                    to extract the relevant directories."
+                    to extract the relevant directories. Defaults to empty
+                    (change detection runs across all changed directories)."
                 required: false
                 type: string
                 default: ""
@@ -55,61 +57,65 @@ on:
                 default: "^([^/.]+)/"
             roslyn-version:
                 description: "Optional override for the Microsoft.CodeAnalysis.CSharp package
-                    version used by the analyzers."
+                    version used by the analyzers. Defaults to empty (bundled version is
+                    used)."
                 required: false
                 type: string
                 default: ""
             # Testing - change detection
             optimize-base-ref:
                 description: "When true, compares against the SHA of the last successful run on
-                    this branch instead of the default branch."
+                    this branch instead of the default branch.  Default is true."
                 required: false
                 type: string
-                default: "false"
+                default: "true"
             testing-path-pattern:
                 description: "Regex pattern (with capture group) for identifying changed
-                    directories to run tests against."
+                    directories to run tests against. Defaults to
+                    '^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$'."
                 required: false
                 type: string
                 default: "^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
             transformer:
                 description: "sed-style transformer for converting source directories to test
-                    directories."
+                    directories. Defaults to 's#(^|/)src/(.*)$#$1tests/$2.Tests#'."
                 required: false
                 type: string
                 default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
             use-original-if-missing:
                 description: "Fall back to the original path if the transformed test directory
-                    does not exist."
+                    does not exist. Defaults to false."
                 required: false
                 type: string
                 default: "false"
             # Testing - run options
             fail-fast:
-                description: "Cancel remaining matrix jobs when any test job fails."
+                description: "Cancel remaining matrix jobs when any test job fails. Defaults
+                    to false."
                 required: false
                 type: string
                 default: "false"
             test-args:
-                description: "Additional arguments passed to dotnet test."
+                description: "Additional arguments passed to dotnet test. Defaults to empty."
                 required: false
                 type: string
                 default: ""
             dotnet-version:
-                description: ".NET SDK version(s) to use when running tests. Comma-separated for
-                    multiple."
+                description: ".NET SDK version(s) to use when running tests. Comma-separated
+                    for multiple. Defaults to empty (uses whatever SDK is available on the
+                    runner)."
                 required: false
                 type: string
                 default: ""
             test-project-regex:
                 description: "Regex to identify the test project file within the test
-                    directory."
+                    directory. Defaults to empty (first .csproj found is used)."
                 required: false
                 type: string
                 default: ""
             prefer-solution:
                 description: "Prefer a .sln file over individual project files when running
-                    tests."
+                    tests. Defaults to false."
                 required: false
                 type: string
                 default: "false"
@@ -118,14 +124,16 @@ on:
                 description: "Filename of this checks workflow. Used when looking up the last
                     successful run for base-ref optimization. If omitted, the
                     workflow will not be able to optimize the base ref and will
-                    always compare against the default branch."
+                    always compare against the default branch. Defaults to empty
+                    (base-ref optimization is disabled)."
                 required: false
                 type: string
                 default: ""
             overridden-changed-files:
                 description: "JSON array of file paths to treat as changed. When set, skips git
                     change detection entirely and uses these paths for pattern
-                    matching. Intended for testing and demo scenarios."
+                    matching. Intended for testing and demo scenarios. Defaults to
+                    empty (git change detection is used)."
                 required: false
                 type: string
                 default: ""
