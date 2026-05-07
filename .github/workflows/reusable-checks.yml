@@ -383,6 +383,7 @@ jobs:
 
             - name: Build safe artifact name
               id: artifact-name
+              if: ${{ always() }}
               shell: bash
               run: |
                   safe_dir=$(echo "${{ matrix.directory }}" | sed 's#[\/:*?"<>|]#-#g')
