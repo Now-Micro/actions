@@ -138,12 +138,31 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `test-project-regex` | No | `""` | Regex used to identify the test project file. |
 | `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
 | `workflow-name` | No | `""` | Workflow filename used when looking up the last successful run for optimization. |
+| `caller-job-name` | No | `""` | The name of the job in the calling workflow that invokes this reusable workflow (e.g. `checks`). Required when `optimize-base-ref` is `true`. GitHub prefixes every job name in the API response with the caller's job name (e.g. `checks / test-setup`), so this must be provided for the last-successful-run lookup to match correctly. See [Base-ref optimization](#base-ref-optimization) below. |
+| `overridden-changed-files` | No | `""` | JSON array of file paths to treat as changed. Skips git change detection entirely. Intended for testing and demo scenarios. |
 
 **Secrets**
 
 | Name | Required | Description |
 |---|---|---|
 | `token-github-packages` | No | Optionally required depending on project.  PAT with `read:packages` permission for restoring NuGet packages from GitHub Packages. |
+
+**Base-ref optimization**
+
+When `optimize-base-ref: "true"` and `workflow-name` is set, the `test-setup` job compares changed files against the SHA of the last successful run on the branch (rather than the default branch), so tests only run for files that have changed since the last green build.
+
+Because the workflow is called as a reusable workflow, GitHub prefixes all job names in the API with the caller's job name. For example, if your calling job is named `checks`, the API reports jobs as `checks / test-setup`, `checks / test (...)`. The lookup will fail to find any matching runs unless you also pass `caller-job-name: "checks"` to tell the workflow what prefix to expect.
+
+```yaml
+jobs:
+  checks:
+    uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
+    with:
+      optimize-base-ref: "true"
+      workflow-name: checks.yml
+      caller-job-name: checks   # must match the job key above
+      ...
+```
 
 **Usage — called from a PR workflow**
 
@@ -152,11 +171,13 @@ jobs:
   checks:
     uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
     with:
+      caller-job-name: checks
       dotnet-version: "8.0.x"
       enable-linting: "true"
       enable-coding-standards: "true"
       enable-testing: "true"
       head-ref: ${{ github.event.pull_request.head.sha }}
+      optimize-base-ref: "true"
       roslyn-version: "4.9.2"
       test-project-regex: '.*Tests\.csproj\s*$'
       workflow-name: checks.yml
@@ -171,6 +192,7 @@ jobs:
   checks:
     uses: Now-Micro/actions/.github/workflows/reusable-checks.yml@v1
     with:
+      caller-job-name: checks
       ci-debug-mode: ${{ vars.ENABLE_TEST_DEBUGGING }}
       directory: "./" # this is the trigger to change the mode
       prefer-solution: "true" # test the solution file
