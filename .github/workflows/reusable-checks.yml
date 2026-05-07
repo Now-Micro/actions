@@ -128,10 +128,10 @@ on:
                     name (`jobs.<id>.name`) when it is set; otherwise pass the
                     job id/YAML key (`jobs.<id>`). You can find the exact value
                     in the GitHub Actions UI/API job name. Required when
-                    optimize-base-ref is true. GitHub prefixes reusable
-                    workflow job names with this value (e.g. 'checks /
-                    test-setup'), so it must match for the last-success lookup
-                    to work correctly. Defaults to empty."
+                    optimize-base-ref is true. GitHub prefixes reusable workflow
+                    job names with this value (e.g. 'checks / test-setup'), so
+                    it must match for the last-success lookup to work correctly.
+                    Defaults to empty."
                 required: false
                 type: string
                 default: ""
@@ -315,8 +315,8 @@ jobs:
 
             - name: Find Last Successful Checks Run on Branch
               id: last-success
-              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != '' && inputs['caller-job-name'] != ''
-                  }}
+              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
+                  && inputs['caller-job-name'] != '' }}
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
                   branch: ${{ github.head_ref }}
