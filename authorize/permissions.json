@@ -12,6 +12,12 @@
         ]
     },
     "CSI-Connector": {
+        "cd-docker.yml": [
+            "Adam Major",
+            "Bernard Carter",
+            "Hilton Dahl",
+            "Stephen James"
+        ],
         "release-nuget.yml": [
             "Adam Major",
             "Bernard Carter",
@@ -20,6 +26,12 @@
         ]
     },
     "WarrantyService": {
+         "cd-docker.yml": [
+            "Adam Major",
+            "Bernard Carter",
+            "Hilton Dahl",
+            "Stephen James"
+        ],
         "release-nuget.yml": [
             "Adam Major",
             "Bernard Carter",
