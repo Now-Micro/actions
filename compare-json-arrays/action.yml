@@ -1,0 +1,39 @@
+name: 'Compare JSON Arrays'
+description: 'Compares two JSON array strings and returns a JSON array based on the selected mode (intersection, union, left-diff, right-diff, or unique).'
+author: 'Trafera'
+
+inputs:
+  array-a:
+    description: 'First JSON array string (e.g. ["a","b","c"]).'
+    required: true
+  array-b:
+    description: 'Second JSON array string (e.g. ["b","c","d"]).'
+    required: true
+  mode:
+    description: 'Operation to perform: "intersection" (items in both), "union" (all unique items), "left-diff" (items in array-a not in array-b), "right-diff" (items in array-b not in array-a), or "unique" (items in exactly one array, i.e. symmetric difference).'
+    required: true
+  debug-mode:
+    description: 'Enable debug mode for additional logging.'
+    required: false
+    default: 'false'
+
+outputs:
+  result:
+    description: 'JSON array string containing the result of the comparison.'
+    value: ${{ steps.compare.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Compare Arrays
+      id: compare
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/compare-json-arrays.js"
+      env:
+        INPUT_ARRAY_A: ${{ inputs.array-a }}
+        INPUT_ARRAY_B: ${{ inputs.array-b }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
