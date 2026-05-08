@@ -88,13 +88,6 @@ function run() {
     }
 
     console.log(`✅ Actor '${actor}' is authorized to run '${workflowFilename}' in '${repository}'.`); // always visible
-
-    const githubOutput = process.env.GITHUB_OUTPUT;
-    if (!githubOutput) {
-        console.error('❌ GITHUB_OUTPUT is not set');
-        process.exit(1);
-    }
-    fs.appendFileSync(githubOutput, `authorized=true\n`);
 }
 
 if (require.main === module) run();

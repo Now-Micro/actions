@@ -42,10 +42,7 @@ function writePermissions(dir, obj) {
 
 function runWith(env) {
     const tmpDir = makeTempDir();
-    const tmpOut = path.join(tmpDir, 'github_output.txt');
-    fs.writeFileSync(tmpOut, '');
-    const r = withEnv({ ...env, GITHUB_OUTPUT: tmpOut }, () => run());
-    r.outputContent = fs.readFileSync(tmpOut, 'utf8');
+    const r = withEnv(env, () => run());
     r.tmpDir = tmpDir;
     return r;
 }
@@ -86,17 +83,16 @@ function makeEnv(overrides = {}) {
 // Tests
 // ---------------------------------------------------------------------------
 
-test('authorized actor exits 0 and writes authorized=true', () => {
+test('authorized actor exits 0 and logs success', () => {
     const r = runWith(makeEnv());
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
     assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
 });
 
 test('second authorized actor in same repo is also permitted', () => {
     const r = runWith(makeEnv({ INPUT_ACTOR: 'Test123' }));
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
+    assert.match(r.out, /✅.*Test123.*is authorized/);
 });
 
 test('unauthorized actor exits 1 with helpful message', () => {
@@ -105,7 +101,6 @@ test('unauthorized actor exits 1 with helpful message', () => {
     assert.match(r.err, /UnknownUser/);
     assert.match(r.err, /not authorized/);
     assert.match(r.err, /Allowed actors:/);
-    assert.strictEqual(r.outputContent.includes('authorized=true'), false);
 });
 
 test('actor authorized in one repo but not another exits 1', () => {
@@ -175,13 +170,10 @@ test('missing INPUT_WORKFLOW_REF exits 1', () => {
     assert.match(r.err, /INPUT_WORKFLOW_REF is required/);
 });
 
-test('missing GITHUB_OUTPUT exits 1', () => {
-    const env = makeEnv();
-    const tmpDir = makeTempDir();
-    // Run through withEnv directly to suppress the auto GITHUB_OUTPUT injection from runWith
-    const r = withEnv({ ...env, GITHUB_OUTPUT: '' }, () => run());
-    assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err, /GITHUB_OUTPUT is not set/);
+test('authorization succeeds without GITHUB_OUTPUT', () => {
+    const r = runWith(makeEnv());
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*is authorized/);
 });
 
 test('workflow ref with branch ref suffix is parsed correctly', () => {
@@ -189,7 +181,7 @@ test('workflow ref with branch ref suffix is parsed correctly', () => {
         INPUT_WORKFLOW_REF: 'Now-Micro/CodeBits/.github/workflows/release.yml@refs/tags/v1.2.3'
     }));
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
+    assert.match(r.out, /✅.*is authorized/);
 });
 
 test('permissions with empty actor list exits 1', () => {
@@ -212,7 +204,7 @@ test('non-array allowedActors exits 1 with (none) in message', () => {
 test('actor lookup is case-insensitive', () => {
     const r = runWith(makeEnv({ INPUT_ACTOR: 'beschuetzer' })); // lowercase
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
+    assert.match(r.out, /✅.*beschuetzer.*is authorized/);
 });
 
 test('repository lookup is case-insensitive', () => {
@@ -221,7 +213,7 @@ test('repository lookup is case-insensitive', () => {
         INPUT_WORKFLOW_REF: 'Now-Micro/CODEBITS/.github/workflows/release.yml@refs/heads/main'
     }));
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
+    assert.match(r.out, /🔍 Repository:\s+Now-Micro\/CODEBITS\s+→\s+CODEBITS/);
 });
 
 test('workflow filename lookup is case-insensitive', () => {
@@ -229,7 +221,7 @@ test('workflow filename lookup is case-insensitive', () => {
         INPUT_WORKFLOW_REF: 'Now-Micro/CodeBits/.github/workflows/RELEASE.YML@refs/heads/main'
     }));
     assert.strictEqual(r.exitCode, 0);
-    assert.match(r.outputContent, /authorized=true/);
+    assert.match(r.out, /🔍 Workflow ref:\s+Now-Micro\/CodeBits\/\.github\/workflows\/RELEASE\.YML@refs\/heads\/main\s+→\s+RELEASE\.YML/);
 });
 
 test('debug mode disabled suppresses 🔍 logs but still prints ✅', () => {
@@ -237,7 +229,6 @@ test('debug mode disabled suppresses 🔍 logs but still prints ✅', () => {
     assert.strictEqual(r.exitCode, 0);
     assert.ok(!r.out.includes('🔍'), 'debug lines should not appear when debug mode is off');
     assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
-    assert.match(r.outputContent, /authorized=true/);
 });
 
 test('debug mode enabled prints 🔍 logs', () => {
