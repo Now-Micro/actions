@@ -7,8 +7,10 @@ const os = require('os');
 const {
     buildUsersObject,
     loadExistingUsers,
+    isYes,
     mergeAliases,
     normalizeWhitespace,
+    promptForConfirmation,
     run,
     uniqueCaseInsensitive
 } = require('./populateUsers');
@@ -90,6 +92,21 @@ test('mergeAliases keeps existing aliases and appends the profile name', () => {
     assert.deepStrictEqual(mergeAliases(['Adam Major', 'Adam'], 'Adam Major'), ['Adam Major', 'Adam']);
 });
 
+test('isYes accepts yes answers and rejects everything else', () => {
+    assert.strictEqual(isYes('y'), true);
+    assert.strictEqual(isYes(' yes '), true);
+    assert.strictEqual(isYes('no'), false);
+});
+
+test('promptForConfirmation uses an injected prompt function when provided', async () => {
+    const answer = await promptForConfirmation('Continue? ', async message => {
+        assert.strictEqual(message, 'Continue? ');
+        return 'yes';
+    });
+
+    assert.strictEqual(answer, 'yes');
+});
+
 test('buildUsersObject merges aliases and sorts logins', () => {
     const users = buildUsersObject(
         [
@@ -144,6 +161,7 @@ test('run writes users.json from GitHub org members and preserves existing alias
     const { fetchMock } = makeFetchMock(responses);
     const originalFetch = global.fetch;
     global.fetch = fetchMock;
+    let promptMessage = '';
 
     try {
         const result = await withEnv(
@@ -151,10 +169,14 @@ test('run writes users.json from GitHub org members and preserves existing alias
                 INPUT_ORG: 'Now-Micro',
                 INPUT_OUTPUT_FILE: outputFile
             },
-            () => run()
+            () => run({ prompt: async message => {
+                promptMessage = message;
+                return 'y';
+            } })
         );
 
         assert.strictEqual(result.exitCode, 0);
+        assert.match(promptMessage, /About to write 2 users/);
         assert.match(result.out, /Wrote 2 users/);
         assert.deepStrictEqual(JSON.parse(fs.readFileSync(outputFile, 'utf8')), {
             Beschuetzer: ['Adam Major', 'Adam'],
@@ -181,6 +203,52 @@ test('run exits 1 when the output directory does not exist', async () => {
 
         assert.strictEqual(result.exitCode, 1);
         assert.match(result.err, /Output directory does not exist/);
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
+test('run aborts without changing files when confirmation is declined', async () => {
+    const dir = makeTempDir();
+    const outputFile = path.join(dir, 'users.json');
+    fs.writeFileSync(outputFile, JSON.stringify({ Beschuetzer: ['Old Alias'] }, null, 4));
+
+    const responses = {
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
+            body: [
+                { login: 'Beschuetzer' }
+            ]
+        },
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=2': {
+            body: []
+        },
+        'https://api.github.com/users/Beschuetzer': {
+            body: { name: 'Adam Major' }
+        }
+    };
+
+    const { fetchMock } = makeFetchMock(responses);
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock;
+    let promptMessage = '';
+
+    try {
+        const before = fs.readFileSync(outputFile, 'utf8');
+        const result = await withEnv(
+            {
+                INPUT_ORG: 'Now-Micro',
+                INPUT_OUTPUT_FILE: outputFile
+            },
+            () => run({ prompt: async message => {
+                promptMessage = message;
+                return 'no';
+            } })
+        );
+
+        assert.strictEqual(result.exitCode, 0);
+        assert.match(promptMessage, /About to write 1 users/);
+        assert.match(result.out, /Aborted\. No files were changed\./);
+        assert.strictEqual(fs.readFileSync(outputFile, 'utf8'), before);
     } finally {
         global.fetch = originalFetch;
     }

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const readline = require('node:readline/promises');
 const path = require('path');
 
 const DEFAULT_ORG = 'Now-Micro';
@@ -47,6 +48,31 @@ function mergeAliases(existingAliases, profileName) {
 		aliases.push(profileName);
 	}
 	return uniqueCaseInsensitive(aliases);
+}
+
+function isYes(answer) {
+	return /^(y|yes)$/i.test(normalizeWhitespace(answer));
+}
+
+async function promptForConfirmation(message, promptFn) {
+	if (typeof promptFn === 'function') {
+		return promptFn(message);
+	}
+
+	if (!process.stdin.isTTY) {
+		throw new Error('Interactive confirmation requires a TTY.');
+	}
+
+	const interfaceHandle = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout
+	});
+
+	try {
+		return await interfaceHandle.question(message);
+	} finally {
+		interfaceHandle.close();
+	}
 }
 
 function buildUsersObject(members, existingUsers) {
@@ -112,7 +138,8 @@ async function fetchMemberProfiles(members, token) {
 	return profiles;
 }
 
-async function run() {
+async function run(options = {}) {
+	const promptFn = options.prompt;
 	const org = normalizeWhitespace(process.env.INPUT_ORG || DEFAULT_ORG);
 	const outputFile = normalizeWhitespace(process.env.INPUT_OUTPUT_FILE || DEFAULT_OUTPUT_FILE);
 	const token = process.env.GITHUB_TOKEN || process.env.INPUT_GITHUB_TOKEN || '';
@@ -137,7 +164,25 @@ async function run() {
 		const profiles = await fetchMemberProfiles(members, token);
 		const existingUsers = loadExistingUsers(outputFile);
 		const users = buildUsersObject(profiles, existingUsers);
-		fs.writeFileSync(outputFile, `${JSON.stringify(users, null, 4)}\n`);
+		const nextContent = `${JSON.stringify(users, null, 4)}\n`;
+		const currentContent = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
+
+		if (currentContent === nextContent) {
+			console.log(`ℹ️  No changes detected for ${outputFile}`);
+			return;
+		}
+
+		const confirmation = await promptForConfirmation(
+			`About to write ${Object.keys(users).length} users to ${outputFile}. Continue? [y/N] `,
+			promptFn
+		);
+
+		if (!isYes(confirmation)) {
+			console.log('ℹ️  Aborted. No files were changed.');
+			return;
+		}
+
+		fs.writeFileSync(outputFile, nextContent);
 
 		console.log(`✅ Wrote ${Object.keys(users).length} users to ${outputFile}`);
 	} catch (error) {
@@ -156,7 +201,9 @@ module.exports = {
 	fetchOrgMembers,
 	loadExistingUsers,
 	mergeAliases,
+	isYes,
 	normalizeWhitespace,
+	promptForConfirmation,
 	run,
 	uniqueCaseInsensitive
 };
