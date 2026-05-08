@@ -186,34 +186,36 @@ test('buildUsersObject merges aliases and sorts logins', () => {
     const users = buildUsersObject(
         [
             { login: 'zeta', name: 'Zeta User' },
-            { login: 'alpha', name: 'Alpha One' }
+            { login: 'alpha', name: 'Alpha One' },
+            { login: 'blank', name: '' }
         ],
         {
-            alpha: ['Alpha One', 'A. One']
+            alpha: 'Alpha One'
         }
     );
 
     assert.deepStrictEqual(users, {
-        alpha: ['Alpha One', 'A. One'],
-        zeta: ['Zeta User']
+        alpha: 'Alpha One',
+        blank: '',
+        zeta: 'Zeta User'
     });
 });
 
 test('loadExistingUsers reads a valid object and rejects malformed JSON', () => {
     const dir = makeTempDir();
     const file = path.join(dir, 'users.json');
-    fs.writeFileSync(file, JSON.stringify({ Beschuetzer: ['Adam Major'] }, null, 4));
-    assert.deepStrictEqual(loadExistingUsers(file), { Beschuetzer: ['Adam Major'] });
+    fs.writeFileSync(file, JSON.stringify({ Beschuetzer: ['Adam Major', 'Adam'], BerryFinnamin: [] }, null, 4));
+    assert.deepStrictEqual(loadExistingUsers(file), { Beschuetzer: 'Adam Major', BerryFinnamin: '' });
 
     const badFile = path.join(dir, 'bad.json');
     fs.writeFileSync(badFile, '{ this is not json }');
     assert.throws(() => loadExistingUsers(badFile));
 });
 
-test('run writes users.json from GitHub org members and preserves existing aliases', async () => {
+test('run writes users.json from GitHub org members and preserves existing names', async () => {
     const dir = makeTempDir();
     const outputFile = path.join(dir, 'users.json');
-    fs.writeFileSync(outputFile, JSON.stringify({ Beschuetzer: ['Adam Major', 'Adam'] }, null, 4));
+    fs.writeFileSync(outputFile, JSON.stringify({ Beschuetzer: 'Adam Major' }, null, 4));
 
     const responses = {
         'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
@@ -254,8 +256,8 @@ test('run writes users.json from GitHub org members and preserves existing alias
         assert.match(promptMessage, /About to write 2 users/);
         assert.match(result.out, /Wrote 2 users/);
         assert.deepStrictEqual(JSON.parse(fs.readFileSync(outputFile, 'utf8')), {
-            Beschuetzer: ['Adam Major', 'Adam'],
-            'new-user': ['New User']
+            Beschuetzer: 'Adam Major',
+            'new-user': 'New User'
         });
     } finally {
         global.fetch = originalFetch;

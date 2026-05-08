@@ -62,7 +62,14 @@ function loadExistingUsers(filePath) {
 		throw new Error(`Expected ${filePath} to contain a JSON object.`);
 	}
 
-	return parsed;
+	const normalized = {};
+	for (const [login, value] of Object.entries(parsed)) {
+		normalized[normalizeWhitespace(login)] = Array.isArray(value)
+			? normalizeWhitespace(value.find(item => normalizeWhitespace(item)) || '')
+			: normalizeWhitespace(value);
+	}
+
+	return normalized;
 }
 
 function mergeAliases(existingAliases, profileName) {
@@ -104,9 +111,9 @@ function buildUsersObject(members, existingUsers) {
 		const login = normalizeWhitespace(member.login);
 		if (!login) continue;
 
-		const existingAliases = existingUsers[login] ?? existingUsers[Object.keys(existingUsers).find(key => key.toLowerCase() === login.toLowerCase())];
+		const existingName = existingUsers[login] ?? existingUsers[Object.keys(existingUsers).find(key => key.toLowerCase() === login.toLowerCase())] ?? '';
 		const profileName = member.name ? normalizeWhitespace(member.name) : '';
-		users[login] = mergeAliases(existingAliases, profileName);
+		users[login] = profileName || existingName || '';
 	}
 
 	return Object.fromEntries(
