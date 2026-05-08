@@ -9,18 +9,21 @@
     },
     "CodeBits": {
         "release-nuget.yml": [
+            "beschuetzer",
             "HDLovecraft",
             "sourcex"
         ]
     },
     "CSI-Connector": {
         "release-nuget.yml": [
+            "beschuetzer",
             "HDLovecraft",
             "sourcex"
         ]
     },
     "WarrantyService": {
         "release-nuget.yml": [
+            "beschuetzer",
             "HDLovecraft",
             "sourcex"
         ]
