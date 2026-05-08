@@ -349,7 +349,7 @@ test('run accepts CLI flags for org, token, and output file', async () => {
         assert.match(result.out, /Token:\s+provided/);
         assert.strictEqual(getAuthorizationHeader(calls[0]), 'Bearer ghp_cli123');
         assert.deepStrictEqual(JSON.parse(fs.readFileSync(outputFile, 'utf8')), {
-            '': 'flag-user'
+            'flag-user': 'flag-user'
         });
     } finally {
         global.fetch = originalFetch;
@@ -468,8 +468,8 @@ test('buildUsersObject merges aliases and sorts logins', () => {
     );
 
     assert.deepStrictEqual(users, {
-        '': 'blank',
         'Alpha One': 'alpha',
+        blank: 'blank',
         'Zeta User': 'zeta'
     });
 });

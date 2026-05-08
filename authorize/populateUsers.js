@@ -121,7 +121,7 @@ function buildUsersObject(members, existingUsers) {
 		if (!login) continue;
 
 		const profileName = member.name ? normalizeWhitespace(member.name) : '';
-		const displayName = profileName || findExistingNameForLogin(existingUsers, login) || '';
+		const displayName = profileName || findExistingNameForLogin(existingUsers, login) || login;
 		users[displayName] = login;
 	}
 
