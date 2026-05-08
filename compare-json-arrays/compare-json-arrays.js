@@ -89,7 +89,11 @@ function run() {
     }
 
     const json = JSON.stringify(result);
-    console.log(`🔍 Result (${result.length} items): ${json}`);
+    if (debugMode) {
+        console.log(`🔍 Result (${result.length} items): ${json}`);
+    } else {
+        console.log(`Result: ${result.length} item(s)`);
+    }
 
     fs.appendFileSync(outputFile, `result=${json}\n`);
 }
