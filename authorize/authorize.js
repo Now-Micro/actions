@@ -21,7 +21,7 @@ function run() {
     const repository = process.env.INPUT_REPOSITORY;
     const workflowRef = process.env.INPUT_WORKFLOW_REF;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, true);
-    const permissionsFile = path.join(process.env.GITHUB_ACTION_PATH || __dirname, '..', '.github', 'permissions.json');
+    const permissionsFile = path.join(process.env.GITHUB_ACTION_PATH || __dirname, 'permissions.json');
 
     if (!actor) {
         console.error('❌ INPUT_ACTOR is required');

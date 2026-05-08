@@ -1,6 +1,6 @@
 {
     "CodeBits": {
-        "release.yml": [
+        "release-nuget.yml": [
             "Beschuetzer",
             "Test123"
         ]

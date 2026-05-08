@@ -66,11 +66,9 @@ const VALID_ACTOR = 'Beschuetzer';
 function makeActionDir(permissions) {
     const tmpDir = makeTempDir();
     const actionDir = path.join(tmpDir, 'authorize');
-    const githubDir = path.join(tmpDir, '.github');
     fs.mkdirSync(actionDir, { recursive: true });
-    fs.mkdirSync(githubDir, { recursive: true });
-    if (permissions) writePermissions(githubDir, permissions);
-    return { tmpDir, actionDir, githubDir };
+    if (permissions) writePermissions(actionDir, permissions);
+    return { tmpDir, actionDir };
 }
 
 function makeEnv(overrides = {}) {
@@ -139,15 +137,15 @@ test('repository not in workflow permissions exits 1 with helpful message', () =
 });
 
 test('permissions file not found exits 1', () => {
-    const { actionDir } = makeActionDir(null); // no .github/permissions.json written
+    const { actionDir } = makeActionDir(null); // no authorize/permissions.json written
     const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /Permissions file not found/);
 });
 
 test('malformed permissions JSON exits 1', () => {
-    const { actionDir, githubDir } = makeActionDir(null);
-    fs.writeFileSync(path.join(githubDir, 'permissions.json'), '{ this is not json }');
+    const { actionDir } = makeActionDir(null);
+    fs.writeFileSync(path.join(actionDir, 'permissions.json'), '{ this is not json }');
     const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
     assert.match(r.err, /Failed to parse permissions file/);
