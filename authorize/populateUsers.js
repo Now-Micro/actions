@@ -6,6 +6,29 @@ const DEFAULT_ORG = 'Now-Micro';
 const DEFAULT_OUTPUT_FILE = path.join(__dirname, 'users.json');
 const GITHUB_API_BASE = 'https://api.github.com';
 
+function parseArgs(argv) {
+	const result = {};
+	for (let index = 0; index < argv.length; index += 1) {
+		const arg = argv[index];
+		if (arg === '--token' || arg === '--github-token') {
+			result.token = argv[index + 1] || '';
+			index += 1;
+			continue;
+		}
+		if (arg === '--org') {
+			result.org = argv[index + 1] || '';
+			index += 1;
+			continue;
+		}
+		if (arg === '--output-file') {
+			result.outputFile = argv[index + 1] || '';
+			index += 1;
+			continue;
+		}
+	}
+	return result;
+}
+
 function normalizeWhitespace(value) {
 	return String(value).trim().replace(/\s+/g, ' ');
 }
@@ -138,11 +161,23 @@ async function fetchMemberProfiles(members, token) {
 	return profiles;
 }
 
+function logStartupContext({ org, outputFile, token }) {
+	console.log('🚦 Starting users.json population');
+	console.log(`📦 Org:         ${org}`);
+	console.log(`🗂️  Output file: ${outputFile}`);
+	console.log(`🔐 Token:       ${token ? 'provided' : 'not provided'}`);
+	if (!token) {
+		console.log('ℹ️  Provide GITHUB_TOKEN or INPUT_GITHUB_TOKEN to include private org members.');
+	}
+}
+
 async function run(options = {}) {
 	const promptFn = options.prompt;
-	const org = normalizeWhitespace(process.env.INPUT_ORG || DEFAULT_ORG);
-	const outputFile = normalizeWhitespace(process.env.INPUT_OUTPUT_FILE || DEFAULT_OUTPUT_FILE);
-	const token = process.env.GITHUB_TOKEN || process.env.INPUT_GITHUB_TOKEN || '';
+	const cliArgs = options.argv || process.argv.slice(2);
+	const parsedArgs = parseArgs(cliArgs);
+	const org = normalizeWhitespace(options.org || parsedArgs.org || process.env.INPUT_ORG || DEFAULT_ORG);
+	const outputFile = normalizeWhitespace(options.outputFile || parsedArgs.outputFile || process.env.INPUT_OUTPUT_FILE || DEFAULT_OUTPUT_FILE);
+	const token = options.token || parsedArgs.token || process.env.GITHUB_TOKEN || process.env.INPUT_GITHUB_TOKEN || '';
 
 	if (!org) {
 		console.error('❌ INPUT_ORG is required');
@@ -160,7 +195,12 @@ async function run(options = {}) {
 	}
 
 	try {
+		logStartupContext({ org, outputFile, token });
 		const members = await fetchOrgMembers(org, token);
+		console.log(`ℹ️  GitHub returned ${members.length} org member${members.length === 1 ? '' : 's'}.`);
+		if (members.length === 0) {
+			console.log('⚠️  No org members were returned. If this org has private members, provide a token with read:org scope.');
+		}
 		const profiles = await fetchMemberProfiles(members, token);
 		const existingUsers = loadExistingUsers(outputFile);
 		const users = buildUsersObject(profiles, existingUsers);
@@ -204,6 +244,7 @@ module.exports = {
 	isYes,
 	normalizeWhitespace,
 	promptForConfirmation,
+	logStartupContext,
 	run,
 	uniqueCaseInsensitive
 };

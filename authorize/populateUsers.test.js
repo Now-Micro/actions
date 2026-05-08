@@ -63,8 +63,8 @@ function makeTempDir() {
 
 function makeFetchMock(responses) {
     const calls = [];
-    const fetchMock = async url => {
-        calls.push(url);
+    const fetchMock = async (url, options = {}) => {
+        calls.push({ url, options });
         const response = responses[url];
         if (!response) {
             throw new Error(`Unexpected fetch: ${url}`);
@@ -78,6 +78,15 @@ function makeFetchMock(responses) {
         };
     };
     return { fetchMock, calls };
+}
+
+function getAuthorizationHeader(call) {
+    const headers = call.options && call.options.headers;
+    if (!headers) return undefined;
+    if (typeof headers.get === 'function') {
+        return headers.get('Authorization') || headers.get('authorization') || undefined;
+    }
+    return headers.Authorization || headers.authorization;
 }
 
 test('normalizeWhitespace trims and collapses spaces', () => {
@@ -105,6 +114,72 @@ test('promptForConfirmation uses an injected prompt function when provided', asy
     });
 
     assert.strictEqual(answer, 'yes');
+});
+
+test('run logs startup inputs and uses the GitHub token when provided', async () => {
+    const dir = makeTempDir();
+    const outputFile = path.join(dir, 'users.json');
+
+    const responses = {
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
+            body: []
+        }
+    };
+
+    const { fetchMock, calls } = makeFetchMock(responses);
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock;
+
+    try {
+        const result = await withEnv(
+            {
+                INPUT_ORG: 'Now-Micro',
+                INPUT_OUTPUT_FILE: outputFile,
+                INPUT_GITHUB_TOKEN: 'ghp_testtoken123'
+            },
+            () => run({ prompt: async () => 'y' })
+        );
+
+        assert.strictEqual(result.exitCode, 0);
+        assert.match(result.out, /Starting users\.json population/);
+        assert.match(result.out, /Org:\s+Now-Micro/);
+        assert.match(result.out, /Output file:/);
+        assert.match(result.out, /Token:\s+provided/);
+        assert.match(result.out, /GitHub returned 0 org members/);
+        assert.strictEqual(getAuthorizationHeader(calls[0]), 'Bearer ghp_testtoken123');
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
+test('run accepts a token passed directly in options', async () => {
+    const dir = makeTempDir();
+    const outputFile = path.join(dir, 'users.json');
+
+    const responses = {
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
+            body: []
+        }
+    };
+
+    const { fetchMock, calls } = makeFetchMock(responses);
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock;
+
+    try {
+        const result = await withEnv(
+            {
+                INPUT_ORG: 'Now-Micro',
+                INPUT_OUTPUT_FILE: outputFile
+            },
+            () => run({ token: 'ghp_directtoken456', prompt: async () => 'y' })
+        );
+
+        assert.strictEqual(result.exitCode, 0);
+        assert.strictEqual(getAuthorizationHeader(calls[0]), 'Bearer ghp_directtoken456');
+    } finally {
+        global.fetch = originalFetch;
+    }
 });
 
 test('buildUsersObject merges aliases and sorts logins', () => {
