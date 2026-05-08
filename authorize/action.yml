@@ -10,20 +10,6 @@ inputs:
     description: 'Enable debug mode for additional logging.'
     required: false
     default: 'false'
-  actor:
-    description: 'The GitHub actor (user) initiating the workflow. Use github.actor.'
-    required: true
-  repository:
-    description: 'The calling repository in owner/repo format. Use github.repository.'
-    required: true
-  workflow-ref:
-    description: 'The full workflow ref of the calling workflow. Use github.workflow_ref.'
-    required: true
- 
-outputs:
-  authorized:
-    description: 'Whether the actor is authorized (true). Not set on denial — the step exits with code 1 instead.'
-    value: ${{ steps.authorize.outputs.authorized }}
 
 runs:
   using: 'composite'
@@ -36,7 +22,7 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/authorize.js"
       env:
-        INPUT_ACTOR: ${{ inputs.actor }}
+        INPUT_ACTOR: ${{ github.actor }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
-        INPUT_REPOSITORY: ${{ inputs.repository }}
-        INPUT_WORKFLOW_REF: ${{ inputs.workflow-ref }}
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_WORKFLOW_REF: ${{ github.workflow_ref }}

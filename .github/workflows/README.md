@@ -63,47 +63,6 @@ steps:
 
 ## Reusable Workflows
 
-### `reusable-authorize.yml` — Authorize Workflow
-
-Checks whether the triggering actor is authorized to run the calling workflow. Intended to be used as a guard job at the start of sensitive workflows.
-
-**What it does:**
-
-1. Logs the current GitHub context (actor, repository, workflow ref).
-2. Calls the `Now-Micro/actions/authorize` composite action to perform the authorization check.
-3. Outputs an `authorized` boolean that subsequent jobs can gate on via `needs` and `if`.
-
-**Outputs**
-
-| Name | Description |
-|---|---|
-| `authorized` | `'true'` if the actor is authorized to run the workflow, otherwise `'false'`. |
-
-**Inputs**
-
-| Name | Required | Default | Description |
-|---|---|---|---|
-| `debug-mode` | No | `false` | Enable debug logging in the authorize action. |
-
-**Usage**
-
-```yaml
-jobs:
-  authorize:
-    uses: Now-Micro/actions/.github/workflows/reusable-authorize.yml@v1
-    with:
-      debug-mode: "false"
-
-  deploy:
-    needs: authorize
-    if: needs.authorize.outputs.authorized == 'true'
-    runs-on: ubuntu-22.04
-    steps:
-      - run: echo "Authorized — proceeding with deployment"
-```
-
----
-
 ### `reusable-checks.yml` — Reusable Checks for PRs into main
 
 Runs the repo's shared PR checks: linting, coding standards, and tests. It is designed to be called from PR workflows so consumers can pass in the branch context and, optionally, a specific directory to check.
