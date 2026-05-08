@@ -4,7 +4,7 @@
             "Test123"
         ],
         "auth-sucCEss.yml": [
-            "Adam Major"
+            "Adam major"
         ]
     },
     "CodeBits": {
@@ -15,7 +15,7 @@
     },
     "CSI-Connector": {
         "release-nuget.yml": [
-            "Adam Major",
+            "Adam major",
             "Hilton Dahl",
             "Bernard Carter"
         ]
