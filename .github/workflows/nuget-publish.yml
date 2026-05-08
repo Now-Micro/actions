@@ -62,6 +62,9 @@ jobs:
     nuget-publish:
         runs-on: ubuntu-22.04
         steps:
+            - name: Authorize workflow
+              uses: Now-Micro/actions/authorize@v1
+
             - name: Check out code
               uses: actions/checkout@v6
               with:
