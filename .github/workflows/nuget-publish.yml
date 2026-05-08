@@ -64,6 +64,8 @@ jobs:
         steps:
             - name: Authorize workflow
               uses: Now-Micro/actions/authorize@v1
+              with:
+                debug-mode: ${{ inputs['ci-debug-mode'] != '' && inputs['ci-debug-mode'] || 'false' }}
 
             - name: Check out code
               uses: actions/checkout@v6
