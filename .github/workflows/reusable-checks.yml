@@ -331,15 +331,38 @@ jobs:
                   retry-attempts: 3
                   workflow-name: ${{ inputs['workflow-name'] }}
 
-            - name: Get Changed Files
+            - name: Get Changed Files Between Last Successful Run and Head
               if: ${{ steps.mode.outputs.mode == 'changes' &&
                   inputs['overridden-changed-files'] == '' }}
-              id: changed-files
+              id: changed-files-against-last-success
               uses: Now-Micro/actions/get-changed-files@v1
               with:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ steps.last-success.outputs.last_success_sha ||
                       github.event.repository.default_branch }}
+
+            - name: Get Changed Files Between Default Branch and Head
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' &&
+                  steps.last-success.outputs.last_success_sha != '' }}
+              id: changed-files-against-main
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ github.event.repository.default_branch }}
+
+            - name: Calculate Intersection of Changed Files (still changed since last
+                  successful run)
+              id: changed-files-to-use
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' &&
+                  steps.last-success.outputs.last_success_sha != '' }}
+              uses: Now-Micro/actions/compare-json-arrays@v1
+              with:
+                  array-a: ${{ steps.changed-files-against-last-success.outputs.changed_files }}
+                  array-b: ${{ steps.changed-files-against-main.outputs.changed_files }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  mode: "intersection"
 
             - name: Get Unique Project Directories
               if: ${{ steps.mode.outputs.mode == 'changes' }}
@@ -347,7 +370,9 @@ jobs:
               uses: Now-Micro/actions/get-unique-project-directories@v1
               with:
                   paths: ${{ inputs['overridden-changed-files'] ||
-                      steps.changed-files.outputs.changed_files }}
+                      steps.changed-files-to-use.outputs.changed_files ||
+                      steps.changed-files-against-last-success.outputs.changed_files
+                      }}
                   pattern: ${{ inputs['testing-path-pattern'] }}
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
                   fallback-regex: ${{ inputs['testing-path-pattern'] }}
