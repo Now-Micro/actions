@@ -109,6 +109,19 @@ on:
                 required: false
                 type: string
                 default: "8.0.x"
+            nuget-names:
+                description: "Comma-separated names of the NuGet sources to configure when
+                    running tests. Defaults to 'Now-Micro' (the GitHub Packages
+                    feed in the Now-Micro organization).  It should be noted
+                    that if you specify multiple urls for the nuget-urls input,
+                    you should specify corresponding names here in the same
+                    order, otherwise the feeds may not be configured correctly.
+                    If you want to use a single feed, you can just specify it
+                    here and leave nuget-urls empty to use the default GitHub
+                    Packages feed for the Now-Micro organization."
+                required: false
+                type: string
+                default: "Now-Micro"
             nuget-urls:
                 description: "Comma-separated list of NuGet feed URLs to configure when running
                     tests. Defaults to
@@ -281,7 +294,7 @@ jobs:
               with:
                   directory: ${{ matrix.directory }}
                   roslyn-version: ${{ inputs['roslyn-version'] }}
-                  nuget-names: "Now-Micro"
+                  nuget-names: ${{ inputs.nuget-names }}
                   nuget-passwords: ${{ secrets['token-github-packages'] }}
                   nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner
                       }}/index.json"
