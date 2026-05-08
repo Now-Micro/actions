@@ -394,7 +394,7 @@ test('missing GITHUB_OUTPUT exits 1', () => {
 
 // ── debug mode ────────────────────────────────────────────────────────────────
 
-test('debug-mode true logs debug output', () => {
+test('debug-mode true logs debug output including full result JSON', () => {
     const r = runWith({
         INPUT_MODE: 'intersection',
         INPUT_ARRAY_A: '["a"]',
@@ -404,6 +404,19 @@ test('debug-mode true logs debug output', () => {
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.out, /Debug mode is ON/);
     assert.match(r.out, /Mode: intersection/);
+    assert.match(r.out, /Result \(1 items\): \["a"\]/);
+    assert.doesNotMatch(r.out, /^Result: \d+ item/m);
+});
+
+test('debug-mode false logs only item count summary, not full JSON', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '["a","b"]',
+        INPUT_ARRAY_B: '["c"]',
+    });
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /^Result: 3 item\(s\)$/m);
+    assert.doesNotMatch(r.out, /\["a","b","c"\]/);
 });
 
 test('debug-mode: parseBool accepts boolean true value', () => {
