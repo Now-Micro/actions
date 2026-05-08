@@ -111,7 +111,7 @@ on:
                 default: "8.0.x"
             nuget-names:
                 description: "Comma-separated names of the NuGet sources to configure when
-                    running tests. Defaults to 'Now-Micro' (the GitHub Packages
+                    running coding standards and tests jobs. Defaults to 'Now-Micro' (the GitHub Packages
                     feed in the Now-Micro organization).  It should be noted
                     that if you specify multiple urls for the nuget-urls input,
                     you should specify corresponding names here in the same
@@ -294,10 +294,9 @@ jobs:
               with:
                   directory: ${{ matrix.directory }}
                   roslyn-version: ${{ inputs['roslyn-version'] }}
-                  nuget-names: ${{ inputs.nuget-names }}
+                  nuget-names: ${{ inputs['nuget-names'] }}
                   nuget-passwords: ${{ secrets['token-github-packages'] }}
-                  nuget-urls: "https://nuget.pkg.github.com/${{ github.repository_owner
-                      }}/index.json"
+                  nuget-urls: ${{ inputs['nuget-urls'] || format('https://nuget.pkg.github.com/{0}/index.json', github.repository_owner) }}
                   nuget-usernames: ${{ github.actor }}
 
     test-setup:
@@ -442,11 +441,9 @@ jobs:
             - name: Configure Github NuGet source
               uses: Now-Micro/actions/nuget/configure-sources@v1
               with:
-                  names: "Now-Micro"
+                  names: ${{ inputs['nuget-names'] }}
                   passwords: ${{ secrets['token-github-packages'] }}
-                  urls: ${{ inputs['nuget-urls'] ||
-                      format('https://nuget.pkg.github.com/{0}/index.json',
-                      github.repository_owner) }}
+                  urls: ${{ inputs['nuget-urls'] || format('https://nuget.pkg.github.com/{0}/index.json', github.repository_owner) }}
                   usernames: ${{ github.actor }}
 
             - name: Run tests
