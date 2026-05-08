@@ -370,7 +370,7 @@ jobs:
               uses: Now-Micro/actions/get-unique-project-directories@v1
               with:
                   paths: ${{ inputs['overridden-changed-files'] ||
-                      steps.changed-files-to-use.outputs.changed_files ||
+                      steps.changed-files-to-use.outputs.result ||
                       steps.changed-files-against-last-success.outputs.changed_files
                       }}
                   pattern: ${{ inputs['testing-path-pattern'] }}
