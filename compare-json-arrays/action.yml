@@ -1,5 +1,5 @@
 name: 'Compare JSON Arrays'
-description: 'Compares two JSON array strings and returns a JSON array based on the selected mode (intersection, union, or diff).'
+description: 'Compares two JSON array strings and returns a JSON array based on the selected mode (intersection, union, left-diff, right-diff, or unique).'
 author: 'Trafera'
 
 inputs:

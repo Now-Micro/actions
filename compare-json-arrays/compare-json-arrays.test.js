@@ -351,6 +351,36 @@ test('non-array JSON in array-a exits 1', () => {
     assert.match(r.err, /must be a JSON array/);
 });
 
+test('empty string for array-a exits 1', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '',
+        INPUT_ARRAY_B: '["b"]',
+    });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /INPUT_ARRAY_A is required and must not be empty/);
+});
+
+test('whitespace-only string for array-a exits 1', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '   ',
+        INPUT_ARRAY_B: '["b"]',
+    });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /INPUT_ARRAY_A is required and must not be empty/);
+});
+
+test('empty string for array-b exits 1', () => {
+    const r = runWith({
+        INPUT_MODE: 'union',
+        INPUT_ARRAY_A: '["a"]',
+        INPUT_ARRAY_B: '',
+    });
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /INPUT_ARRAY_B is required and must not be empty/);
+});
+
 test('missing GITHUB_OUTPUT exits 1', () => {
     const r = withEnv({
         INPUT_MODE: 'union',
@@ -398,14 +428,14 @@ test('debug-mode: unknown value falls back to default (false)', () => {
     assert.doesNotMatch(r.out, /Debug mode is ON/);
 });
 
-test('parseArray: empty string returns empty array', () => {
+test('parseArray: empty string exits 1 with clear message', () => {
     const r = runWith({
         INPUT_MODE: 'union',
         INPUT_ARRAY_A: '',
         INPUT_ARRAY_B: '["b"]',
     });
-    assert.strictEqual(r.exitCode, 0);
-    assert.deepStrictEqual(getResult(r), ['b']);
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /INPUT_ARRAY_A is required and must not be empty/);
 });
 
 // ── output format ─────────────────────────────────────────────────────────────

@@ -10,7 +10,10 @@ function parseBool(val, def) {
 }
 
 function parseArray(raw, name) {
-    if (!raw || raw.trim() === '') return [];
+    if (!raw || raw.trim() === '') {
+        console.error(`${name} is required and must not be empty. Pass "[]" for an empty array.`);
+        process.exit(1);
+    }
     try {
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) {
