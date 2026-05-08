@@ -1,21 +1,28 @@
 {
-    "CodeBits": {
-        "release-nuget.yml": [
-            "Beschuetzer",
-            "Test123"
-        ]
-    },
-    "WarrantyService": {
-        "release.yml": [
-            "Test123"
-        ]
-    },
     "aSpIRe-DEMO": {
         "relEAse.yml": [
             "Test123"
         ],
         "auth-sucCEss.yml": [
-            "Beschuetzer"
+            "beschuetzer"
+        ]
+    },
+    "CodeBits": {
+        "release-nuget.yml": [
+            "HDLovecraft",
+            "sourcex"
+        ]
+    },
+    "CSI-Connector": {
+        "release-nuget.yml": [
+            "HDLovecraft",
+            "sourcex"
+        ]
+    },
+    "WarrantyService": {
+        "release-nuget.yml": [
+            "HDLovecraft",
+            "sourcex"
         ]
     }
 }
