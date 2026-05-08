@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const readline = require('node:readline/promises');
 
 const {
     buildUsersObject,
@@ -116,6 +117,39 @@ test('promptForConfirmation uses an injected prompt function when provided', asy
     assert.strictEqual(answer, 'yes');
 });
 
+test('promptForConfirmation reads from TTY when no prompt function is provided', async () => {
+    const originalCreateInterface = readline.createInterface;
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+    let closed = false;
+
+    try {
+        Object.defineProperty(process.stdin, 'isTTY', {
+            configurable: true,
+            value: true
+        });
+
+        readline.createInterface = () => ({
+            question: async message => {
+                assert.strictEqual(message, 'Continue? ');
+                return 'yes';
+            },
+            close: () => {
+                closed = true;
+            }
+        });
+
+        const answer = await promptForConfirmation('Continue? ');
+
+        assert.strictEqual(answer, 'yes');
+        assert.strictEqual(closed, true);
+    } finally {
+        readline.createInterface = originalCreateInterface;
+        if (stdinDescriptor) {
+            Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor);
+        }
+    }
+});
+
 test('run logs startup inputs and uses the GitHub token when provided', async () => {
     const dir = makeTempDir();
     const outputFile = path.join(dir, 'users.json');
@@ -182,6 +216,46 @@ test('run accepts a token passed directly in options', async () => {
     }
 });
 
+test('run accepts CLI flags for org, token, and output file', async () => {
+    const dir = makeTempDir();
+    const outputFile = path.join(dir, 'users.json');
+
+    const responses = {
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
+            body: [
+                { login: 'flag-user' }
+            ]
+        },
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=2': {
+            body: []
+        },
+        'https://api.github.com/users/flag-user': {
+            body: { name: '' }
+        }
+    };
+
+    const { fetchMock, calls } = makeFetchMock(responses);
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock;
+
+    try {
+        const result = await withEnv({}, () => run({
+            argv: ['--org', 'Now-Micro', '--output-file', outputFile, '--github-token', 'ghp_cli123'],
+            prompt: async () => 'y'
+        }));
+
+        assert.strictEqual(result.exitCode, 0);
+        assert.match(result.out, /Starting users\.json population/);
+        assert.match(result.out, /Token:\s+provided/);
+        assert.strictEqual(getAuthorizationHeader(calls[0]), 'Bearer ghp_cli123');
+        assert.deepStrictEqual(JSON.parse(fs.readFileSync(outputFile, 'utf8')), {
+            'flag-user': ''
+        });
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
 test('buildUsersObject merges aliases and sorts logins', () => {
     const users = buildUsersObject(
         [
@@ -201,6 +275,21 @@ test('buildUsersObject merges aliases and sorts logins', () => {
     });
 });
 
+test('buildUsersObject falls back to an existing stored name when profile name is blank', () => {
+    const users = buildUsersObject(
+        [
+            { login: 'BerryFinnamin', name: '' }
+        ],
+        {
+            BERRYFINNAMIN: 'Stored Name'
+        }
+    );
+
+    assert.deepStrictEqual(users, {
+        BerryFinnamin: 'Stored Name'
+    });
+});
+
 test('loadExistingUsers reads a valid object and rejects malformed JSON', () => {
     const dir = makeTempDir();
     const file = path.join(dir, 'users.json');
@@ -210,6 +299,17 @@ test('loadExistingUsers reads a valid object and rejects malformed JSON', () => 
     const badFile = path.join(dir, 'bad.json');
     fs.writeFileSync(badFile, '{ this is not json }');
     assert.throws(() => loadExistingUsers(badFile));
+});
+
+test('loadExistingUsers returns empty object for missing and empty files', () => {
+    const dir = makeTempDir();
+    const missingFile = path.join(dir, 'missing.json');
+    const emptyFile = path.join(dir, 'empty.json');
+
+    fs.writeFileSync(emptyFile, '   \n');
+
+    assert.deepStrictEqual(loadExistingUsers(missingFile), {});
+    assert.deepStrictEqual(loadExistingUsers(emptyFile), {});
 });
 
 test('run writes users.json from GitHub org members and preserves existing names', async () => {
@@ -280,6 +380,40 @@ test('run exits 1 when the output directory does not exist', async () => {
 
         assert.strictEqual(result.exitCode, 1);
         assert.match(result.err, /Output directory does not exist/);
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
+
+test('run exits 1 when the GitHub API request fails', async () => {
+    const dir = makeTempDir();
+    const outputFile = path.join(dir, 'users.json');
+
+    const responses = {
+        'https://api.github.com/orgs/Now-Micro/members?per_page=100&page=1': {
+            ok: false,
+            status: 403,
+            statusText: 'Forbidden',
+            text: 'rate limited'
+        }
+    };
+
+    const { fetchMock } = makeFetchMock(responses);
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock;
+
+    try {
+        const result = await withEnv(
+            {
+                INPUT_ORG: 'Now-Micro',
+                INPUT_OUTPUT_FILE: outputFile
+            },
+            () => run({ prompt: async () => 'y' })
+        );
+
+        assert.strictEqual(result.exitCode, 1);
+        assert.match(result.err, /GitHub API request failed/);
+        assert.match(result.err, /rate limited/);
     } finally {
         global.fetch = originalFetch;
     }
