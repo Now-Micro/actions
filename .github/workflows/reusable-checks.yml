@@ -109,6 +109,17 @@ on:
                 required: false
                 type: string
                 default: "8.0.x"
+            nuget-urls:
+                description: "Comma-separated list of NuGet feed URLs to configure when running
+                    tests. Defaults to
+                    'https://nuget.pkg.github.com/{github.repository_owner}/ind\
+                    ex.json', so you only need to specify this if you need to
+                    add additional feeds or override the default GitHub Packages
+                    feed (e.g. your repo has a different owner or you want to
+                    use a different feed)."
+                required: false
+                type: string
+                default: ""
             test-project-regex:
                 description: "Regex to identify the test project file within the test directory.
                     Defaults to empty (first .csproj found is used)."
@@ -420,7 +431,9 @@ jobs:
               with:
                   names: "Now-Micro"
                   passwords: ${{ secrets['token-github-packages'] }}
-                  urls: "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+                  urls: ${{ inputs['nuget-urls'] ||
+                      format('https://nuget.pkg.github.com/{0}/index.json',
+                      github.repository_owner) }}
                   usernames: ${{ github.actor }}
 
             - name: Run tests
