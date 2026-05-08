@@ -4,25 +4,27 @@
             "Test123"
         ],
         "auth-sucCEss.yml": [
-            "beschuetzer"
+            "Adam major"
         ]
     },
     "CodeBits": {
         "release-nuget.yml": [
-            "HDLovecraft",
-            "sourcex"
+            "Hilton Dahl",
+            "Bernard Carter"
         ]
     },
     "CSI-Connector": {
         "release-nuget.yml": [
-            "HDLovecraft",
-            "sourcex"
+            "Adam major",
+            "Hilton Dahl",
+            "Bernard Carter"
         ]
     },
     "WarrantyService": {
         "release-nuget.yml": [
-            "HDLovecraft",
-            "sourcex"
+            "beschuetzer",
+            "Hilton Dahl",
+            "Bernard Carter"
         ]
     }
 }

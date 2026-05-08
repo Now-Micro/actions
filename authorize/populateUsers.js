@@ -72,6 +72,15 @@ function loadExistingUsers(filePath) {
 	return normalized;
 }
 
+function findExistingNameForLogin(existingUsers, login) {
+	const lowerLogin = login.toLowerCase();
+	const found = Object.keys(existingUsers).find(key => {
+		const value = existingUsers[key];
+		return typeof value === 'string' && value.toLowerCase() === lowerLogin;
+	});
+	return found !== undefined ? found : '';
+}
+
 function mergeAliases(existingAliases, profileName) {
 	const aliases = Array.isArray(existingAliases) ? existingAliases.map(normalizeWhitespace) : [];
 	if (profileName) {
@@ -111,9 +120,9 @@ function buildUsersObject(members, existingUsers) {
 		const login = normalizeWhitespace(member.login);
 		if (!login) continue;
 
-		const existingName = existingUsers[login] ?? existingUsers[Object.keys(existingUsers).find(key => key.toLowerCase() === login.toLowerCase())] ?? '';
 		const profileName = member.name ? normalizeWhitespace(member.name) : '';
-		users[login] = profileName || existingName || '';
+		const displayName = profileName || findExistingNameForLogin(existingUsers, login) || login;
+		users[displayName] = login;
 	}
 
 	return Object.fromEntries(
@@ -186,16 +195,6 @@ async function run(options = {}) {
 	const outputFile = normalizeWhitespace(options.outputFile || parsedArgs.outputFile || process.env.INPUT_OUTPUT_FILE || DEFAULT_OUTPUT_FILE);
 	const token = options.token || parsedArgs.token || process.env.GITHUB_TOKEN || process.env.INPUT_GITHUB_TOKEN || '';
 
-	if (!org) {
-		console.error('❌ INPUT_ORG is required');
-		process.exit(1);
-	}
-
-	if (!outputFile) {
-		console.error('❌ INPUT_OUTPUT_FILE is required');
-		process.exit(1);
-	}
-
 	if (!fs.existsSync(path.dirname(outputFile))) {
 		console.error(`❌ Output directory does not exist: ${path.dirname(outputFile)}`);
 		process.exit(1);
@@ -244,6 +243,7 @@ if (require.main === module) {
 
 module.exports = {
 	buildUsersObject,
+	findExistingNameForLogin,
 	fetchMemberProfiles,
 	fetchOrgMembers,
 	loadExistingUsers,

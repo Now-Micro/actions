@@ -40,6 +40,12 @@ function writePermissions(dir, obj) {
     return file;
 }
 
+function writeUsers(dir, obj) {
+    const file = path.join(dir, 'users.json');
+    fs.writeFileSync(file, JSON.stringify(obj));
+    return file;
+}
+
 function runWith(env) {
     const tmpDir = makeTempDir();
     const r = withEnv(env, () => run());
@@ -56,14 +62,24 @@ const BASE_PERMISSIONS = {
     }
 };
 
+const BASE_USERS = {
+    'Adam Major': 'Beschuetzer',
+    'Test User': 'Test123',
+    'Nick Huey': 'nlhuey',
+    'Brian Ulrich': 'brian-trafera'
+};
+
 const VALID_WORKFLOW_REF = 'Now-Micro/CodeBits/.github/workflows/release.yml@refs/heads/main';
 const VALID_REPOSITORY = 'Now-Micro/CodeBits';
 const VALID_ACTOR = 'Beschuetzer';
 
-function makeActionDir(permissions) {
+function makeActionDir(permissions, users = BASE_USERS) {
     const tmpDir = makeTempDir();
     const actionDir = path.join(tmpDir, 'authorize');
     fs.mkdirSync(actionDir, { recursive: true });
+    if (users !== null) {
+        writeUsers(actionDir, users);
+    }
     if (permissions) writePermissions(actionDir, permissions);
     return { tmpDir, actionDir };
 }
@@ -89,10 +105,52 @@ test('authorized actor exits 0 and logs success', () => {
     assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
 });
 
+test('invalid debug mode falls back to default logging', () => {
+    const r = runWith(makeEnv({ INPUT_DEBUG_MODE: 'maybe' }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /🔍 Checking authorization/);
+});
+
 test('second authorized actor in same repo is also permitted', () => {
     const r = runWith(makeEnv({ INPUT_ACTOR: 'Test123' }));
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.out, /✅.*Test123.*is authorized/);
+});
+
+test('permission entry can resolve through users.json aliases', () => {
+    const { actionDir } = makeActionDir({
+        'CodeBits': {
+            'release.yml': ['Adam Major']
+        }
+    });
+
+    const r = runWith(makeEnv({
+        INPUT_ACTOR: 'Beschuetzer',
+        GITHUB_ACTION_PATH: actionDir
+    }));
+
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Users file:/);
+    assert.match(r.out, /Actor alias resolved: 'Beschuetzer' → 'Adam Major'/);
+    assert.match(r.out, /Authorization resolved via alias: Adam Major → Beschuetzer/);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('missing users file still allows direct permission matches', () => {
+    const { actionDir } = makeActionDir(BASE_PERMISSIONS, null);
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Users file not found/);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('empty users file still allows direct permission matches', () => {
+    const { actionDir } = makeActionDir(BASE_PERMISSIONS, null);
+    fs.writeFileSync(path.join(actionDir, 'users.json'), '   \n');
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /Users file is empty/);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
 });
 
 test('unauthorized actor exits 1 with helpful message', () => {
@@ -143,7 +201,7 @@ test('malformed permissions JSON exits 1', () => {
     fs.writeFileSync(path.join(actionDir, 'permissions.json'), '{ this is not json }');
     const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
     assert.strictEqual(r.exitCode, 1);
-    assert.match(r.err, /Failed to parse permissions file/);
+    assert.match(r.err, /Failed to parse permissions or users file/);
 });
 
 test('missing INPUT_ACTOR exits 1', () => {
@@ -222,6 +280,15 @@ test('workflow filename lookup is case-insensitive', () => {
     }));
     assert.strictEqual(r.exitCode, 0);
     assert.match(r.out, /🔍 Workflow ref:\s+Now-Micro\/CodeBits\/\.github\/workflows\/RELEASE\.YML@refs\/heads\/main\s+→\s+RELEASE\.YML/);
+});
+
+test('malformed users file exits 1', () => {
+    const { actionDir } = makeActionDir(BASE_PERMISSIONS, null);
+    fs.writeFileSync(path.join(actionDir, 'users.json'), '[]');
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /Failed to parse permissions or users file/);
+    assert.match(r.err, /Expected/);
 });
 
 test('debug mode disabled suppresses 🔍 logs but still prints ✅', () => {
