@@ -351,31 +351,18 @@ jobs:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ github.event.repository.default_branch }}
 
-            - name: Calculate Still-Changed Files
+            - name: Calculate Intersection of Changed Files (still changed since last
+                  successful run)
               id: changed-files-to-use
               if: ${{ steps.mode.outputs.mode == 'changes' &&
                   inputs['overridden-changed-files'] == '' &&
                   steps.last-success.outputs.last_success_sha != '' }}
-              shell: bash
-              env:
-                  SINCE_LAST: ${{ steps.changed-files-against-last-success.outputs.changed_files
-                      }}
-                  AGAINST_MAIN: ${{ steps.changed-files-against-main.outputs.changed_files }}
-              run: |
-                  # When no against-main comparison ran (no last-success SHA was found),
-                  # all files in SINCE_LAST are by definition still changed — no filtering needed.
-                  if [ -z "$AGAINST_MAIN" ] || [ "$AGAINST_MAIN" = "[]" ]; then
-                    echo "changed_files=$SINCE_LAST" >> "$GITHUB_OUTPUT"
-                    exit 0
-                  fi
-
-                  # Intersection: files that changed since the last successful run
-                  # AND are still part of the diff between the default branch and HEAD.
-                  # This filters out anything that was introduced and then reverted
-                  # between the last run and the current commit.
-                  INTERSECTION=$(jq -nc --argjson since "$SINCE_LAST" --argjson main "$AGAINST_MAIN" \
-                    '[$since[] | select(. as $x | $main | index($x) != null)]')
-                  echo "changed_files=$INTERSECTION" >> "$GITHUB_OUTPUT"
+              uses: Now-Micro/actions/compare-json-arrays@v1
+              with:
+                  array-a: ${{ steps.changed-files-against-last-success.outputs.changed_files }}
+                  array-b: ${{ steps.changed-files-against-main.outputs.changed_files }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  mode: "intersection"
 
             - name: Get Unique Project Directories
               if: ${{ steps.mode.outputs.mode == 'changes' }}
