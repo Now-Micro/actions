@@ -153,7 +153,7 @@ jobs:
       ...
 ```
 
-#### Single Directory Case:
+#### Single Directory Case
 
 ```yaml
 jobs:
@@ -174,7 +174,7 @@ jobs:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
 
-#### Multi-Directory Case:
+#### Multi-Directory Case
 
 ```yaml
 jobs:
