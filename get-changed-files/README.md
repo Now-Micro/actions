@@ -1,6 +1,6 @@
 # Get Changed Files
 
-This action compares two refs and returns the changed directories as JSON.
+This action compares two refs and returns the changed file paths as a JSON array in the `changed_files` output.
 
 ## Usage
 
