@@ -53,7 +53,7 @@ jobs:
           SHOULD_RUN=false
 
           if echo "$CHANGED_FILES" | jq -r '.[]' | grep -qE \
-            '\.js$|\.cs$|action\.yml$|^\.github/actions/|^\.github/workflows/(demo-nuget-publish|demo-all|release)\.yml$|^\.github/workflows/reusable[^/]*\.ya?ml$'; then
+            '\.js$|\.cs$|action\.yml$|^\.github/actions/.*\.ya?ml$|^\.github/workflows/(demo-nuget-publish|demo-all|release)\.yml$|^\.github/workflows/reusable[^/]*\.ya?ml$'; then
             SHOULD_RUN=true
           fi
 
