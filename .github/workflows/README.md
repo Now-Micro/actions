@@ -1,12 +1,23 @@
-# Reusable Workflows
+# Reusable Workflows and Composite Actions
 
 This directory contains GitHub Actions **reusable workflows** — shared workflow definitions that any repository in the organization can call, as well as workflows that run on this repository directly.
+
+## Table of Contents
+
+- [Background: Reusable Workflows vs Composite Actions](#background-reusable-workflows-vs-composite-actions)
+  - [Reusable Workflows](#reusable-workflows)
+  - [Composite Actions](#composite-actions)
+  - [When to use which](#when-to-use-which)
+- [Reusable Workflows in this Repo](#reusable-workflows-in-this-repo)
+  - [Reusable Checks Workflow](#reusable-checks-workflow)
+  - [NuGet Publish Workflow](#nuget-publish-workflow)
+  - [Pre-Release NuGet Workflow](#pre-release-nuget-workflow)
 
 ---
 
 ## Background: Reusable Workflows vs Composite Actions
 
-### Reusable Workflows
+### Reusable Workflows in this Repo
 
 A **reusable workflow** is a complete `.yml` workflow file that exposes a `workflow_call` trigger. Another workflow can call it using the `uses:` key at the **job** level. Each job in the reusable workflow runs on its own runner (just like a normal workflow job), which means it can use `needs:`, `strategy: matrix:`, and `if:` conditions across jobs.
 
@@ -63,7 +74,7 @@ steps:
 
 ## Reusable Workflows
 
-### `reusable-checks.yml` — Reusable Checks for PRs into main
+### Reusable Checks Workflow
 
 Runs the repo's shared PR checks: linting, coding standards, and tests. It is designed to be called from PR workflows so consumers can pass in the branch context and, optionally, a specific directory to check.
 
@@ -169,7 +180,7 @@ jobs:
 
 ---
 
-### `nuget-publish.yml` — Reusable NuGet Package
+### NuGet Publish Workflow
 
 Builds, packs, and publishes a versioned NuGet package from a release branch, then creates a GitHub release with the generated artifacts. Intended to run automatically when a `release/**` branch is pushed, or to be called explicitly from another workflow.
 
@@ -233,7 +244,7 @@ git push origin release/MyLibrary/1.2.3
 
 ---
 
-### `reusable-pre-release.yml` — Reusable Pre-Release NuGet Package
+### Pre-Release NuGet Workflow
 
 Detects which project directories have changed and publishes a timestamped pre-release NuGet package for each one. Designed to be called on pull requests or feature branches to publish an `alpha`/`beta`/`rc`/`preview` build that consumers can test before a full release.
 
