@@ -10,5 +10,6 @@ This action finds a .NET project or solution when needed, installs the requested
   with:
     directory: src/MyApp.Tests
     dotnet-version: 8.0.x
+    prefer-solution: "true"
     solution-regex: '.*\.sln$'
 ```
