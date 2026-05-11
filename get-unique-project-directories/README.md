@@ -16,7 +16,7 @@ Values are de-duplicated in final output.
 ## Inputs
 
 - `pattern` (required)  
-   Regex used to decide which input paths are considered.
+   Regex used to decide which input paths are considered. The root directory must be captured in group 1 because the action uses `match[1]` when collecting results.
 
 - `paths` (required)  
    Comma-separated file path list to evaluate.
@@ -51,7 +51,7 @@ Values are de-duplicated in final output.
 
 ```yaml
 with:
-   pattern: '.*\\.cs$'
+   pattern: '^(src/[^/]+)/'
    paths: 'src/App/Program.cs,tests/App.Tests/Unit/Test1.cs'
    output-is-json: 'true'
 ```
