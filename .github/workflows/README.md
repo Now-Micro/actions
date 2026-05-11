@@ -67,7 +67,7 @@ steps:
 
 Runs the repo's shared PR checks: linting, coding standards, and tests. It is designed to be called from PR workflows so consumers can pass in the branch context and, optionally, a specific directory to check.
 
-**What it does:**
+#### What it does
 
 1. Runs CSharpier linting when `enable-linting` is `true`.
 2. Resolves the directories to check for coding standards and tests.
@@ -75,7 +75,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 4. Runs tests for each resolved directory.
 5. Uploads test result artifacts for each test matrix entry.
 
-**Inputs**
+#### Inputs
 
 | Name | Required | Default | Description |
 |---|---|---|---|
@@ -100,13 +100,13 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `caller-job-name` | No | `""` | The name of the job in the calling workflow that invokes this reusable workflow (e.g. `checks`). Required when `optimize-base-ref` is `true`. GitHub prefixes every job name in the API response with the caller's job name (e.g. `checks / test-setup`), so this must be provided for the last-successful-run lookup to match correctly. See [Base-ref optimization](#base-ref-optimization) below. |
 | `overridden-changed-files` | No | `""` | JSON array of file paths to treat as changed. Skips git change detection entirely. Intended for testing and demo scenarios. |
 
-**Secrets**
+#### Secrets
 
 | Name | Required | Description |
 |---|---|---|
 | `token-github-packages` | No | Optionally required depending on project.  PAT with `read:packages` permission for restoring NuGet packages from GitHub Packages. |
 
-**Base-ref optimization**
+#### Base-ref optimization
 
 When `optimize-base-ref: "true"` and `workflow-name` is set, the `test-setup` job compares changed files against the SHA of the last successful run on the branch (rather than the default branch), so tests only run for files that have changed since the last green build.
 
@@ -123,7 +123,7 @@ jobs:
       ...
 ```
 
-**Usage — called from a PR workflow**
+#### Usage — called from a PR workflow
 
 ```yaml
 jobs:
@@ -144,7 +144,7 @@ jobs:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
 
-**Usage — check one directory explicitly**
+#### Usage — check one directory explicitly
 
 ```yaml
 jobs:
@@ -173,7 +173,7 @@ jobs:
 
 Builds, packs, and publishes a versioned NuGet package from a release branch, then creates a GitHub release with the generated artifacts. Intended to run automatically when a `release/**` branch is pushed, or to be called explicitly from another workflow.
 
-**What it does:**
+#### What it does
 
 1. Checks out the repository.
 2. Validates the release ref and extracts the package name and version from it.
@@ -182,9 +182,11 @@ Builds, packs, and publishes a versioned NuGet package from a release branch, th
 5. Builds and packs the project, running tests if a test directory is specified.
 6. Uploads artifacts and creates a GitHub release with release notes.
 
-**Trigger:** Runs automatically on `push` to any `release/**` branch, or on `workflow_call`.
+#### Trigger
 
-**Inputs**
+Runs automatically on `push` to any `release/**` branch, or on `workflow_call`.
+
+#### Inputs
 
 | Name | Required | Default | Description |
 |---|---|---|---|
@@ -200,13 +202,13 @@ Builds, packs, and publishes a versioned NuGet package from a release branch, th
 | `tests-directory` | No | — | Directory containing the test project. Leave empty to skip tests. |
 | `version` | No | — | Explicit version to publish. Extracted from `ref-name` when empty. |
 
-**Secrets**
+#### Secrets
 
 | Name | Required | Description |
 |---|---|---|
 | `token-github-packages` | Yes | PAT with `read:packages` and `write:packages` permissions for pushing to GitHub Packages. |
 
-**Usage — called from another workflow**
+#### Usage — called from another workflow
 
 ```yaml
 jobs:
@@ -220,7 +222,7 @@ jobs:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
 
-**Usage — automatic trigger on release branch push**
+#### Usage — automatic trigger on release branch push
 
 Simply push or merge to a branch named `release/MyLibrary/1.2.3`. The workflow will pick up the package name (`MyLibrary`) and version (`1.2.3`) from the branch name automatically.
 
@@ -235,7 +237,7 @@ git push origin release/MyLibrary/1.2.3
 
 Detects which project directories have changed and publishes a timestamped pre-release NuGet package for each one. Designed to be called on pull requests or feature branches to publish an `alpha`/`beta`/`rc`/`preview` build that consumers can test before a full release.
 
-**What it does:**
+#### What it does
 
 When `directory` is **not** provided:
 
@@ -254,7 +256,7 @@ In both cases, for each directory:
 3. Builds, packs, and pushes the package to the NuGet feed.
 4. Uploads the artifacts and generates a pre-release summary.
 
-**Inputs**
+#### Inputs
 
 | Name | Required | Default | Description |
 |---|---|---|---|
@@ -270,13 +272,13 @@ In both cases, for each directory:
 | `prerelease-identifier` | No | `alpha` | Label to embed in the version string (`alpha`, `beta`, `preview`, `rc`). |
 | `version-increment-type` | No | `none` | How to increment the version (`major`, `minor`, `patch`, or `none`). |
 
-**Secrets**
+#### Secrets
 
 | Name | Required | Description |
 |---|---|---|
 | `token-github-packages` | Yes | PAT with `read:packages` and `write:packages` permissions. |
 
-**Usage — auto-detect changed packages on a PR**
+#### Usage — auto-detect changed packages on a PR
 
 ```yaml
 jobs:
@@ -291,7 +293,7 @@ jobs:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
 
-**Usage — publish a specific directory**
+#### Usage — publish a specific directory
 
 ```yaml
 jobs:
@@ -306,7 +308,7 @@ jobs:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
 
-**Version format**
+#### Version format
 
 Pre-release versions follow the pattern:
 
