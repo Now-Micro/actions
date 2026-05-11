@@ -122,7 +122,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `use-original-if-missing` | No | `false` | Keep the original path when the transformed test directory does not exist. |
 | `fail-fast` | No | `false` | Cancel remaining test matrix jobs when one fails. |
 | `test-args` | No | `""` | Additional arguments passed to `dotnet test`. |
-| `dotnet-version` | No | `"8.0.x"` | .NET SDK version(s) to use when running tests. |
+| `dotnet-version` | No | `8.0.x` | .NET SDK version(s) to use when running tests. |
 | `test-project-regex` | No | `""` | Regex used to identify the test project file. |
 | `solution-regex` | No | `""` | Regex used to identify the solution file. |
 | `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
