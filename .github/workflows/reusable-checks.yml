@@ -141,7 +141,7 @@ on:
                 default: ""
             solution-regex:
                 description: "Regex to identify the solution file to use for testing.
-                    Defaults to empty (first .sln found is used)."
+                    Defaults to empty (first solution file found, such as .sln or .slnx, is used)."
                 required: false
                 type: string
                 default: ""
