@@ -139,12 +139,6 @@ on:
                 required: false
                 type: string
                 default: ""
-            solution-regex:
-                description: "Regex to identify the solution file to use for testing.
-                    Defaults to empty (first .sln found is used)."
-                required: false
-                type: string
-                default: ""
             prefer-solution:
                 description: "Prefer a .sln file over individual project files when running
                     tests. Defaults to false."
@@ -460,7 +454,6 @@ jobs:
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   project-regex: ${{ inputs['test-project-regex'] }}
                   prefer-solution: ${{ inputs['prefer-solution'] }}
-                  solution-regex: ${{ inputs['solution-regex'] }}
 
             - name: Build safe artifact name
               id: artifact-name
