@@ -17,7 +17,7 @@ This directory contains GitHub Actions **reusable workflows** — shared workflo
 
 ## Background: Reusable Workflows vs Composite Actions
 
-### Reusable Workflows in this Repo
+### Reusable Workflows
 
 A **reusable workflow** is a complete `.yml` workflow file that exposes a `workflow_call` trigger. Another workflow can call it using the `uses:` key at the **job** level. Each job in the reusable workflow runs on its own runner (just like a normal workflow job), which means it can use `needs:`, `strategy: matrix:`, and `if:` conditions across jobs.
 
@@ -72,7 +72,7 @@ steps:
 
 ---
 
-## Reusable Workflows
+## Reusable Workflows in this Repo
 
 ### Reusable Checks Workflow
 
