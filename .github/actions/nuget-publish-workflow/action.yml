@@ -26,10 +26,14 @@ inputs:
     description: "Ignore casing when parsing release refs and matching package names."
     required: false
     default: "true"
+  nuget-names:
+    description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
+    required: false
+    default: "Now-Micro"
   nuget-urls:
     description: "Nuget feed URLs needed to build the projects. Should be a comma-separated list of URLs."
     required: false
-    default: ""
+    default: "https://nuget.pkg.github.com/Now-Micro/index.json"
   package:
     description: "Package name to release."
     required: false
@@ -172,7 +176,7 @@ runs:
         additional-pack-args: /p:PackageVersion=${{ steps.get-version.outputs.version }} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
         dotnet-version: ${{ inputs['release-dotnet-version'] }}
         github-token: ${{ inputs['token-github-packages'] }}
-        nuget-names: "github"
+        nuget-names: ${{ inputs['nuget-names'] }}
         nuget-passwords: ${{ inputs['token-github-packages'] }}
         nuget-urls: ${{ inputs['nuget-urls'] }}
         nuget-usernames: ${{ github.actor }}

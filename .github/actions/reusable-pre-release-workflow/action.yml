@@ -22,6 +22,10 @@ inputs:
       Should be a comma-separated list of versions (e.g. '8.0.x,10.0.x')."
     required: false
     default: "8.0.x"
+  nuget-names:
+    description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
+    required: false
+    default: "Now-Micro"
   nuget-package-dir:
     description: "Directory to store generated package artifacts."
     required: false
@@ -41,7 +45,7 @@ inputs:
   nuget-urls:
     description: "Nuget feed URLs needed to build the projects.  Should be a comma-separated list of URLs."
     required: false
-    default: ""
+    default: "https://nuget.pkg.github.com/Now-Micro/index.json"
   prerelease-identifier:
     description: "Pre-release identifier (alpha, beta, preview, rc)"
     required: false
@@ -130,7 +134,7 @@ runs:
           -p:SymbolPackageFormat=snupkg
         dotnet-version: ${{ inputs.dotnet-version }}
         github-token: ${{ inputs.token-github-packages }}
-        nuget-names: "github"
+        nuget-names: ${{ inputs['nuget-names'] }}
         nuget-passwords: ${{ inputs.token-github-packages }}
         nuget-urls: ${{ inputs.nuget-urls }}
         nuget-usernames: ${{ github.actor }}
