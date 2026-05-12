@@ -384,6 +384,8 @@ Installs dependencies and publishes a scoped npm package to GitHub Packages (or 
 | `registry-url` | No | `https://npm.pkg.github.com` | npm registry URL to publish to. |
 | `scope` | No | `""` | npm package scope (e.g. `@my-org`). Must match the scope prefix in the `package.json` name field. Required when publishing to GitHub Packages. |
 | `tag` | No | `latest` | npm distribution tag applied to the published version (e.g. `latest`, `next`, `beta`). |
+| `test-directory` | No | `""` | Directory containing the `package.json` whose test script should be run. Defaults to `package-directory` when `test-script` is set and this is empty. |
+| `test-script` | No | `""` | npm script name to run before publishing (e.g. `test`, `test:ci`). When empty, the test step is skipped. If the script exits non-zero, the workflow stops and nothing is published. |
 
 #### npm Publish Secrets
 

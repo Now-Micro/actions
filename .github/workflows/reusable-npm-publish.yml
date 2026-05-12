@@ -1,4 +1,4 @@
-name: Reusable - npm Package
+name: Reusable - npm Publish
 
 permissions:
     contents: read
@@ -46,6 +46,16 @@ on:
                 required: false
                 type: string
                 default: "latest"
+            test-directory:
+                description: "Directory containing the package.json whose test script should be run. If empty, defaults to package-directory when test-script is set."
+                required: false
+                type: string
+                default: ""
+            test-script:
+                description: "npm script name to run as the test step (e.g. 'test', 'test:ci'). When empty, the test step is skipped entirely and the workflow proceeds straight to publish."
+                required: false
+                type: string
+                default: ""
         secrets:
             token-github-packages:
                 description: "PAT with write:packages permission used to authenticate to the npm registry."
@@ -93,6 +103,21 @@ jobs:
               shell: bash
               run: npm ci
 
+            - name: Install test dependencies
+              if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
+              working-directory: ${{ inputs['test-directory'] }}
+              shell: bash
+              run: npm ci
+
+            - name: Run tests
+              if: ${{ inputs['test-script'] != '' }}
+              working-directory: ${{ inputs['test-directory'] != '' && inputs['test-directory'] || inputs['package-directory'] }}
+              shell: bash
+              run: |
+                  script="${{ inputs['test-script'] }}"
+                  echo "🧪 Running npm run $script..."
+                  npm run "$script"
+
             - name: Publish npm package
               working-directory: ${{ inputs['package-directory'] }}
               shell: bash
@@ -112,6 +137,8 @@ jobs:
                     echo "🔍 tag: $tag"
                     echo "🔍 access: $access"
                     echo "🔍 dry-run: $dry_run"
+                    echo "🔍 test-script: ${{ inputs['test-script'] }}"
+                    echo "🔍 test-directory: ${{ inputs['test-directory'] }}"
                   fi
 
                   ARGS="--access $access --tag $tag"
