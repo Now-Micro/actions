@@ -21,6 +21,10 @@ on:
                 description: "Ignore casing when parsing release refs and matching package names."
                 required: false
                 type: string
+            nuget-names:
+                description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
+                required: false
+                type: string
             nuget-urls:
                 description: "Nuget feed URLs needed to build the projects. Should be a comma-separated list of URLs."
                 required: false
@@ -65,7 +69,7 @@ jobs:
             - name: Authorize workflow
               uses: Now-Micro/actions/authorize@v1
               with:
-                debug-mode: ${{ inputs['ci-debug-mode'] != '' && inputs['ci-debug-mode'] || 'false' }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] != '' && inputs['ci-debug-mode'] || 'false' }}
 
             - name: Check out code
               uses: actions/checkout@v6
@@ -80,6 +84,7 @@ jobs:
                   cleanup-release: "false"
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   ignore-casing: ${{ inputs['ignore-casing'] != '' && inputs['ignore-casing'] || 'true' }}
+                  nuget-names: ${{ inputs['nuget-names'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
                   package: ${{ inputs.package }}
                   package-directory: ${{ inputs['package-directory'] != '' && inputs['package-directory'] || 'nupkgs' }}

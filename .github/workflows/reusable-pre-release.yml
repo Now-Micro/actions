@@ -41,6 +41,11 @@ on:
                 required: false
                 type: string
                 default: "nupkgs"
+            nuget-names:
+                description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
+                required: false
+                type: string
+                default: "github"
             nuget-pattern-to-match:
                 description: "Glob pattern to match for determining which changed files should
                     trigger a package publish. Should include a capture group
@@ -155,6 +160,7 @@ jobs:
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   directory: ${{ inputs['directory'] }}
                   nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
+                  nuget-names: ${{ inputs['nuget-names'] }}
                   nuget-pattern-to-match: ${{ inputs['nuget-pattern-to-match'] }}
                   nuget-project-regex: ${{ inputs['nuget-project-regex'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
@@ -188,6 +194,7 @@ jobs:
                   directory: ${{ matrix.directory }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
                   nuget-package-dir: ${{ inputs['nuget-package-dir'] }}
+                  nuget-names: ${{ inputs['nuget-names'] }}
                   nuget-pattern-to-match: ${{ inputs['nuget-pattern-to-match'] }}
                   nuget-project-regex: ${{ inputs['nuget-project-regex'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
