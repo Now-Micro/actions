@@ -88,7 +88,6 @@ jobs:
             - name: Validate inputs
               shell: bash
               env:
-                  NUGET_URLS: ${{ inputs['nuget-urls'] }}
                   TOKEN_GITHUB_PACKAGES: ${{ secrets['token-github-packages'] }}
               run: |
                   valid_identifiers="alpha beta preview rc"
@@ -96,11 +95,6 @@ jobs:
 
                   identifier="${{ inputs['prerelease-identifier'] }}"
                   increment="${{ inputs['version-increment-type'] }}"
-
-                  if [[ -z "$NUGET_URLS" ]]; then
-                    echo "❌ Required input 'nuget-urls' is empty."
-                    exit 1
-                  fi
 
                   if [[ -z "$TOKEN_GITHUB_PACKAGES" ]]; then
                     echo "❌ Required secret 'token-github-packages' is empty."
