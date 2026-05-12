@@ -33,11 +33,16 @@ on:
                 required: false
                 type: string
                 default: "8.0.x"
+            nuget-names:
+                description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
+                required: false
+                type: string
+                default: "Now-Micro"
             nuget-urls:
                 description: "NuGet feed URLs needed to build the projects. Should be a comma-separated list of URLs."
                 required: false
                 type: string
-                default: ""
+                default: "https://nuget.pkg.github.com/Now-Micro/index.json"
             prerelease-identifier:
                 description: "Pre-release identifier."
                 required: false
@@ -80,6 +85,7 @@ jobs:
                   delete-published-package: ${{ inputs['delete-published-package'] }}
                   directory: ${{ inputs['directory'] }}
                   dotnet-version: ${{ inputs['dotnet-version'] }}
+                  nuget-names: ${{ inputs['nuget-names'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] }}
                   prerelease-identifier: ${{ inputs['prerelease-identifier'] }}
                   token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
