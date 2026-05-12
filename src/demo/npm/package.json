@@ -1,0 +1,15 @@
+{
+  "name": "@now-micro/demo-npm",
+  "version": "1.0.0",
+  "description": "Simple math utility functions (add, subtract, multiply, divide, clamp, absDiff). Demo package for the reusable npm publish workflow.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test index.test.js"
+  },
+  "keywords": ["demo"],
+  "author": "Now-Micro",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

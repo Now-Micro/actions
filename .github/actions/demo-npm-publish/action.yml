@@ -1,0 +1,86 @@
+name: Demo - npm Publish
+description: Demonstrates the reusable npm publish workflow by running key npm steps against the demo npm package.
+author: Trafera
+
+runs:
+  using: composite
+  steps:
+    - name: Title - npm Publish Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: npm Publish Demo
+        path: ./.github/actions/demo-npm-publish
+
+    - name: Setup summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-npm-publish-summary.txt" >> $GITHUB_ENV
+        : > "$GITHUB_WORKSPACE/demo-npm-publish-summary.txt"
+
+    - name: Setup Node.js for GitHub Packages
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22.x"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+
+    - name: Install dependencies
+      id: npm-ci
+      continue-on-error: true
+      shell: bash
+      working-directory: src/demo/npm
+      run: npm ci
+
+    - name: Assert npm ci succeeded
+      uses: ./src/testing/assert
+      with:
+        expected: success
+        mode: exact
+        actual: ${{ steps.npm-ci.outcome }}
+        test-name: "npm ci in demo package -> success"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Pack demo package (validates package.json without auth)
+      id: npm-pack
+      continue-on-error: true
+      shell: bash
+      working-directory: src/demo/npm
+      run: npm pack --dry-run
+
+    - name: Assert npm pack succeeded
+      uses: ./src/testing/assert
+      with:
+        expected: success
+        mode: exact
+        actual: ${{ steps.npm-pack.outcome }}
+        test-name: "npm pack --dry-run in demo package -> success"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Run npm ci in directory without package.json (expected failure)
+      id: npm-ci-missing
+      continue-on-error: true
+      shell: bash
+      run: |
+        tmpdir=$(mktemp -d)
+        cd "$tmpdir"
+        npm ci
+
+    - name: Assert npm ci without package.json failed
+      uses: ./src/testing/assert
+      with:
+        expected: failure
+        mode: exact
+        actual: ${{ steps.npm-ci-missing.outcome }}
+        test-name: "npm ci in directory without package.json -> failure"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      run: |
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## npm Publish Demo Results" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f "$SUMMARY_FILE" ]; then
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+        fi

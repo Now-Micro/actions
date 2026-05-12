@@ -1,0 +1,124 @@
+name: Reusable - npm Package
+
+permissions:
+    contents: read
+    packages: write
+
+on:
+    workflow_call:
+        inputs:
+            access:
+                description: "Package access level. Use 'public' for public packages or 'restricted' for private/org-scoped packages."
+                required: false
+                type: string
+                default: "restricted"
+            ci-debug-mode:
+                description: "Debug mode for additional logging during the publish steps."
+                required: false
+                type: string
+                default: "false"
+            dry-run:
+                description: "When true, runs npm publish with --dry-run. No package is actually published."
+                required: false
+                type: string
+                default: "false"
+            node-version:
+                description: "Node.js version to use when installing and publishing."
+                required: false
+                type: string
+                default: "22.x"
+            package-directory:
+                description: "Directory containing the package.json to publish. Relative to the repository root."
+                required: true
+                type: string
+            registry-url:
+                description: "npm registry URL to publish to. Defaults to the GitHub Packages npm registry."
+                required: false
+                type: string
+                default: "https://npm.pkg.github.com"
+            scope:
+                description: "npm package scope (e.g. '@my-org'). Must match the scope prefix in the package.json name field. Required when publishing to GitHub Packages."
+                required: false
+                type: string
+                default: ""
+            tag:
+                description: "npm distribution tag applied to the published version (e.g. 'latest', 'next', 'beta')."
+                required: false
+                type: string
+                default: "latest"
+        secrets:
+            token-github-packages:
+                description: "PAT with write:packages permission used to authenticate to the npm registry."
+                required: true
+
+jobs:
+    npm-publish:
+        if: ${{ github.ref_name == 'main' }}
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Validate inputs
+              shell: bash
+              env:
+                  TOKEN_GITHUB_PACKAGES: ${{ secrets['token-github-packages'] }}
+              run: |
+                  valid_access="public restricted"
+                  access="${{ inputs.access }}"
+
+                  if [[ -z "$TOKEN_GITHUB_PACKAGES" ]]; then
+                    echo "❌ Required secret 'token-github-packages' is empty."
+                    exit 1
+                  fi
+
+                  if [[ ! " $valid_access " =~ " $access " ]]; then
+                    echo "❌ Invalid access: '$access'. Must be one of: $valid_access"
+                    exit 1
+                  fi
+
+                  echo "✅ Inputs validated."
+
+            - name: Check out code
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ inputs['node-version'] }}
+                  registry-url: ${{ inputs['registry-url'] }}
+                  scope: ${{ inputs.scope }}
+
+            - name: Install dependencies
+              working-directory: ${{ inputs['package-directory'] }}
+              shell: bash
+              run: npm ci
+
+            - name: Publish npm package
+              working-directory: ${{ inputs['package-directory'] }}
+              shell: bash
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets['token-github-packages'] }}
+              run: |
+                  debug="${{ inputs['ci-debug-mode'] }}"
+                  dry_run="${{ inputs['dry-run'] }}"
+                  tag="${{ inputs.tag }}"
+                  access="${{ inputs.access }}"
+
+                  if [[ "$debug" == "true" ]]; then
+                    echo "🔍 Debug mode is ON"
+                    echo "🔍 package-directory: ${{ inputs['package-directory'] }}"
+                    echo "🔍 registry-url: ${{ inputs['registry-url'] }}"
+                    echo "🔍 scope: ${{ inputs.scope }}"
+                    echo "🔍 tag: $tag"
+                    echo "🔍 access: $access"
+                    echo "🔍 dry-run: $dry_run"
+                  fi
+
+                  ARGS="--access $access --tag $tag"
+                  if [[ "$dry_run" == "true" ]]; then
+                    ARGS="$ARGS --dry-run"
+                    echo "ℹ️ Dry run mode enabled; package will not be published."
+                  fi
+
+                  echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
+                  npm publish $ARGS

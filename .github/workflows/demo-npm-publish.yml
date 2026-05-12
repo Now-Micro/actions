@@ -1,0 +1,22 @@
+name: Demo - npm Publish
+
+on:
+    workflow_dispatch:
+        inputs:
+            node-version:
+                description: "Node.js version to use."
+                required: false
+                type: string
+                default: "22.x"
+
+jobs:
+    demo-npm-publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run npm publish demo
+              uses: ./.github/actions/demo-npm-publish
