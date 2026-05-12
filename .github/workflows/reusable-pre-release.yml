@@ -45,7 +45,7 @@ on:
                 description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
                 required: false
                 type: string
-                default: ""
+                default: "Now-Micro"
             nuget-pattern-to-match:
                 description: "Glob pattern to match for determining which changed files should
                     trigger a package publish. Should include a capture group
@@ -65,7 +65,7 @@ on:
                 description: "Nuget feed URLs to publish to, separated by commas."
                 required: true
                 type: string
-                default: ""
+                default: "https://nuget.pkg.github.com/Now-Micro/index.json"
             prerelease-identifier:
                 description: "Pre-release identifier (alpha, beta, preview, rc)"
                 required: false

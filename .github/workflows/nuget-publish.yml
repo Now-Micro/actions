@@ -25,10 +25,12 @@ on:
                 description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
                 required: false
                 type: string
+                default: "Now-Micro"
             nuget-urls:
                 description: "Nuget feed URLs needed to build the projects. Should be a comma-separated list of URLs."
                 required: false
                 type: string
+                default: "https://nuget.pkg.github.com/Now-Micro/index.json"
             package:
                 description: "Package name to release."
                 required: false
