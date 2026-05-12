@@ -102,6 +102,7 @@ jobs:
                   registry-url: ${{ inputs['registry-url'] }}
                   scope: ${{ inputs.scope }}
                   tag: ${{ inputs.tag }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   test-directory: ${{ inputs['test-directory'] }}
                   test-script: ${{ inputs['test-script'] }}
                   token-github-packages: ${{ secrets['token-github-packages'] }}

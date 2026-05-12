@@ -7,6 +7,10 @@ inputs:
     description: "When true, deletes the published demo package version from GitHub Packages after the run."
     required: false
     default: "false"
+  github-token:
+    description: "GitHub token (GITHUB_TOKEN) used to create and delete the GitHub release."
+    required: false
+    default: ""
   token-github-packages:
     description: "PAT with write:packages permission. Required for the real publish and delete steps."
     required: false
@@ -96,6 +100,7 @@ runs:
         package-directory: "src/demo/npm"
         registry-url: "https://npm.pkg.github.com"
         scope: "@now-micro"
+        github-token: ${{ inputs['github-token'] }}
         tag: "latest"
         test-script: "test"
         token-github-packages: ${{ inputs['token-github-packages'] }}
@@ -141,6 +146,39 @@ runs:
             core.info(`✅ Deleted npm package version: @now-micro/${packageName}@${versionNumber}`);
           } catch (err) {
             core.warning(`Failed to delete package version: ${err.message}`);
+          }
+
+    - name: Delete GitHub release
+      if: ${{ always() && inputs['delete-published-package'] == 'true' && inputs['github-token'] != '' && steps.npm-publish-real.outputs.tag-name != '' }}
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['github-token'] }}
+        script: |
+          const tag = '${{ steps.npm-publish-real.outputs.tag-name }}';
+          const { owner, repo } = context.repo;
+
+          core.info(`🔍 Looking for GitHub release with tag '${tag}'`);
+          try {
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: release.id });
+            core.info(`✅ Deleted GitHub release for tag '${tag}'`);
+          } catch (e) {
+            if (e.status === 404) {
+              core.info(`ℹ️ No GitHub release found for tag '${tag}' — nothing to delete.`);
+            } else {
+              throw e;
+            }
+          }
+
+          try {
+            await github.rest.git.deleteRef({ owner, repo, ref: `tags/${tag}` });
+            core.info(`✅ Deleted git tag '${tag}'`);
+          } catch (e) {
+            if (e.status === 404 || e.status === 422) {
+              core.info(`ℹ️ Git tag '${tag}' not found — nothing to delete.`);
+            } else {
+              throw e;
+            }
           }
 
     - name: Summary

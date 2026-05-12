@@ -27,4 +27,5 @@ jobs:
               uses: ./.github/actions/demo-npm-publish
               with:
                   delete-published-package: ${{ inputs['delete-published-package'] }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
                   token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}

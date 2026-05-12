@@ -45,6 +45,21 @@ inputs:
     description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN."
     required: false
     default: ""
+  github-token:
+    description: "GitHub token (GITHUB_TOKEN) used to create a GitHub release after publishing. When empty, the release step is skipped."
+    required: false
+    default: ""
+
+outputs:
+  release-url:
+    description: "URL of the created GitHub release. Empty when dry-run is true or github-token is not provided."
+    value: ${{ steps.create-release.outputs.release-url }}
+  release-name:
+    description: "Name of the created GitHub release."
+    value: ${{ steps.create-release.outputs.release-name }}
+  tag-name:
+    description: "Tag name of the created GitHub release."
+    value: ${{ steps.create-release.outputs.tag-name }}
 
 runs:
   using: composite
@@ -60,6 +75,18 @@ runs:
       working-directory: ${{ inputs['package-directory'] }}
       shell: bash
       run: npm ci
+
+    - name: Read package info
+      id: pkg-info
+      shell: bash
+      working-directory: ${{ inputs['package-directory'] }}
+      run: |
+          name=$(node -e "process.stdout.write(require('./package.json').name)")
+          version=$(node -e "process.stdout.write(require('./package.json').version)")
+          library_name="${name##*/}"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "library-name=$library_name" >> "$GITHUB_OUTPUT"
 
     - name: Install test dependencies
       if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
@@ -107,3 +134,13 @@ runs:
 
           echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
           npm publish $ARGS
+
+    - name: Create GitHub Release
+      id: create-release
+      if: ${{ inputs['dry-run'] != 'true' && inputs['github-token'] != '' }}
+      uses: Now-Micro/actions/github/release@v1
+      with:
+          github-token: ${{ inputs['github-token'] }}
+          library-name: ${{ steps.pkg-info.outputs.library-name }}
+          release-version: ${{ steps.pkg-info.outputs.version }}
+          skip-download: "true"
