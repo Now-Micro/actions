@@ -25,7 +25,7 @@ inputs:
   nuget-names:
     description: "NuGet source names used with the configured feed URLs. Should be a comma-separated list matching nuget-urls."
     required: false
-    default: "GitHub"
+    default: "Now-Micro"
   nuget-package-dir:
     description: "Directory to store generated package artifacts."
     required: false
