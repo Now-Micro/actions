@@ -45,7 +45,7 @@ inputs:
   nuget-urls:
     description: "Nuget feed URLs needed to build the projects.  Should be a comma-separated list of URLs."
     required: false
-    default: ""
+    default: "https://nuget.pkg.github.com/Now-Micro/index.json"
   prerelease-identifier:
     description: "Pre-release identifier (alpha, beta, preview, rc)"
     required: false
