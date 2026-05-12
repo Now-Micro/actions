@@ -91,61 +91,17 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
+            - name: Run npm publish workflow
+              uses: Now-Micro/actions/.github/actions/npm-publish-workflow@v1
               with:
+                  access: ${{ inputs.access }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  dry-run: ${{ inputs['dry-run'] }}
                   node-version: ${{ inputs['node-version'] }}
+                  package-directory: ${{ inputs['package-directory'] }}
                   registry-url: ${{ inputs['registry-url'] }}
                   scope: ${{ inputs.scope }}
-
-            - name: Install dependencies
-              working-directory: ${{ inputs['package-directory'] }}
-              shell: bash
-              run: npm ci
-
-            - name: Install test dependencies
-              if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
-              working-directory: ${{ inputs['test-directory'] }}
-              shell: bash
-              run: npm ci
-
-            - name: Run tests
-              if: ${{ inputs['test-script'] != '' }}
-              working-directory: ${{ inputs['test-directory'] != '' && inputs['test-directory'] || inputs['package-directory'] }}
-              shell: bash
-              run: |
-                  script="${{ inputs['test-script'] }}"
-                  echo "🧪 Running npm run $script..."
-                  npm run "$script"
-
-            - name: Publish npm package
-              working-directory: ${{ inputs['package-directory'] }}
-              shell: bash
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets['token-github-packages'] }}
-              run: |
-                  debug="${{ inputs['ci-debug-mode'] }}"
-                  dry_run="${{ inputs['dry-run'] }}"
-                  tag="${{ inputs.tag }}"
-                  access="${{ inputs.access }}"
-
-                  if [[ "$debug" == "true" ]]; then
-                    echo "🔍 Debug mode is ON"
-                    echo "🔍 package-directory: ${{ inputs['package-directory'] }}"
-                    echo "🔍 registry-url: ${{ inputs['registry-url'] }}"
-                    echo "🔍 scope: ${{ inputs.scope }}"
-                    echo "🔍 tag: $tag"
-                    echo "🔍 access: $access"
-                    echo "🔍 dry-run: $dry_run"
-                    echo "🔍 test-script: ${{ inputs['test-script'] }}"
-                    echo "🔍 test-directory: ${{ inputs['test-directory'] }}"
-                  fi
-
-                  ARGS="--access $access --tag $tag"
-                  if [[ "$dry_run" == "true" ]]; then
-                    ARGS="$ARGS --dry-run"
-                    echo "ℹ️ Dry run mode enabled; package will not be published."
-                  fi
-
-                  echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
-                  npm publish $ARGS
+                  tag: ${{ inputs.tag }}
+                  test-directory: ${{ inputs['test-directory'] }}
+                  test-script: ${{ inputs['test-script'] }}
+                  token-github-packages: ${{ secrets['token-github-packages'] }}

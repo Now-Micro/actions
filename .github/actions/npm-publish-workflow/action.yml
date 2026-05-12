@@ -1,0 +1,109 @@
+name: npm Publish Workflow
+description: Shared composite action for the reusable-npm-publish workflow. Runs npm ci, optional tests, and npm publish.
+
+inputs:
+  access:
+    description: "Package access level ('public' or 'restricted')."
+    required: false
+    default: "restricted"
+  ci-debug-mode:
+    description: "Debug mode for additional logging during the publish steps."
+    required: false
+    default: "false"
+  dry-run:
+    description: "When true, runs npm publish with --dry-run. No package is actually published."
+    required: false
+    default: "false"
+  node-version:
+    description: "Node.js version to use when installing and publishing."
+    required: false
+    default: "22.x"
+  package-directory:
+    description: "Directory containing the package.json to publish. Relative to the repository root."
+    required: true
+  registry-url:
+    description: "npm registry URL to publish to. Defaults to the GitHub Packages npm registry."
+    required: false
+    default: "https://npm.pkg.github.com"
+  scope:
+    description: "npm package scope (e.g. '@my-org'). Must match the scope prefix in the package.json name field."
+    required: false
+    default: ""
+  tag:
+    description: "npm distribution tag applied to the published version (e.g. 'latest', 'next', 'beta')."
+    required: false
+    default: "latest"
+  test-directory:
+    description: "Directory containing the package.json whose test script should be run. Defaults to package-directory when empty."
+    required: false
+    default: ""
+  test-script:
+    description: "npm script name to run before publishing (e.g. 'test', 'test:ci'). When empty, the test step is skipped."
+    required: false
+    default: ""
+  token-github-packages:
+    description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
+
+    - name: Install dependencies
+      working-directory: ${{ inputs['package-directory'] }}
+      shell: bash
+      run: npm ci
+
+    - name: Install test dependencies
+      if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
+      working-directory: ${{ inputs['test-directory'] }}
+      shell: bash
+      run: npm ci
+
+    - name: Run tests
+      if: ${{ inputs['test-script'] != '' }}
+      working-directory: ${{ inputs['test-directory'] != '' && inputs['test-directory'] || inputs['package-directory'] }}
+      shell: bash
+      run: |
+          script="${{ inputs['test-script'] }}"
+          echo "🧪 Running npm run $script..."
+          npm run "$script"
+
+    - name: Publish npm package
+      working-directory: ${{ inputs['package-directory'] }}
+      shell: bash
+      env:
+          NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
+      run: |
+          debug="${{ inputs['ci-debug-mode'] }}"
+          dry_run="${{ inputs['dry-run'] }}"
+          tag="${{ inputs.tag }}"
+          access="${{ inputs.access }}"
+
+          if [[ "$debug" == "true" ]]; then
+            echo "🔍 Debug mode is ON"
+            echo "🔍 package-directory: ${{ inputs['package-directory'] }}"
+            echo "🔍 registry-url: ${{ inputs['registry-url'] }}"
+            echo "🔍 scope: ${{ inputs.scope }}"
+            echo "🔍 tag: $tag"
+            echo "🔍 access: $access"
+            echo "🔍 dry-run: $dry_run"
+            echo "🔍 test-script: ${{ inputs['test-script'] }}"
+            echo "🔍 test-directory: ${{ inputs['test-directory'] }}"
+          fi
+
+          ARGS="--access $access --tag $tag"
+          if [[ "$dry_run" == "true" ]]; then
+            ARGS="$ARGS --dry-run"
+            echo "ℹ️ Dry run mode enabled; package will not be published."
+          fi
+
+          echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
+          npm publish $ARGS

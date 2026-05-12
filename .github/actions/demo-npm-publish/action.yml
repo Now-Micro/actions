@@ -17,61 +17,49 @@ runs:
         echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-npm-publish-summary.txt" >> $GITHUB_ENV
         : > "$GITHUB_WORKSPACE/demo-npm-publish-summary.txt"
 
-    - name: Setup Node.js for GitHub Packages
-      uses: actions/setup-node@v4
+    - name: Run npm publish workflow (dry run with tests)
+      id: npm-publish-success
+      continue-on-error: true
+      uses: ./.github/actions/npm-publish-workflow
       with:
+        access: "restricted"
+        ci-debug-mode: "true"
+        dry-run: "true"
         node-version: "22.x"
+        package-directory: "src/demo/npm"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+        tag: "latest"
+        test-script: "test"
+
+    - name: Assert dry-run publish with tests succeeded
+      uses: ./src/testing/assert
+      with:
+        expected: success
+        mode: exact
+        actual: ${{ steps.npm-publish-success.outcome }}
+        test-name: "npm publish dry-run with tests -> success"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Run npm publish workflow with invalid package directory (expected failure)
+      id: npm-publish-bad-dir
+      continue-on-error: true
+      uses: ./.github/actions/npm-publish-workflow
+      with:
+        access: "restricted"
+        dry-run: "true"
+        node-version: "22.x"
+        package-directory: "src/demo/npm/__does_not_exist__"
         registry-url: "https://npm.pkg.github.com"
         scope: "@now-micro"
 
-    - name: Install dependencies
-      id: npm-ci
-      continue-on-error: true
-      shell: bash
-      working-directory: src/demo/npm
-      run: npm ci
-
-    - name: Assert npm ci succeeded
-      uses: ./src/testing/assert
-      with:
-        expected: success
-        mode: exact
-        actual: ${{ steps.npm-ci.outcome }}
-        test-name: "npm ci in demo package -> success"
-        summary-file: ${{ env.SUMMARY_FILE }}
-
-    - name: Pack demo package (validates package.json without auth)
-      id: npm-pack
-      continue-on-error: true
-      shell: bash
-      working-directory: src/demo/npm
-      run: npm pack --dry-run
-
-    - name: Assert npm pack succeeded
-      uses: ./src/testing/assert
-      with:
-        expected: success
-        mode: exact
-        actual: ${{ steps.npm-pack.outcome }}
-        test-name: "npm pack --dry-run in demo package -> success"
-        summary-file: ${{ env.SUMMARY_FILE }}
-
-    - name: Run npm ci in directory without package.json (expected failure)
-      id: npm-ci-missing
-      continue-on-error: true
-      shell: bash
-      run: |
-        tmpdir=$(mktemp -d)
-        cd "$tmpdir"
-        npm ci
-
-    - name: Assert npm ci without package.json failed
+    - name: Assert invalid directory caused failure
       uses: ./src/testing/assert
       with:
         expected: failure
         mode: exact
-        actual: ${{ steps.npm-ci-missing.outcome }}
-        test-name: "npm ci in directory without package.json -> failure"
+        actual: ${{ steps.npm-publish-bad-dir.outcome }}
+        test-name: "npm publish with missing package directory -> failure"
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Summary
