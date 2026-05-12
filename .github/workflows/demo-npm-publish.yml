@@ -3,6 +3,11 @@ name: Demo - npm Publish
 on:
     workflow_dispatch:
         inputs:
+            delete-published-package:
+                description: "When true, deletes the published demo package version after the run."
+                required: false
+                type: boolean
+                default: true
             node-version:
                 description: "Node.js version to use."
                 required: false
@@ -20,3 +25,6 @@ jobs:
 
             - name: Run npm publish demo
               uses: ./.github/actions/demo-npm-publish
+              with:
+                  delete-published-package: ${{ inputs['delete-published-package'] }}
+                  token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}

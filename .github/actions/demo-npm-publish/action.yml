@@ -2,6 +2,16 @@ name: Demo - npm Publish
 description: Demonstrates the reusable npm publish workflow by running key npm steps against the demo npm package.
 author: Trafera
 
+inputs:
+  delete-published-package:
+    description: "When true, deletes the published demo package version from GitHub Packages after the run."
+    required: false
+    default: "false"
+  token-github-packages:
+    description: "PAT with write:packages permission. Required for the real publish and delete steps."
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -61,6 +71,77 @@ runs:
         actual: ${{ steps.npm-publish-bad-dir.outcome }}
         test-name: "npm publish with missing package directory -> failure"
         summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Generate unique demo version
+      id: version
+      shell: bash
+      run: |
+          version="0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "📦 Generated demo version: $version"
+
+    - name: Stamp version into package.json
+      shell: bash
+      working-directory: src/demo/npm
+      run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+    - name: Publish demo package to GitHub Packages
+      id: npm-publish-real
+      uses: ./.github/actions/npm-publish-workflow
+      with:
+        access: "restricted"
+        ci-debug-mode: "true"
+        dry-run: "false"
+        node-version: "22.x"
+        package-directory: "src/demo/npm"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+        tag: "latest"
+        test-script: "test"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Delete published demo package version
+      if: ${{ always() && inputs['delete-published-package'] == 'true' && steps.npm-publish-real.outcome == 'success' }}
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['token-github-packages'] }}
+        script: |
+          const packageName = 'demo-npm';
+          const versionNumber = '${{ steps.version.outputs.version }}';
+          const org = context.repo.owner;
+
+          core.info(`🔍 Looking for npm package '${packageName}' version '${versionNumber}' in org '${org}'`);
+
+          let versions;
+          try {
+            const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+              org,
+              package_type: 'npm',
+              package_name: packageName,
+            });
+            versions = resp.data;
+          } catch (err) {
+            core.warning(`Could not list package versions: ${err.message}`);
+            return;
+          }
+
+          const match = versions.find(v => v.name === versionNumber);
+          if (!match) {
+            core.info(`ℹ️ Version '${versionNumber}' not found in package '${packageName}' — nothing to delete.`);
+            return;
+          }
+
+          try {
+            await github.rest.packages.deletePackageVersionForOrg({
+              org,
+              package_type: 'npm',
+              package_name: packageName,
+              package_version_id: match.id,
+            });
+            core.info(`✅ Deleted npm package version: @now-micro/${packageName}@${versionNumber}`);
+          } catch (err) {
+            core.warning(`Failed to delete package version: ${err.message}`);
+          }
 
     - name: Summary
       if: always()
