@@ -60,6 +60,7 @@ on:
 
 jobs:
     nuget-publish:
+        if: ${{ github.ref_name == 'main' }}
         runs-on: ubuntu-22.04
         steps:
             - name: Authorize workflow
