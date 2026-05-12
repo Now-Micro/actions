@@ -56,6 +56,7 @@ permissions:
 jobs:
   run-node-tests:
     name: Run Node tests
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,6 +72,7 @@ jobs:
 
   run-workflow-tests:
     name: Run workflow tests
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -90,6 +92,7 @@ jobs:
   publish:
     name: Publish release
     needs: [run-node-tests, run-workflow-tests]
+    if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release_out.outputs.release_id }}
