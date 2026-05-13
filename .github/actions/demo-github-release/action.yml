@@ -181,7 +181,7 @@ runs:
     - name: Fetch created release
       id: api
       env:
-        GITHUB_TOKEN: ${{ inputs['github-token'] }}
+        GH_TOKEN: ${{ inputs['github-token'] }}
       shell: bash
       run: |
         set -euo pipefail
@@ -294,7 +294,7 @@ runs:
     - name: Fetch created npm release
       id: npm_api
       env:
-        GITHUB_TOKEN: ${{ inputs['github-token'] }}
+        GH_TOKEN: ${{ inputs['github-token'] }}
       shell: bash
       run: |
         set -euo pipefail
@@ -344,6 +344,26 @@ runs:
         mode: exact
         expected: "true"
         actual: ${{ steps.npm_api.outputs.npm_api_body_has_npm_install || '' }}
+
+    - name: Cleanup created nuget demo release
+      if: always()
+      env:
+        GH_TOKEN: ${{ inputs['github-token'] }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        gh release delete "${LIB_NAME}-v${RELEASE_VERSION}" -y >/dev/null 2>&1 || true
+        git push origin ":refs/tags/${LIB_NAME}-v${RELEASE_VERSION}" >/dev/null 2>&1 || true
+
+    - name: Cleanup created npm demo release
+      if: always()
+      env:
+        GH_TOKEN: ${{ inputs['github-token'] }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        gh release delete "${NPM_LIB_NAME}-v${NPM_RELEASE_VERSION}" -y >/dev/null 2>&1 || true
+        git push origin ":refs/tags/${NPM_LIB_NAME}-v${NPM_RELEASE_VERSION}" >/dev/null 2>&1 || true
 
     - name: Publish summary
       shell: bash
