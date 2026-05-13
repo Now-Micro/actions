@@ -21,6 +21,8 @@ runs:
 
     - name: Demo - github release
       uses: ./.github/actions/demo-github-release
+      with:
+        github-token: ${{ inputs.github-release-token }}
 
     - name: Demo - npm publish
       uses: ./.github/actions/demo-npm-publish
