@@ -52,7 +52,7 @@ runs:
 
           if [ -z "$changelog_file" ]; then
             echo "No changelog file provided. Skipping extraction."
-            changelog-content="This release includes updates to $library_name, but no changelog file was found."
+            changelog_content="This release includes updates to $library_name, but no changelog file was found."
           else 
             while IFS= read -r line || [[ -n "$line" ]]; do
               if [[ "$exact_match_found" == "true" && "$line" =~ $version_section_pattern_generic ]]; then

@@ -12,29 +12,59 @@ inputs:
     description: 'Install dependencies using npm ci (true/false)'
     required: false
     default: 'false'
+  install-dependencies-directory:
+    description: 'Directory to run the dependency install in.'
+    required: false
+    default: '.'
   node-version:
     description: 'The Node.js version to use'
     required: false
     default: '24.x'
+  registry-url:
+    description: 'npm registry URL to configure for package publication.'
+    required: false
+    default: ''
+  scope:
+    description: 'npm scope to configure for the registry.'
+    required: false
+    default: ''
   show-version:
     description: 'Show Node.js and npm version (true/false)'
     required: false
     default: 'false'
+  token-github-packages:
+    description: 'Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN.'
+    required: false
+    default: ''
   
 runs:
   using: "composite"
   steps:
     - name: Set up Node.js ${{ inputs.node-version }}
       uses: actions/setup-node@v6
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
       with:
-        node-version: ${{ inputs.node-version }}
-        cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
         cache-dependency-path: ${{ inputs.cache-dependency-path || '' }}
+        cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
+        node-version: ${{ inputs.node-version }}
+        registry-url: ${{ inputs.registry-url || '' }}
+        scope: ${{ inputs.scope || '' }}
 
     - name: Install dependencies
       if: ${{ inputs.install-dependencies == 'true' }}
+      working-directory: ${{ inputs.install-dependencies-directory || '.' }}
       shell: bash
-      run: npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
+      run: |
+        if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+          echo "📦 Installing dependencies with npm ci"
+          npm ci
+        else
+          echo "⚠️ No lockfile found; installing dependencies with npm install --no-package-lock"
+          npm install --no-package-lock --no-audit --no-fund
+        fi
 
     - name: Show Node.js and npm version
       shell: bash

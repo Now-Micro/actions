@@ -1,0 +1,197 @@
+name: npm Publish Workflow
+description: Shared composite action for the reusable-npm-publish workflow. Validates the changelog, runs a lockfile-aware npm install, optional tests, npm publish, and optionally creates a GitHub Release when a GitHub token is provided.
+
+inputs:
+  access:
+    description: "Package access level ('public' or 'restricted')."
+    required: false
+    default: "restricted"
+  ci-debug-mode:
+    description: "Debug mode for additional logging during the publish steps."
+    required: false
+    default: "false"
+  dry-run:
+    description: "When true, runs npm publish with --dry-run. No package is actually published."
+    required: false
+    default: "false"
+  node-version:
+    description: "Node.js version to use when installing and publishing."
+    required: false
+    default: "22.x"
+  package-directory:
+    description: "Directory containing the package.json to publish. Relative to the repository root."
+    required: true
+  registry-url:
+    description: "npm registry URL to publish to. Defaults to the GitHub Packages npm registry."
+    required: false
+    default: "https://npm.pkg.github.com"
+  scope:
+    description: "npm package scope (e.g. '@my-org'). Must match the scope prefix in the package.json name field."
+    required: false
+    default: ""
+  tag:
+    description: "npm distribution tag applied to the published version (e.g. 'latest', 'next', 'beta')."
+    required: false
+    default: "latest"
+  test-directory:
+    description: "Directory containing the package.json whose test script should be run. Defaults to package-directory when empty."
+    required: false
+    default: ""
+  test-script:
+    description: "npm script name to run before publishing (e.g. 'test', 'test:ci'). When empty, the test step is skipped."
+    required: false
+    default: ""
+  token-github-packages:
+    description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN. Required for real publishes and GitHub Packages installs."
+    required: false
+    default: ""
+  github-token:
+    description: "GitHub token (GITHUB_TOKEN) used to create a GitHub release after publishing. When empty, the release step is skipped."
+    required: false
+    default: ""
+
+outputs:
+  release-url:
+    description: "URL of the created GitHub release. Empty when dry-run is true or github-token is not provided."
+    value: ${{ steps.create-release.outputs.release-url }}
+  release-name:
+    description: "Name of the created GitHub release."
+    value: ${{ steps.create-release.outputs.release-name }}
+  tag-name:
+    description: "Tag name of the created GitHub release."
+    value: ${{ steps.create-release.outputs.tag-name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate publish auth
+      shell: bash
+      run: |
+          dry_run="${{ inputs['dry-run'] }}"
+          registry_url="${{ inputs['registry-url'] }}"
+          token="${{ inputs['token-github-packages'] }}"
+
+          requires_token="false"
+          if [[ "$dry_run" != "true" ]]; then
+            requires_token="true"
+          fi
+
+          if [[ "$registry_url" == *"npm.pkg.github.com"* ]]; then
+            requires_token="true"
+          fi
+
+          if [[ "$requires_token" == "true" && -z "$token" ]]; then
+            echo "❌ token-github-packages is required when dry-run is false or when using GitHub Packages."
+            exit 1
+          fi
+
+    - name: Setup Node.js
+      uses: ./setup-node
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Read package info
+      id: pkg-info
+      shell: bash
+      working-directory: ${{ inputs['package-directory'] }}
+      run: |
+          name=$(node -e "process.stdout.write(require('./package.json').name)")
+          version=$(node -e "process.stdout.write(require('./package.json').version)")
+          library_name="${name##*/}"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "library-name=$library_name" >> "$GITHUB_OUTPUT"
+
+    - name: Extract Changelog
+      id: extract-changelog
+      uses: Now-Micro/actions/extract-changelog@v1
+      with:
+        library-directory: ${{ inputs['package-directory'] }}
+        library-name: ${{ steps.pkg-info.outputs.library-name }}
+        changelog-content-path: ${{ inputs['package-directory'] }}/CHANGELOG-EXTRACTED.md
+        create-artifact: "false"
+        version: ${{ steps.pkg-info.outputs.version }}
+
+    - name: Validate changelog exists
+      shell: bash
+      run: |
+          if [ -z "${{ steps.extract-changelog.outputs.changelog-content }}" ]; then
+            echo "No changelog content found for version ${{ steps.pkg-info.outputs.version }}. Ensure a CHANGELOG.md exists and contains an entry for this version."
+            exit 1
+          fi
+
+    - name: Install dependencies
+      uses: ./setup-node
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
+        install-dependencies: 'true'
+        install-dependencies-directory: ${{ inputs['package-directory'] }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Install test dependencies
+      if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
+      uses: ./setup-node
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
+        install-dependencies: 'true'
+        install-dependencies-directory: ${{ inputs['test-directory'] }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Run tests
+      if: ${{ inputs['test-script'] != '' }}
+      working-directory: ${{ inputs['test-directory'] != '' && inputs['test-directory'] || inputs['package-directory'] }}
+      shell: bash
+      run: |
+          script="${{ inputs['test-script'] }}"
+          echo "🧪 Running npm run $script..."
+          npm run "$script"
+
+    - name: Publish npm package
+      working-directory: ${{ inputs['package-directory'] }}
+      shell: bash
+      env:
+          NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
+      run: |
+          debug="${{ inputs['ci-debug-mode'] }}"
+          dry_run="${{ inputs['dry-run'] }}"
+          tag="${{ inputs.tag }}"
+          access="${{ inputs.access }}"
+
+          if [[ "$debug" == "true" ]]; then
+            echo "🔍 Debug mode is ON"
+            echo "🔍 package-directory: ${{ inputs['package-directory'] }}"
+            echo "🔍 registry-url: ${{ inputs['registry-url'] }}"
+            echo "🔍 scope: ${{ inputs.scope }}"
+            echo "🔍 tag: $tag"
+            echo "🔍 access: $access"
+            echo "🔍 dry-run: $dry_run"
+            echo "🔍 test-script: ${{ inputs['test-script'] }}"
+            echo "🔍 test-directory: ${{ inputs['test-directory'] }}"
+          fi
+
+          args=(--access "$access" --tag "$tag")
+          if [[ "$dry_run" == "true" ]]; then
+            args+=(--dry-run)
+            echo "ℹ️ Dry run mode enabled; package will not be published."
+          fi
+
+          echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
+          npm publish "${args[@]}"
+
+    - name: Create GitHub Release
+      id: create-release
+      if: ${{ inputs['dry-run'] != 'true' && inputs['github-token'] != '' }}
+      uses: Now-Micro/actions/github/release@v1
+      with:
+          github-token: ${{ inputs['github-token'] }}
+          changelog-path: ${{ inputs['package-directory'] }}/CHANGELOG.md
+          library-name: ${{ steps.pkg-info.outputs.library-name }}
+          release-version: ${{ steps.pkg-info.outputs.version }}
+          skip-download: "true"

@@ -1,0 +1,202 @@
+name: Demo - npm Publish
+description: Demonstrates the reusable npm publish workflow by running key npm steps against the demo npm package.
+author: Trafera
+
+inputs:
+  delete-published-package:
+    description: "When true, deletes the published demo package version from GitHub Packages after the run."
+    required: false
+    default: "false"
+  github-token:
+    description: "GitHub token (GITHUB_TOKEN) used to create and delete the GitHub release."
+    required: false
+    default: ""
+  token-github-packages:
+    description: "PAT with write:packages and delete:packages permissions. Required for the real publish and delete steps."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Title - npm Publish Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: npm Publish Demo
+        path: ./.github/actions/demo-npm-publish
+
+    - name: Setup summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-npm-publish-summary.txt" >> $GITHUB_ENV
+        : > "$GITHUB_WORKSPACE/demo-npm-publish-summary.txt"
+
+    - name: Run npm publish workflow (dry run with tests)
+      id: npm-publish-success
+      continue-on-error: true
+      uses: ./.github/actions/npm-publish-workflow
+      with:
+        access: "restricted"
+        ci-debug-mode: "true"
+        dry-run: "true"
+        node-version: "22.x"
+        package-directory: "src/demo/npm"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+        tag: "latest"
+        test-script: "test"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Assert dry-run publish with tests succeeded
+      uses: ./src/testing/assert
+      with:
+        expected: success
+        mode: exact
+        actual: ${{ steps.npm-publish-success.outcome }}
+        test-name: "npm publish dry-run with tests -> success"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Run npm publish workflow with invalid package directory (expected failure)
+      id: npm-publish-bad-dir
+      continue-on-error: true
+      uses: ./.github/actions/npm-publish-workflow
+      with:
+        access: "restricted"
+        dry-run: "true"
+        node-version: "22.x"
+        package-directory: "src/demo/npm/__does_not_exist__"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Assert invalid directory caused failure
+      uses: ./src/testing/assert
+      with:
+        expected: failure
+        mode: exact
+        actual: ${{ steps.npm-publish-bad-dir.outcome }}
+        test-name: "npm publish with missing package directory -> failure"
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Generate unique demo version
+      id: version
+      shell: bash
+      run: |
+          version="0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "📦 Generated demo version: $version"
+
+    - name: Stamp version into package.json
+      shell: bash
+      working-directory: src/demo/npm
+      run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+    - name: Stamp version into changelog
+      shell: bash
+      working-directory: src/demo/npm
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        sed -i "s/^## \[1\.0\.0\]$/## [${version}]/" CHANGELOG.md
+
+    - name: Publish demo package to GitHub Packages
+      id: npm-publish-real
+      uses: ./.github/actions/npm-publish-workflow
+      with:
+        access: "restricted"
+        ci-debug-mode: "true"
+        dry-run: "false"
+        node-version: "22.x"
+        package-directory: "src/demo/npm"
+        registry-url: "https://npm.pkg.github.com"
+        scope: "@now-micro"
+        github-token: ${{ inputs['github-token'] }}
+        tag: "latest"
+        test-script: "test"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
+    - name: Delete published demo package version
+      if: ${{ always() && inputs['delete-published-package'] == 'true' && steps.npm-publish-real.outcome == 'success' }}
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['token-github-packages'] }}
+        script: |
+          const packageName = 'demo-npm';
+          const versionNumber = '${{ steps.version.outputs.version }}';
+          const org = context.repo.owner;
+
+          core.info(`🔍 Looking for npm package '${packageName}' version '${versionNumber}' in org '${org}'`);
+
+          let versions;
+          try {
+            const resp = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+              org,
+              package_type: 'npm',
+              package_name: packageName,
+            });
+            versions = resp.data;
+          } catch (err) {
+            core.warning(`Could not list package versions: ${err.message}`);
+            return;
+          }
+
+          const match = versions.find(v => v.name === versionNumber);
+          if (!match) {
+            core.info(`ℹ️ Version '${versionNumber}' not found in package '${packageName}' — nothing to delete.`);
+            return;
+          }
+
+          try {
+            await github.rest.packages.deletePackageVersionForOrg({
+              org,
+              package_type: 'npm',
+              package_name: packageName,
+              package_version_id: match.id,
+            });
+            core.info(`✅ Deleted npm package version: @now-micro/${packageName}@${versionNumber}`);
+          } catch (err) {
+            core.warning(`Failed to delete package version: ${err.message}`);
+          }
+
+    - name: Delete GitHub release
+      if: ${{ always() && inputs['delete-published-package'] == 'true' && inputs['github-token'] != '' && steps.npm-publish-real.outputs.tag-name != '' }}
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs['github-token'] }}
+        script: |
+          const tag = '${{ steps.npm-publish-real.outputs.tag-name }}';
+          const { owner, repo } = context.repo;
+
+          core.info(`🔍 Looking for GitHub release with tag '${tag}'`);
+          try {
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: release.id });
+            core.info(`✅ Deleted GitHub release for tag '${tag}'`);
+          } catch (e) {
+            if (e.status === 404) {
+              core.info(`ℹ️ No GitHub release found for tag '${tag}' — nothing to delete.`);
+            } else {
+              throw e;
+            }
+          }
+
+          try {
+            await github.rest.git.deleteRef({ owner, repo, ref: `tags/${tag}` });
+            core.info(`✅ Deleted git tag '${tag}'`);
+          } catch (e) {
+            if (e.status === 404 || e.status === 422) {
+              core.info(`ℹ️ Git tag '${tag}' not found — nothing to delete.`);
+            } else {
+              throw e;
+            }
+          }
+
+    - name: Summary
+      if: always()
+      shell: bash
+      run: |
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## npm Publish Demo Results" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f "$SUMMARY_FILE" ]; then
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+        fi

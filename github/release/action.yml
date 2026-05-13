@@ -103,7 +103,7 @@ runs:
         INPUT_BODY_FILENAME: ${{ inputs.body-filename }}
 
     - name: Create git tag
-      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
+      if: ${{ inputs.dry-run == 'false' }}
       shell: bash
       run: |
         git config user.name "github-actions[bot]"
@@ -120,13 +120,14 @@ runs:
 
     - name: Create GitHub Release
       id: create-release
-      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 }}
+      if: ${{ inputs.dry-run == 'false' }}
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
       shell: bash
       run: |
         set -euo pipefail
+        shopt -s nullglob
 
         tag_name="${{ steps.prepare.outputs.tag_name }}"
         release_name="${{ steps.prepare.outputs.release_name }}"
@@ -138,17 +139,25 @@ runs:
           prerelease_flag="--prerelease"
         fi
 
-        gh release create "$tag_name" "${release_files[@]}" \
-          --repo "$GITHUB_REPOSITORY" \
-          --title "$release_name" \
-          --notes-file "$release_notes_path" \
-          $prerelease_flag
+        if [ "${#release_files[@]}" -gt 0 ]; then
+          gh release create "$tag_name" "${release_files[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$release_name" \
+            --notes-file "$release_notes_path" \
+            $prerelease_flag
+        else
+          gh release create "$tag_name" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$release_name" \
+            --notes-file "$release_notes_path" \
+            $prerelease_flag
+        fi
 
         release_url=$(gh release view "$tag_name" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
         echo "url=$release_url" >> "$GITHUB_OUTPUT"
 
     - name: Add release URL to workflow summary
-      if: ${{ inputs.dry-run == 'false' && steps.prepare.outputs.has_packages > 0 && steps.create-release.outputs.url != '' }}
+      if: ${{ inputs.dry-run == 'false' && steps.create-release.outputs.url != '' }}
       shell: bash
       run: |
         {

@@ -18,6 +18,13 @@ runs:
       uses: actions/checkout@v6
       with:
         fetch-depth: 0
+      
+    - name: Demo - npm publish
+      uses: ./.github/actions/demo-npm-publish
+      with:
+        delete-published-package: "true"
+        github-token: ${{ inputs.github-release-token }}
+        token-github-packages: ${{ inputs.github-token }}
 
     - name: Demo - checks-workflow
       uses: ./.github/actions/demo-checks-workflow

@@ -30,6 +30,12 @@ This directory contains GitHub Actions **reusable workflows** — shared workflo
     - [Usage - auto-detect changed packages on a PR](#pre-release-nuget-usage---auto-detect-changed-packages-on-a-pr)
     - [Usage - publish a specific directory](#pre-release-nuget-usage---publish-a-specific-directory)
     - [Version format](#pre-release-nuget-version-format)
+  - [npm Publish Workflow](#npm-publish-workflow)
+    - [What it does](#npm-publish-what-it-does)
+    - [Inputs](#npm-publish-inputs)
+    - [Secrets](#npm-publish-secrets)
+    - [Security notes](#npm-publish-security-notes)
+    - [Usage](#npm-publish-usage)
 
 ---
 
@@ -350,4 +356,64 @@ For example, if the `.csproj` contains `<VersionPrefix>1.2.3</VersionPrefix>` an
 
 ```
 1.2.4-alpha-202506011430
+```
+
+---
+
+### npm Publish Workflow
+
+Installs dependencies, publishes a scoped npm package to GitHub Packages (or another npm registry), and creates a GitHub Release for real publishes when a GitHub token is provided. Intended to be called from a workflow that runs on `main` after a version has been set in `package.json`.
+
+#### npm Publish What it does
+
+1. Validates that the required secret and the `access` input are present and valid.
+2. Checks out the repository.
+3. Configures Node.js and the `.npmrc` for the target registry and scope.
+4. Extracts and validates the changelog entry for the package version before any dependency installation.
+5. Runs `npm ci` when a lockfile exists in the specified `package-directory`, otherwise falls back to `npm install --no-package-lock`.
+6. Runs `npm publish` with the configured access level and distribution tag.
+7. Creates a GitHub Release using the forwarded `GITHUB_TOKEN` unless `dry-run` is `true`.
+
+#### npm Publish Inputs
+
+| Name | Required | Default | Description |
+|---|---|---|---|
+| `access` | No | `restricted` | Package access level. Use `public` for public packages or `restricted` for private/org-scoped packages. |
+| `ci-debug-mode` | No | `false` | Enable verbose debug logging during the publish steps. |
+| `dry-run` | No | `false` | When `true`, runs `npm publish --dry-run`. No package is actually published. |
+| `node-version` | No | `22.x` | Node.js version to use when installing and publishing. |
+| `package-directory` | **Yes** | — | Directory containing the `package.json` to publish. Relative to the repository root. |
+| `registry-url` | No | `https://npm.pkg.github.com` | npm registry URL to publish to. |
+| `scope` | No | `""` | npm package scope (e.g. `@my-org`). Must match the scope prefix in the `package.json` name field. Required when publishing to GitHub Packages. |
+| `tag` | No | `latest` | npm distribution tag applied to the published version (e.g. `latest`, `next`, `beta`). |
+| `test-directory` | No | `""` | Directory containing the `package.json` whose test script should be run. Defaults to `package-directory` when `test-script` is set and this is empty. |
+| `test-script` | No | `""` | npm script name to run before publishing (e.g. `test`, `test:ci`). When empty, the test step is skipped. If the script exits non-zero, the workflow stops and nothing is published. |
+
+#### npm Publish Secrets
+
+| Name | Required | Description |
+|---|---|---|
+| `token-github-packages` | Yes | PAT with `write:packages` permission used to authenticate to the npm registry. |
+
+#### npm Publish Security notes
+
+- The token is passed to npm via the `NODE_AUTH_TOKEN` environment variable, not embedded in `.npmrc`. It is never echoed to logs.
+- The job only runs when the workflow is triggered from `main` (`github.ref_name == 'main'`), preventing accidental publishes from feature branches.
+- Use a PAT scoped to `write:packages` only — do not use a token with broader permissions.
+- The reusable workflow runs with `contents: write` so the composite action can create a GitHub Release on real publishes. Dry runs skip release creation.
+- The `package.json` version must be bumped before calling this workflow. Do not republish the same version.
+
+#### npm Publish Usage
+
+```yaml
+jobs:
+  publish:
+    uses: Now-Micro/actions/.github/workflows/reusable-npm-publish.yml@v1
+    with:
+      package-directory: "src/my-library"
+      scope: "@my-org"
+      access: "restricted"
+      tag: "latest"
+    secrets:
+      token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 ```
