@@ -91,6 +91,13 @@ runs:
       working-directory: src/demo/npm
       run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
 
+    - name: Stamp version into changelog
+      shell: bash
+      working-directory: src/demo/npm
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        sed -i "s/^## \[1\.0\.0\]$/## [${version}]/" CHANGELOG.md
+
     - name: Publish demo package to GitHub Packages
       id: npm-publish-real
       uses: ./.github/actions/npm-publish-workflow
