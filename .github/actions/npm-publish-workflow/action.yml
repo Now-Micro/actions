@@ -86,7 +86,7 @@ runs:
           fi
 
     - name: Setup Node.js
-      uses: ./setup-node
+      uses: Now-Micro/actions/setup-node@v1
       with:
         node-version: ${{ inputs['node-version'] }}
         registry-url: ${{ inputs['registry-url'] }}
@@ -124,7 +124,7 @@ runs:
           fi
 
     - name: Install dependencies
-      uses: ./setup-node
+      uses: Now-Micro/actions/setup-node@v1
       with:
         node-version: ${{ inputs['node-version'] }}
         registry-url: ${{ inputs['registry-url'] }}
@@ -135,7 +135,7 @@ runs:
 
     - name: Install test dependencies
       if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
-      uses: ./setup-node
+      uses: Now-Micro/actions/setup-node@v1
       with:
         node-version: ${{ inputs['node-version'] }}
         registry-url: ${{ inputs['registry-url'] }}
