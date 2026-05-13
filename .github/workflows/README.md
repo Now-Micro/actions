@@ -369,7 +369,7 @@ Installs dependencies and publishes a scoped npm package to GitHub Packages (or 
 1. Validates that the required secret and the `access` input are present and valid.
 2. Checks out the repository.
 3. Configures Node.js and the `.npmrc` for the target registry and scope.
-4. Runs `npm ci` in the specified `package-directory`.
+4. Runs `npm ci` when a lockfile exists in the specified `package-directory`, otherwise falls back to `npm install --no-package-lock`.
 5. Runs `npm publish` with the configured access level and distribution tag.
 
 #### npm Publish Inputs

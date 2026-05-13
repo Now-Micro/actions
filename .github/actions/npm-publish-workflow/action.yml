@@ -1,5 +1,5 @@
 name: npm Publish Workflow
-description: Shared composite action for the reusable-npm-publish workflow. Runs npm ci, optional tests, and npm publish.
+description: Shared composite action for the reusable-npm-publish workflow. Runs a lockfile-aware npm install, optional tests, and npm publish.
 
 inputs:
   access:
@@ -74,7 +74,14 @@ runs:
     - name: Install dependencies
       working-directory: ${{ inputs['package-directory'] }}
       shell: bash
-      run: npm ci
+      run: |
+          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            echo "📦 Installing package dependencies with npm ci"
+            npm ci
+          else
+            echo "⚠️ No lockfile found; installing package dependencies with npm install --no-package-lock"
+            npm install --no-package-lock --no-audit --no-fund
+          fi
 
     - name: Read package info
       id: pkg-info
@@ -92,7 +99,14 @@ runs:
       if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
       working-directory: ${{ inputs['test-directory'] }}
       shell: bash
-      run: npm ci
+      run: |
+          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            echo "🧪 Installing test dependencies with npm ci"
+            npm ci
+          else
+            echo "⚠️ No lockfile found; installing test dependencies with npm install --no-package-lock"
+            npm install --no-package-lock --no-audit --no-fund
+          fi
 
     - name: Run tests
       if: ${{ inputs['test-script'] != '' }}

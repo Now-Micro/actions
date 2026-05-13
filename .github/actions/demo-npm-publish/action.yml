@@ -12,7 +12,7 @@ inputs:
     required: false
     default: ""
   token-github-packages:
-    description: "PAT with write:packages permission. Required for the real publish and delete steps."
+    description: "PAT with write:packages and delete:packages permissions. Required for the real publish and delete steps."
     required: false
     default: ""
 
