@@ -118,7 +118,7 @@ runs:
       with:
         library-name: ${{ env.LIB_NAME }}
         package-type: nuget
-        release-version: 1.2.3
+        release-version: ${{ env.RELEASE_VERSION }}
         artifacts-path: ${{ env.ARTIFACTS_DIR }}
         packages-path: ${{ env.PACKAGES_DIR }}
         changelog-path: ${{ env.ARTIFACTS_DIR }}/CHANGELOG.md
@@ -134,7 +134,7 @@ runs:
         test-name: "tag name"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: ${{ env.LIB_NAME }}-v1.2.3
+        expected: ${{ env.LIB_NAME }}-v${{ env.RELEASE_VERSION }}
         actual: ${{ steps.release.outputs.tag-name || '' }}
 
     - name: Assert release name
@@ -143,7 +143,7 @@ runs:
         test-name: "release name"
         summary-file: ${{ env.SUMMARY_FILE }}
         mode: exact
-        expected: ${{ env.LIB_NAME }} v1.2.3
+        expected: ${{ env.LIB_NAME }} v${{ env.RELEASE_VERSION }}
         actual: ${{ steps.release.outputs.release-name || '' }}
 
     - name: Assert packages copied
