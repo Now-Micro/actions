@@ -206,6 +206,7 @@ runs:
         debug-mode: ${{ inputs['release-workflow-debug-mode'] }}
         github-token: ${{ inputs['github-token'] }}
         library-name: ${{ steps.get-version.outputs.library_name }}
+        package-type: nuget
         release-version: ${{ steps.get-version.outputs.version }}
 
     - name: Delete GitHub Release
