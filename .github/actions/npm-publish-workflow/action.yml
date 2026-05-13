@@ -191,6 +191,7 @@ runs:
       uses: Now-Micro/actions/github/release@v1
       with:
           github-token: ${{ inputs['github-token'] }}
+          changelog-path: ${{ inputs['package-directory'] }}/CHANGELOG.md
           library-name: ${{ steps.pkg-info.outputs.library-name }}
           release-version: ${{ steps.pkg-info.outputs.version }}
           skip-download: "true"
