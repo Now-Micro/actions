@@ -18,7 +18,12 @@ runs:
       uses: actions/checkout@v6
       with:
         fetch-depth: 0
-      
+
+    - name: Demo - github release
+      uses: ./.github/actions/demo-github-release
+      with:
+        github-token: ${{ inputs.github-release-token }}
+
     - name: Demo - npm publish
       uses: ./.github/actions/demo-npm-publish
       with:
@@ -28,7 +33,7 @@ runs:
 
     - name: Demo - checks-workflow
       uses: ./.github/actions/demo-checks-workflow
-    
+
     - name: Demo - pre-release-workflow
       uses: ./.github/actions/demo-pre-release-workflow
       with:
@@ -61,9 +66,6 @@ runs:
         tests-directory: "src/demo/dotnet/tests/Api.Tests"
         token-github-packages: ${{ inputs.github-token }}
         version: "0.0.0-ci.${{ github.run_id }}.${{ github.run_attempt }}"
-
-    - name: Demo - github release
-      uses: ./.github/actions/demo-github-release
 
     - name: Demo - get-unique-project-directories
       uses: ./.github/actions/demo-get-unique-project-directories

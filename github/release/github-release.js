@@ -24,6 +24,14 @@ function getRequiredEnv(name) {
     return v;
 }
 
+function getPackageType() {
+    const packageType = (process.env.INPUT_PACKAGE_TYPE || '').trim().toLowerCase();
+    if (packageType !== 'npm' && packageType !== 'nuget') {
+        throw new Error('INPUT_PACKAGE_TYPE is required and must be either \'npm\' or \'nuget\'');
+    }
+    return packageType;
+}
+
 function safeMkdir(dir) {
     fs.mkdirSync(dir, { recursive: true });
 }
@@ -111,29 +119,35 @@ function copyPackages(artifactsPath, packagesPath) {
     return copied;
 }
 
-function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPath, bodyFilename, debugMode = false }) {
+function buildReleaseNotes({ libraryName, releaseVersion, packageType, packages, changelogPath, bodyFilename, debugMode = false }) {
     const notesPath = path.resolve(bodyFilename || 'RELEASE_NOTES.md');
     const repo = process.env.GITHUB_REPOSITORY || '';
     const owner = repo.includes('/') ? repo.split('/')[0] : (repo || 'your-org');
     const nugetFeed = `https://nuget.pkg.github.com/${owner}/index.json`;
+    const npmFeed = 'https://npm.pkg.github.com';
+    const npmPackageName = libraryName.startsWith('@') ? libraryName : `@${owner.toLowerCase()}/${libraryName}`;
 
     const lines = [];
     lines.push(`# ${libraryName} v${releaseVersion}`);
     lines.push('');
 
-    lines.push('## Library Release');
-    lines.push(`This is a targeted release for ${libraryName} version ${releaseVersion}.`);
+    lines.push('## Release Type');
+    lines.push(`This is a ${packageType.toUpperCase()} release for ${libraryName} version ${releaseVersion}.`);
     lines.push('');
 
     lines.push('## Installation');
     lines.push('```');
-    lines.push(`dotnet add package ${libraryName} --version ${releaseVersion}`);
+    if (packageType === 'npm') {
+        lines.push(`npm install ${npmPackageName}@${releaseVersion}`);
+    } else {
+        lines.push(`dotnet add package ${libraryName} --version ${releaseVersion}`);
+    }
     lines.push('```');
     lines.push('');
 
     lines.push('## Package Details');
     if (packages.length === 0) {
-        lines.push('- No packages found');
+        lines.push(packageType === 'npm' ? '- No attached npm package assets' : '- No packages found');
     } else {
         for (const pkg of packages) {
             lines.push(`- ${pkg}`);
@@ -161,9 +175,13 @@ function buildReleaseNotes({ libraryName, releaseVersion, packages, changelogPat
     lines.push('');
 
     lines.push('## Installation via GitHub Packages');
-    lines.push('Configure your NuGet source:');
     lines.push('```');
-    lines.push('dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "' + nugetFeed + '"');
+    if (packageType === 'npm') {
+        lines.push(`@${owner.toLowerCase()}:registry=${npmFeed}`);
+        lines.push('//npm.pkg.github.com/:_authToken=YOUR_PAT');
+    } else {
+        lines.push('dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "' + nugetFeed + '"');
+    }
     lines.push('```');
 
     fs.writeFileSync(notesPath, lines.join('\n') + '\n', 'utf8');
@@ -174,6 +192,7 @@ function run() {
     try {
         const libraryName = getRequiredEnv('INPUT_LIBRARY_NAME');
         const releaseVersion = getRequiredEnv('INPUT_RELEASE_VERSION');
+        const packageType = getPackageType();
         const artifactsPath = path.resolve(process.env.INPUT_ARTIFACTS_PATH || 'release-artifacts');
         const packagesPath = path.resolve(process.env.INPUT_PACKAGES_PATH || 'release-packages');
         const changelogPath = (process.env.INPUT_CHANGELOG_PATH || '').trim();
@@ -190,6 +209,7 @@ function run() {
 
         if (debugMode) {
             console.log(`Debug: library=${libraryName} version=${releaseVersion}`);
+            console.log(`Debug: packageType=${packageType}`);
             console.log(`Debug: artifactsPath=${artifactsPath}`);
             console.log(`Debug: packagesPath=${packagesPath}`);
             console.log(`Debug: changelogPath=${changelogPath || '(none)'}`);
@@ -213,6 +233,7 @@ function run() {
         const notesPath = buildReleaseNotes({
             libraryName,
             releaseVersion,
+            packageType,
             packages: copied,
             changelogPath,
             bodyFilename,
@@ -246,4 +267,4 @@ if (require.main === module) {
     run();
 }
 
-module.exports = { run, copyPackages, listFilesRecursive, buildReleaseNotes };
+module.exports = { run, copyPackages, listFilesRecursive, buildReleaseNotes, getPackageType };
