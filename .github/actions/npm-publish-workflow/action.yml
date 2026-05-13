@@ -42,7 +42,7 @@ inputs:
     required: false
     default: ""
   token-github-packages:
-    description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN."
+    description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN. Required for real publishes and GitHub Packages installs."
     required: false
     default: ""
   github-token:
@@ -64,6 +64,27 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Validate publish auth
+      shell: bash
+      run: |
+          dry_run="${{ inputs['dry-run'] }}"
+          registry_url="${{ inputs['registry-url'] }}"
+          token="${{ inputs['token-github-packages'] }}"
+
+          requires_token="false"
+          if [[ "$dry_run" != "true" ]]; then
+            requires_token="true"
+          fi
+
+          if [[ "$registry_url" == *"npm.pkg.github.com"* ]]; then
+            requires_token="true"
+          fi
+
+          if [[ "$requires_token" == "true" && -z "$token" ]]; then
+            echo "❌ token-github-packages is required when dry-run is false or when using GitHub Packages."
+            exit 1
+          fi
+
     - name: Setup Node.js
       uses: ./setup-node
       with:
