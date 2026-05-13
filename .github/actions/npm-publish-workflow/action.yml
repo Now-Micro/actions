@@ -1,5 +1,5 @@
 name: npm Publish Workflow
-description: Shared composite action for the reusable-npm-publish workflow. Runs a lockfile-aware npm install, optional tests, and npm publish.
+description: Shared composite action for the reusable-npm-publish workflow. Validates the changelog, runs a lockfile-aware npm install, optional tests, and npm publish.
 
 inputs:
   access:
@@ -91,8 +91,6 @@ runs:
         node-version: ${{ inputs['node-version'] }}
         registry-url: ${{ inputs['registry-url'] }}
         scope: ${{ inputs.scope }}
-        install-dependencies: 'true'
-        install-dependencies-directory: ${{ inputs['package-directory'] }}
         token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Read package info
@@ -107,13 +105,45 @@ runs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "library-name=$library_name" >> "$GITHUB_OUTPUT"
 
+    - name: Extract Changelog
+      id: extract-changelog
+      uses: Now-Micro/actions/extract-changelog@v1
+      with:
+        library-directory: ${{ inputs['package-directory'] }}
+        library-name: ${{ steps.pkg-info.outputs.library-name }}
+        changelog-content-path: ${{ inputs['package-directory'] }}/CHANGELOG-EXTRACTED.md
+        create-artifact: "false"
+        version: ${{ steps.pkg-info.outputs.version }}
+
+    - name: Validate changelog exists
+      shell: bash
+      run: |
+          if [ -z "${{ steps.extract-changelog.outputs.changelog-content }}" ]; then
+            echo "No changelog content found for version ${{ steps.pkg-info.outputs.version }}. Ensure a CHANGELOG.md exists and contains an entry for this version."
+            exit 1
+          fi
+
+    - name: Install dependencies
+      uses: ./setup-node
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
+        install-dependencies: 'true'
+        install-dependencies-directory: ${{ inputs['package-directory'] }}
+        install-dependencies-mode: 'auto'
+        token-github-packages: ${{ inputs['token-github-packages'] }}
+
     - name: Install test dependencies
       if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
       uses: ./setup-node
       with:
         node-version: ${{ inputs['node-version'] }}
+        registry-url: ${{ inputs['registry-url'] }}
+        scope: ${{ inputs.scope }}
         install-dependencies: 'true'
         install-dependencies-directory: ${{ inputs['test-directory'] }}
+        install-dependencies-mode: 'auto'
         token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Run tests
