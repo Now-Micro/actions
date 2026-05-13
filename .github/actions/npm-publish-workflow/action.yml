@@ -131,7 +131,6 @@ runs:
         scope: ${{ inputs.scope }}
         install-dependencies: 'true'
         install-dependencies-directory: ${{ inputs['package-directory'] }}
-        install-dependencies-mode: 'auto'
         token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Install test dependencies
@@ -143,7 +142,6 @@ runs:
         scope: ${{ inputs.scope }}
         install-dependencies: 'true'
         install-dependencies-directory: ${{ inputs['test-directory'] }}
-        install-dependencies-mode: 'auto'
         token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Run tests
