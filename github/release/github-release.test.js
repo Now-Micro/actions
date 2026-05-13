@@ -107,6 +107,7 @@ test('copies packages, builds notes, and emits outputs', () => {
     const r = runWithEnv({
         INPUT_LIBRARY_NAME: 'Demo.Lib',
         INPUT_RELEASE_VERSION: '1.2.3',
+        INPUT_PACKAGE_TYPE: 'nuget',
         INPUT_ARTIFACTS_PATH: artifacts,
         INPUT_PACKAGES_PATH: packagesPath,
         INPUT_CHANGELOG_PATH: changelog,
@@ -124,6 +125,7 @@ test('copies packages, builds notes, and emits outputs', () => {
     assert.match(notes, /one\.nupkg/);
     assert.match(notes, /two\.snupkg/);
     assert.match(notes, /Initial release of the library/);
+    assert.match(notes, /dotnet add package Demo\.Lib --version 1\.2\.3/);
     assert.ok(!/## \[1\.2\.3\]/.test(notes));
     assert.ok(!/Prior fixes/.test(notes));
     assert.ok(fs.existsSync(path.join(packagesPath, 'one.nupkg')));
@@ -139,6 +141,7 @@ test('handles missing artifacts and writes empty outputs', () => {
     const r = runWithEnv({
         INPUT_LIBRARY_NAME: 'Demo.Lib',
         INPUT_RELEASE_VERSION: '2.0.0',
+        INPUT_PACKAGE_TYPE: 'nuget',
         INPUT_ARTIFACTS_PATH: artifacts,
         INPUT_PACKAGES_PATH: packagesPath,
     });
@@ -149,6 +152,7 @@ test('handles missing artifacts and writes empty outputs', () => {
     assert.deepStrictEqual(JSON.parse(outputs.packages_json), []);
     const notes = fs.readFileSync(outputs.release_notes_path, 'utf8');
     assert.match(notes, /No packages found/);
+    assert.match(notes, /dotnet add package Demo\.Lib --version 2\.0\.0/);
 });
 
 
@@ -178,6 +182,7 @@ test('buildReleaseNotes handles missing changelog', () => {
     const notesPath = buildReleaseNotes({
         libraryName: 'Lib',
         releaseVersion: '0.1.0',
+        packageType: 'nuget',
         packages: [],
         changelogPath: path.join(root, 'missing.md'),
         bodyFilename: path.join(root, 'NOTES.md'),
@@ -185,6 +190,36 @@ test('buildReleaseNotes handles missing changelog', () => {
     const notes = fs.readFileSync(notesPath, 'utf8');
     assert.match(notes, /No packages found/);
     assert.match(notes, /No changelog content found/);
+});
+
+
+test('buildReleaseNotes generates npm instructions', () => {
+    const root = makeTempDir('gh-rel-npm-');
+    const prevRepo = process.env.GITHUB_REPOSITORY;
+    process.env.GITHUB_REPOSITORY = 'Now-Micro/actions';
+    const notesPath = buildReleaseNotes({
+        libraryName: 'demo-npm',
+        releaseVersion: '1.0.0',
+        packageType: 'npm',
+        packages: [],
+        changelogPath: '',
+        bodyFilename: path.join(root, 'NOTES.md'),
+    });
+
+    try {
+        const notes = fs.readFileSync(notesPath, 'utf8');
+        assert.match(notes, /This is a NPM release for demo-npm version 1\.0\.0\./);
+        assert.match(notes, /npm install @now-micro\/demo-npm@1\.0\.0/);
+        assert.match(notes, /No attached npm package assets/);
+        assert.match(notes, /@now-micro:registry=https:\/\/npm\.pkg\.github\.com/);
+        assert.match(notes, /\/\/npm\.pkg\.github\.com\/:_authToken=YOUR_PAT/);
+    } finally {
+        if (prevRepo === undefined) {
+            delete process.env.GITHUB_REPOSITORY;
+        } else {
+            process.env.GITHUB_REPOSITORY = prevRepo;
+        }
+    }
 });
 
 
@@ -198,6 +233,7 @@ test('run honors custom tag prefix and release name template', () => {
     const r = runWithEnv({
         INPUT_LIBRARY_NAME: 'LibX',
         INPUT_RELEASE_VERSION: '9.9.9',
+        INPUT_PACKAGE_TYPE: 'nuget',
         INPUT_ARTIFACTS_PATH: artifacts,
         INPUT_PACKAGES_PATH: packagesPath,
         INPUT_TAG_PREFIX: 'v',
@@ -216,6 +252,7 @@ test('run exits when GITHUB_OUTPUT is missing', () => {
     Object.assign(process.env, {
         INPUT_LIBRARY_NAME: 'Lib',
         INPUT_RELEASE_VERSION: '1.0.0',
+        INPUT_PACKAGE_TYPE: 'nuget',
     });
     delete process.env.GITHUB_OUTPUT;
     let exitCode = 0;
@@ -285,6 +322,7 @@ test('debug mode emits config and package logs', () => {
     const r = runWithEnv({
         INPUT_LIBRARY_NAME: 'Dbg',
         INPUT_RELEASE_VERSION: '0.0.1',
+        INPUT_PACKAGE_TYPE: 'nuget',
         INPUT_ARTIFACTS_PATH: artifacts,
         INPUT_PACKAGES_PATH: packagesPath,
         INPUT_DEBUG_MODE: 'true',

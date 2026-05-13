@@ -1,0 +1,13 @@
+{
+  "name": "demo-npm-consumer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Small runnable project that consumes the published @now-micro/demo-npm package and verifies all exports.",
+  "scripts": {
+    "check": "node run.js",
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "@now-micro/demo-npm": "0.0.0-ci.25815840565.1"
+  }
+}

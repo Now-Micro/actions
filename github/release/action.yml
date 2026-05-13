@@ -38,6 +38,9 @@ inputs:
   library-name:
     description: "Library/package name to include in release metadata."
     required: true
+  package-type:
+    description: "Package type to release. Supported values: npm or nuget."
+    required: true
   release-name-template:
     description: "Template for release name. Supports {library-name} and {release-version}."
     required: false
@@ -92,15 +95,16 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/github-release.js"
       env:
-        INPUT_LIBRARY_NAME: ${{ inputs.library-name }}
-        INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
         INPUT_ARTIFACTS_PATH: ${{ inputs.artifacts-path }}
-        INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
+        INPUT_BODY_FILENAME: ${{ inputs.body-filename }}
         INPUT_CHANGELOG_PATH: ${{ inputs.changelog-path }}
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
-        INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
+        INPUT_LIBRARY_NAME: ${{ inputs.library-name }}
+        INPUT_PACKAGE_TYPE: ${{ inputs.package-type }}
+        INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
         INPUT_RELEASE_NAME_TEMPLATE: ${{ inputs.release-name-template }}
-        INPUT_BODY_FILENAME: ${{ inputs.body-filename }}
+        INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
 
     - name: Create git tag
       if: ${{ inputs.dry-run == 'false' }}
