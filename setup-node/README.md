@@ -16,4 +16,5 @@ This action installs the requested Node.js version, optionally enables npm cachi
     install-dependencies: true
     install-dependencies-directory: src/demo/npm
     install-dependencies-mode: auto
+    token-github-packages: ${{ secrets.GITHUB_TOKEN }}
 ```

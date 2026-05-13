@@ -72,6 +72,7 @@ runs:
         scope: ${{ inputs.scope }}
         install-dependencies: 'true'
         install-dependencies-directory: ${{ inputs['package-directory'] }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Read package info
       id: pkg-info
@@ -92,6 +93,7 @@ runs:
         node-version: ${{ inputs['node-version'] }}
         install-dependencies: 'true'
         install-dependencies-directory: ${{ inputs['test-directory'] }}
+        token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Run tests
       if: ${{ inputs['test-script'] != '' }}
