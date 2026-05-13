@@ -65,23 +65,13 @@ runs:
   using: composite
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: ./setup-node
       with:
         node-version: ${{ inputs['node-version'] }}
         registry-url: ${{ inputs['registry-url'] }}
         scope: ${{ inputs.scope }}
-
-    - name: Install dependencies
-      working-directory: ${{ inputs['package-directory'] }}
-      shell: bash
-      run: |
-          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
-            echo "📦 Installing package dependencies with npm ci"
-            npm ci
-          else
-            echo "⚠️ No lockfile found; installing package dependencies with npm install --no-package-lock"
-            npm install --no-package-lock --no-audit --no-fund
-          fi
+        install-dependencies: 'true'
+        install-dependencies-directory: ${{ inputs['package-directory'] }}
 
     - name: Read package info
       id: pkg-info
@@ -97,16 +87,11 @@ runs:
 
     - name: Install test dependencies
       if: ${{ inputs['test-script'] != '' && inputs['test-directory'] != '' && inputs['test-directory'] != inputs['package-directory'] }}
-      working-directory: ${{ inputs['test-directory'] }}
-      shell: bash
-      run: |
-          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
-            echo "🧪 Installing test dependencies with npm ci"
-            npm ci
-          else
-            echo "⚠️ No lockfile found; installing test dependencies with npm install --no-package-lock"
-            npm install --no-package-lock --no-audit --no-fund
-          fi
+      uses: ./setup-node
+      with:
+        node-version: ${{ inputs['node-version'] }}
+        install-dependencies: 'true'
+        install-dependencies-directory: ${{ inputs['test-directory'] }}
 
     - name: Run tests
       if: ${{ inputs['test-script'] != '' }}
