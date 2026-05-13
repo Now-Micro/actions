@@ -45,6 +45,7 @@ runs:
         scope: "@now-micro"
         tag: "latest"
         test-script: "test"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Assert dry-run publish with tests succeeded
       uses: ./src/testing/assert
@@ -66,6 +67,7 @@ runs:
         package-directory: "src/demo/npm/__does_not_exist__"
         registry-url: "https://npm.pkg.github.com"
         scope: "@now-micro"
+        token-github-packages: ${{ inputs['token-github-packages'] }}
 
     - name: Assert invalid directory caused failure
       uses: ./src/testing/assert
