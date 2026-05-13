@@ -39,7 +39,7 @@ runs:
 
     - name: Clean existing demo release (best-effort)
       env:
-        GITHUB_TOKEN: ${{ inputs['github-token'] }}
+        GH_TOKEN: ${{ inputs['github-token'] }}
       shell: bash
       run: |
         set -euo pipefail
@@ -89,7 +89,7 @@ runs:
 
     - name: Clean existing npm demo release (best-effort)
       env:
-        GITHUB_TOKEN: ${{ inputs['github-token'] }}
+        GH_TOKEN: ${{ inputs['github-token'] }}
       shell: bash
       run: |
         set -euo pipefail
