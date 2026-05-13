@@ -1,7 +1,7 @@
 name: Reusable - npm Publish
 
 permissions:
-    contents: read
+    contents: write
     packages: write
 
 on:

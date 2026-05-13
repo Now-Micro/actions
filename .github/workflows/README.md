@@ -362,7 +362,7 @@ For example, if the `.csproj` contains `<VersionPrefix>1.2.3</VersionPrefix>` an
 
 ### npm Publish Workflow
 
-Installs dependencies and publishes a scoped npm package to GitHub Packages (or another npm registry). Intended to be called from a workflow that runs on `main` after a version has been set in `package.json`.
+Installs dependencies, publishes a scoped npm package to GitHub Packages (or another npm registry), and creates a GitHub Release for real publishes when a GitHub token is provided. Intended to be called from a workflow that runs on `main` after a version has been set in `package.json`.
 
 #### npm Publish What it does
 
@@ -372,6 +372,7 @@ Installs dependencies and publishes a scoped npm package to GitHub Packages (or 
 4. Extracts and validates the changelog entry for the package version before any dependency installation.
 5. Runs `npm ci` when a lockfile exists in the specified `package-directory`, otherwise falls back to `npm install --no-package-lock`.
 6. Runs `npm publish` with the configured access level and distribution tag.
+7. Creates a GitHub Release using the forwarded `GITHUB_TOKEN` unless `dry-run` is `true`.
 
 #### npm Publish Inputs
 
@@ -399,6 +400,7 @@ Installs dependencies and publishes a scoped npm package to GitHub Packages (or 
 - The token is passed to npm via the `NODE_AUTH_TOKEN` environment variable, not embedded in `.npmrc`. It is never echoed to logs.
 - The job only runs when the workflow is triggered from `main` (`github.ref_name == 'main'`), preventing accidental publishes from feature branches.
 - Use a PAT scoped to `write:packages` only — do not use a token with broader permissions.
+- The reusable workflow runs with `contents: write` so the composite action can create a GitHub Release on real publishes. Dry runs skip release creation.
 - The `package.json` version must be bumped before calling this workflow. Do not republish the same version.
 
 #### npm Publish Usage

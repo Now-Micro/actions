@@ -2,11 +2,11 @@
 
 **Acceptance Criteria:**
 
-- [  ] There is a reusable workflow that can publish npm packages from any GitHub workflow.
-- [  ] The reusable workflow supports publishing to GitHub Packages with scoped package names and configurable registry settings.
-- [  ] There is a demo workflow in this repository that exercises the reusable npm publish workflow end to end.
-- [  ] There is an easy-to-understand README.md that explains inputs, outputs, auth requirements, and how to use the reusable workflow safely.
-- [  ] The workflow only publishes from trusted refs such as `main` or release tags, not from pull requests or untrusted branches.
+- [ X ] There is a reusable workflow that can publish npm packages from any GitHub workflow.
+- [ X ] The reusable workflow supports publishing to GitHub Packages with scoped package names and configurable registry settings.
+- [ X ] There is a demo workflow in this repository that exercises the reusable npm publish workflow end to end.
+- [ X ] There is an easy-to-understand README.md that explains inputs, outputs, auth requirements, and how to use the reusable workflow safely.
+- [ X ] The workflow only publishes from trusted refs such as `main` or release tags, not from pull requests or untrusted branches.
 
 ## Non-Functional Requirements
 

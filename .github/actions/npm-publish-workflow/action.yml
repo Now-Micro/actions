@@ -1,5 +1,5 @@
 name: npm Publish Workflow
-description: Shared composite action for the reusable-npm-publish workflow. Validates the changelog, runs a lockfile-aware npm install, optional tests, and npm publish.
+description: Shared composite action for the reusable-npm-publish workflow. Validates the changelog, runs a lockfile-aware npm install, optional tests, npm publish, and optionally creates a GitHub Release when a GitHub token is provided.
 
 inputs:
   access:
@@ -178,14 +178,14 @@ runs:
             echo "🔍 test-directory: ${{ inputs['test-directory'] }}"
           fi
 
-          ARGS="--access $access --tag $tag"
+          args=(--access "$access" --tag "$tag")
           if [[ "$dry_run" == "true" ]]; then
-            ARGS="$ARGS --dry-run"
+            args+=(--dry-run)
             echo "ℹ️ Dry run mode enabled; package will not be published."
           fi
 
           echo "📦 Publishing npm package from ${{ inputs['package-directory'] }}..."
-          npm publish $ARGS
+          npm publish "${args[@]}"
 
     - name: Create GitHub Release
       id: create-release
