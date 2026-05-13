@@ -10,6 +10,7 @@ Composite action that prepares release assets, builds release notes, and (option
 - `changelog-path` (optional): Path to changelog content to append to notes.
 - `dry-run` (default `false`): When true, skips tag creation and GitHub Release publication.
 - `library-name` (required): Library/package name for tagging and notes.
+- `package-type` (required): Package format to describe. Use `npm` or `nuget`.
 - `packages-path` (default `release-packages`): Directory to copy package assets into.
 - `release-name-template` (default `{library-name} v{release-version}`): Template for release display name.
 - `release-version` (required): Version used in tag and release name.
@@ -37,6 +38,7 @@ Composite action that prepares release assets, builds release notes, and (option
   uses: Now-Micro/actions/github/release@v1
   with:
     library-name: Demo.Library
+    package-type: nuget
     release-version: 1.2.3
     artifact-name: build-artifacts
     changelog-path: release-artifacts/changelog.md

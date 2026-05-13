@@ -192,6 +192,7 @@ runs:
       with:
           github-token: ${{ inputs['github-token'] }}
           changelog-path: ${{ inputs['package-directory'] }}/CHANGELOG.md
+          package-type: npm
           library-name: ${{ steps.pkg-info.outputs.library-name }}
           release-version: ${{ steps.pkg-info.outputs.version }}
           skip-download: "true"
