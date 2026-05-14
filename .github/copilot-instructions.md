@@ -25,12 +25,14 @@ This repository is a monorepo of custom GitHub Composite Actions plus supporting
 ## Adding / Modifying Actions
 1. Create folder + `action.yml` referencing new JS file (no inline heredoc JS).
 2. The `action.yml` should first set up node.js using `Now-Micro/actions/setup-node@v1` to ensure Node.js is available.
-2. The `action.yml` file should use `run: node "$GITHUB_ACTION_PATH/my-new-js-file.js"` instead of just `node ./some-action-name/my-new-js-file.js` to ensure that the correct path is used when used by an external repository's workflow.
-3. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
-4. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
-5. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
-6. Add extensive logging for new JS actions. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.  Only output logs if `INPUT_DEBUG_MODE` is truthy.
-7. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `src/testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
+3. The `action.yml` file should use `run: node "$GITHUB_ACTION_PATH/my-new-js-file.js"` instead of just `node ./some-action-name/my-new-js-file.js` to ensure that the correct path is used when used by an external repository's workflow.
+4. Pin every external GitHub Action reference to an exact commit SHA in both composite actions and workflows. Never use floating tags or branch refs for external actions.
+5. When an external action is already referenced elsewhere in this repo, reuse the same commit SHA everywhere. If it is a new external action, choose the most recent known-safe commit SHA and pin that exact hash consistently.
+6. Implement `run()`; resolve & validate all required inputs early; exit with code 1 on error.
+7. Write exhaustive tests first (aim for full statement/branch coverage, especially around regex or traversal logic).  See [this](../get-unique-root-directories/unique-root-directories.test.js) for an example.
+8. Avoid external dependencies unless absolutely necessary (currently zero NPM deps).
+9. Add extensive logging for new JS actions. Keep logs stable & human friendly; do not encode control sequences that complicate summary parsing.  Only output logs if `INPUT_DEBUG_MODE` is truthy.
+10. Add a demo workflow in `.github/workflows/` referencing a new composite action in `.github/actions/` that uses `src/testing/assert` for verifications. Follow the guidance established in `.github/instructions/demo-workflows.md`
 
 ## Refactoring
 - Analyze the existing implementation.  If it makes sense to separate the code into smaller composite action, propose it to the user and ask how to proceed.
