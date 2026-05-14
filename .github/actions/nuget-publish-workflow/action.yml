@@ -185,7 +185,7 @@ runs:
         test-project-file: ${{ steps.extract-project-test.outputs.project-found || '' }}
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         name: ${{ steps.get-version.outputs.library_name }}-${{ steps.get-version.outputs.version }}
         path: |
@@ -211,7 +211,7 @@ runs:
 
     - name: Delete GitHub Release
       if: ${{ always() && inputs['cleanup-release'] == 'true' && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ inputs['github-token'] }}
         script: |
@@ -242,7 +242,7 @@ runs:
 
     - name: Delete published NuGet package version
       if: ${{ always() && inputs['cleanup-release'] == 'true' && inputs['dry-run'] != 'true' && steps.publish-release.outputs.release-url != '' }}
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ inputs['token-github-packages'] }}
         script: |
