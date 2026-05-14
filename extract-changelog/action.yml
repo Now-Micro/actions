@@ -164,7 +164,7 @@ runs:
 
     - name: Upload changelog content
       if: ${{ inputs.create-artifact == 'true' }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: changelog-content-${{ inputs.library-name }}
         path: ${{ inputs.changelog-content-path }}/

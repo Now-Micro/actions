@@ -116,7 +116,7 @@ runs:
 
     - name: Delete published demo package version
       if: ${{ always() && inputs['delete-published-package'] == 'true' && steps.npm-publish-real.outcome == 'success' }}
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ inputs['token-github-packages'] }}
         script: |
@@ -159,7 +159,7 @@ runs:
 
     - name: Delete GitHub release
       if: ${{ always() && inputs['delete-published-package'] == 'true' && inputs['github-token'] != '' && steps.npm-publish-real.outputs.tag-name != '' }}
-      uses: actions/github-script@v8
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
       with:
         github-token: ${{ inputs['github-token'] }}
         script: |

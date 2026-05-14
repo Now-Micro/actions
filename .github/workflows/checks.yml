@@ -16,7 +16,7 @@ jobs:
       should_run_tests: ${{ steps.check-changed-files.outputs.should_run_tests }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # Fetch full history so that before and after commits exist locally
           fetch-depth: 0
