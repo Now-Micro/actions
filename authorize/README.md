@@ -8,6 +8,34 @@ The composite action wraps `authorize.js`, which reads `permissions.json` from t
 
 When the actor is allowed, the action logs a success message. When the actor is not allowed, it exits with code `1` and prints a clear reason so the workflow can fail fast.
 
+### Permissions file structure
+
+`permissions.json` is a two-level map: the top-level key is the repository name (without the org prefix) and the second-level key is the workflow filename. Both levels support the wildcard key `"*"`:
+
+| Top-level key | Second-level key | Meaning |
+|---|---|---|
+| `"RepoName"` | `"workflow.yml"` | Exact match — specific repo and specific workflow |
+| `"RepoName"` | `"*"` | Any workflow in this specific repo |
+| `"*"` | `"workflow.yml"` | This specific workflow in any repo |
+| `"*"` | `"*"` | Any workflow in any repo (universal permission) |
+
+All matching entries are evaluated together. An actor is authorized if they appear in **any** applicable list, so a universal `"*"/"*"` entry grants access everywhere while more specific entries can grant access to a narrower scope alongside it.
+
+**Example:**
+
+```json
+{
+    "*": {
+        "*": ["Bernard Carter", "Hilton Dahl"]
+    },
+    "CodeBits": {
+        "release-nuget.yml": ["Adam Major"]
+    }
+}
+```
+
+Here `Bernard Carter` and `Hilton Dahl` can trigger any workflow in any repository, while `Adam Major` can only trigger `release-nuget.yml` in `CodeBits`.
+
 ## `populateUsers`
 
 `populateUsers.js` is the companion script that helps maintain `users.json`. It fetches members from the `Now-Micro` GitHub organization, looks up each member's display name, and rewrites `users.json` as a simple map of GitHub login to a single name string.

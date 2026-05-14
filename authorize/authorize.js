@@ -135,21 +135,43 @@ function run() {
         process.exit(1);
     }
 
-    const repoPerms = findCaseInsensitive(permissions, repoName);
-    if (!repoPerms) {
-        console.error(`❌ No permissions defined for repository '${repoName}'.`);
-        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${repoName}' in permissions.json.`);
+    // Gather all applicable allowed-actor lists, respecting '*' wildcards at both levels.
+    // Checks (all contribute): repo/workflow, repo/*, */workflow, */*
+    const exactRepoPerms = findCaseInsensitive(permissions, repoName);
+    const wildcardRepoPerms = repoName !== '*' ? findCaseInsensitive(permissions, '*') : null;
+
+    const allowedActorLists = [];
+
+    if (exactRepoPerms) {
+        const exact = findCaseInsensitive(exactRepoPerms, workflowFilename);
+        if (exact !== undefined) allowedActorLists.push(Array.isArray(exact) ? exact : []);
+        if (workflowFilename !== '*') {
+            const wildcardWf = findCaseInsensitive(exactRepoPerms, '*');
+            if (wildcardWf !== undefined) allowedActorLists.push(Array.isArray(wildcardWf) ? wildcardWf : []);
+        }
+    }
+
+    if (wildcardRepoPerms) {
+        const exact = findCaseInsensitive(wildcardRepoPerms, workflowFilename);
+        if (exact !== undefined) allowedActorLists.push(Array.isArray(exact) ? exact : []);
+        if (workflowFilename !== '*') {
+            const wildcardWf = findCaseInsensitive(wildcardRepoPerms, '*');
+            if (wildcardWf !== undefined) allowedActorLists.push(Array.isArray(wildcardWf) ? wildcardWf : []);
+        }
+    }
+
+    if (allowedActorLists.length === 0) {
+        if (!exactRepoPerms && !wildcardRepoPerms) {
+            console.error(`❌ No permissions defined for repository '${repoName}'.`);
+            console.error(`   Actor '${actor}' is not authorized. Add an entry for '${repoName}' or '*' in permissions.json.`);
+        } else {
+            console.error(`❌ No permissions defined for workflow '${workflowFilename}' under repository '${repoName}'.`);
+            console.error(`   Actor '${actor}' is not authorized. Add an entry for '${workflowFilename}' or '*' under '${repoName}' or '*' in permissions.json.`);
+        }
         process.exit(1);
     }
 
-    const allowedActors = findCaseInsensitive(repoPerms, workflowFilename);
-    if (!allowedActors) {
-        console.error(`❌ No permissions defined for workflow '${workflowFilename}' under repository '${repoName}'.`);
-        console.error(`   Actor '${actor}' is not authorized. Add an entry for '${workflowFilename}' under '${repoName}' in permissions.json.`);
-        process.exit(1);
-    }
-
-    const allowedActorList = Array.isArray(allowedActors) ? allowedActors : [];
+    const allowedActorList = allowedActorLists.flat();
     let authorizedByAlias = '';
     const actorLower = actor.toLowerCase();
     const actorDisplayLower = actorAlias.toLowerCase();
