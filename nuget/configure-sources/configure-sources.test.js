@@ -209,6 +209,22 @@ test('special characters in name are escaped when matching', () => {
     assert.ok(execStub.calls.some(call => call.args[1] === 'update'));
 });
 
+test('parses source entries with disabled status and blank lines before urls', () => {
+    const parsed = parseRegisteredSources([
+        'Registered Sources:',
+        '  1.  Foo [Disabled]',
+        '',
+        '      https://example.invalid/foo/index.json',
+        '  2.  Bar [Enabled]',
+        '      https://example.invalid/bar/index.json',
+    ].join('\n'));
+
+    assert.deepStrictEqual(parsed, [
+        { name: 'Foo', url: 'https://example.invalid/foo/index.json' },
+        { name: 'Bar', url: 'https://example.invalid/bar/index.json' },
+    ]);
+});
+
 test('matches existing source regardless of casing', () => {
     const execStub = createExecStub(makeListOutput(['CodeBits']));
     const env = {
@@ -267,6 +283,40 @@ test('run logs errors and exits when configureSources throws', () => {
 
     assert.ok(errors.length >= 1);
     assert.deepStrictEqual(exitCodes, [1]);
+});
+
+test('duplicate source add failures retry as an update', () => {
+    const calls = [];
+    const exec = (cmd, args, opts = {}) => {
+        calls.push({ cmd, args, opts });
+        if (args[0] === 'nuget' && args[1] === 'list') {
+            return makeListOutput([]);
+        }
+        if (args[0] === 'nuget' && args[1] === 'add') {
+            const error = new Error('Command failed: dotnet nuget add source');
+            error.stdout = '';
+            error.stderr = "A source with the name 'Now-Micro' already exists.";
+            throw error;
+        }
+        return '';
+    };
+
+    const env = {
+        INPUT_NAMES: 'Now-Micro',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/Now-Micro/index.json',
+    };
+
+    const logs = [];
+    const entries = configureSources(env, {
+        exec,
+        log: message => logs.push(message),
+    });
+
+    assert.strictEqual(entries.length, 1);
+    assert.ok(logs.some(line => line.includes('Retrying as an update')));
+    assert.ok(calls.some(call => call.args[1] === 'update'), 'expected fallback update command to run');
 });
 
 test('parseRegisteredSources skips entries without urls', () => {
@@ -330,5 +380,43 @@ test('run uses default error logger when configureSources throws', () => {
     }
 
     assert.deepStrictEqual(exitCodes, [1]);
-    assert.ok(errors.some(line => line.includes('Error: boom')), 'expected default error logger to emit the caught stack trace');
+    assert.ok(errors.some(line => line.includes('dotnet nuget list source failed')),
+        'expected default error logger to emit the wrapped dotnet command failure');
+    assert.ok(errors.some(line => line.includes('message: boom')),
+        'expected default error logger to include the underlying exec error message');
+});
+
+test('run includes dotnet stderr when a command fails', () => {
+    const env = {
+        INPUT_NAMES: 'CodeBits',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/owner/index.json',
+    };
+    const exitCodes = [];
+    const errors = [];
+    const originalStderr = process.stderr.write;
+    process.stderr.write = (chunk, ...rest) => {
+        errors.push(String(chunk));
+        return true;
+    };
+    try {
+        run(env, {
+            exec: (cmd, args) => {
+                if (args[0] === 'nuget' && args[1] === 'list') {
+                    return makeListOutput([]);
+                }
+                const error = new Error('Command failed');
+                error.stderr = 'A source with the name already exists.';
+                throw error;
+            },
+            exit: code => exitCodes.push(code),
+        });
+    } finally {
+        process.stderr.write = originalStderr;
+    }
+
+    assert.deepStrictEqual(exitCodes, [1]);
+    assert.ok(errors.some(line => line.includes('A source with the name already exists.')),
+        'expected default error logger to include the underlying dotnet stderr');
 });
