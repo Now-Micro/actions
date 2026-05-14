@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+const fs = require('fs');
 const { execFileSync } = require('child_process');
+const os = require('os');
+const path = require('path');
 
 function log(message) {
     process.stdout.write(`${message}\n`);
@@ -98,17 +101,33 @@ function isDuplicateSourceError(err) {
     return /already exists|same name|duplicate|cannot add a source with the same name/.test(text);
 }
 
-function runDotnet(exec, args, logFn, debugMode) {
+function createNuGetConfigFile() {
+    const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nuget-configure-sources-'));
+    const configFile = path.join(configDir, 'NuGet.Config');
+    const configContents = [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<configuration>',
+        '  <packageSources>',
+        '  </packageSources>',
+        '</configuration>',
+    ].join('\n');
+
+    fs.writeFileSync(configFile, configContents, 'utf8');
+    return configFile;
+}
+
+function runDotnet(exec, args, logFn, debugMode, configFile) {
+    const fullArgs = [...args, '--configfile', configFile];
     if (debugMode) {
-        logFn(`exec: dotnet ${args.join(' ')}`);
+        logFn(`exec: dotnet ${fullArgs.join(' ')}`);
     }
     try {
-        return exec('dotnet', args, { encoding: 'utf8' });
+        return exec('dotnet', fullArgs, { encoding: 'utf8' });
     } catch (err) {
         const details = stringifyExecError(err);
         const message = details
-            ? `dotnet ${args.join(' ')} failed:\n${details}`
-            : `dotnet ${args.join(' ')} failed.`;
+            ? `dotnet ${fullArgs.join(' ')} failed:\n${details}`
+            : `dotnet ${fullArgs.join(' ')} failed.`;
         const wrapped = new Error(message);
         wrapped.cause = err;
         throw wrapped;
@@ -119,6 +138,7 @@ function configureSources(env = process.env, options = {}) {
     const exec = options.exec ?? execFileSync;
     const logFn = options.log ?? log;
     const debugMode = parseBool(env.INPUT_DEBUG_MODE);
+    const configFile = options.configFile ?? createNuGetConfigFile();
 
     const entries = zipEntries(env);
     if (debugMode) {
@@ -140,7 +160,7 @@ function configureSources(env = process.env, options = {}) {
     logFn(`Configuring ${entries.length} NuGet source(s)...`);
     for (const entry of entries) {
         logFn(`Processing NuGet source '${entry.name}' (${entry.url})`);
-        const listOutput = runDotnet(exec, ['nuget', 'list', 'source'], logFn, debugMode);
+        const listOutput = runDotnet(exec, ['nuget', 'list', 'source'], logFn, debugMode, configFile);
         if (debugMode) {
             logFn('dotnet nuget list source output:');
             logFn(listOutput);
@@ -162,7 +182,7 @@ function configureSources(env = process.env, options = {}) {
                 '--store-password-in-clear-text',
                 '--source',
                 entry.url,
-            ], logFn, debugMode);
+            ], logFn, debugMode, configFile);
         } else if (existingByUrl) {
             logFn(`NuGet source with URL '${entry.url}' already exists as '${existingByUrl.name}'. Removing old entry before adding '${entry.name}'.`);
             runDotnet(exec, [
@@ -170,7 +190,7 @@ function configureSources(env = process.env, options = {}) {
                 'remove',
                 'source',
                 existingByUrl.name,
-            ], logFn, debugMode);
+            ], logFn, debugMode, configFile);
             logFn(`Adding NuGet source '${entry.name}'...`);
             runDotnet(exec, [
                 'nuget',
@@ -184,7 +204,7 @@ function configureSources(env = process.env, options = {}) {
                 '--name',
                 entry.name,
                 entry.url,
-            ], logFn, debugMode);
+            ], logFn, debugMode, configFile);
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);
             const addArgs = [
@@ -201,7 +221,7 @@ function configureSources(env = process.env, options = {}) {
                 entry.url,
             ];
             try {
-                runDotnet(exec, addArgs, logFn, debugMode);
+                runDotnet(exec, addArgs, logFn, debugMode, configFile);
             } catch (err) {
                 if (!isDuplicateSourceError(err)) {
                     throw err;
@@ -220,7 +240,7 @@ function configureSources(env = process.env, options = {}) {
                     '--store-password-in-clear-text',
                     '--source',
                     entry.url,
-                ], logFn, debugMode);
+                ], logFn, debugMode, configFile);
             }
         }
     }

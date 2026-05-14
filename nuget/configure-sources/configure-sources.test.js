@@ -67,7 +67,7 @@ test('adds a source when the name is not yet registered', () => {
     assert.deepStrictEqual(execStub.calls, [
         {
             cmd: 'dotnet',
-            args: ['nuget', 'list', 'source'],
+            args: ['nuget', 'list', 'source', '--configfile', execStub.calls[0].args[4]],
             opts: { encoding: 'utf8' },
         },
         {
@@ -84,10 +84,34 @@ test('adds a source when the name is not yet registered', () => {
                 '--name',
                 'CodeBits',
                 'https://nuget.pkg.github.com/owner/index.json',
+                '--configfile',
+                execStub.calls[0].args[4],
             ],
             opts: { encoding: 'utf8' },
         },
     ]);
+});
+
+test('dotnet commands always receive an explicit config file', () => {
+    const execStub = createExecStub(makeListOutput([]));
+    const env = {
+        INPUT_NAMES: 'CodeBits',
+        INPUT_USERNAMES: 'user',
+        INPUT_PASSWORDS: 'pass',
+        INPUT_URLS: 'https://nuget.pkg.github.com/owner/index.json',
+    };
+
+    configureSources(env, {
+        exec: execStub.exec,
+        log: () => { },
+    });
+
+    assert.ok(execStub.calls.length >= 2);
+    for (const call of execStub.calls) {
+        assert.ok(call.args.includes('--configfile'), 'expected every dotnet command to include --configfile');
+        const configIndex = call.args.indexOf('--configfile');
+        assert.ok(configIndex >= 0 && typeof call.args[configIndex + 1] === 'string' && call.args[configIndex + 1].includes('NuGet.Config'));
+    }
 });
 
 test('updates a source when the name already exists', () => {
@@ -107,7 +131,7 @@ test('updates a source when the name already exists', () => {
     assert.deepStrictEqual(execStub.calls, [
         {
             cmd: 'dotnet',
-            args: ['nuget', 'list', 'source'],
+            args: ['nuget', 'list', 'source', '--configfile', execStub.calls[0].args[4]],
             opts: { encoding: 'utf8' },
         },
         {
@@ -124,6 +148,8 @@ test('updates a source when the name already exists', () => {
                 '--store-password-in-clear-text',
                 '--source',
                 'https://nuget.pkg.github.com/owner/index.json',
+                '--configfile',
+                execStub.calls[0].args[4],
             ],
             opts: { encoding: 'utf8' },
         },
@@ -380,7 +406,7 @@ test('run uses default error logger when configureSources throws', () => {
     }
 
     assert.deepStrictEqual(exitCodes, [1]);
-    assert.ok(errors.some(line => line.includes('dotnet nuget list source failed')),
+    assert.ok(errors.some(line => line.includes('dotnet nuget list source --configfile')),
         'expected default error logger to emit the wrapped dotnet command failure');
     assert.ok(errors.some(line => line.includes('message: boom')),
         'expected default error logger to include the underlying exec error message');
