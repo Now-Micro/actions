@@ -21,6 +21,8 @@ When the actor is allowed, the action logs a success message. When the actor is 
 
 All matching entries are evaluated together. An actor is authorized if they appear in **any** applicable list, so a universal `"*"/"*"` entry grants access everywhere while more specific entries can grant access to a narrower scope alongside it.
 
+Each leaf array holds the actors permitted for that entry. Each element may be either a **GitHub login** (e.g. `"nlhuey"`) or a **display name** that maps to a login in `users.json` (e.g. `"Nick Huey"`). Both forms are resolved at runtime, so you may mix them freely within the same array.
+
 **Example:**
 
 ```json

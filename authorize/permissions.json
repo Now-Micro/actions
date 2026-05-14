@@ -6,9 +6,6 @@
             "Hilton Dahl"
         ]
     },
-    "CodeBits": {
-        "release-nuget.yml": []
-    },
     "CSI-Connector": {
         "cd-docker.yml": [
             "Stephen James"

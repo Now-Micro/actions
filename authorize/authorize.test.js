@@ -406,7 +406,7 @@ test('repo/* supports alias resolution via users.json', () => {
     assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
 });
 
-test('*/* repo entry present but no workflow match still errors on workflow not authorized', () => {
+test('wildcard repo entry with specific workflow but no workflow match still errors on workflow not authorized', () => {
     // There IS a wildcard repo entry but the workflow listed doesn't match and there's no */* entry
     const { actionDir } = makeActionDir({ '*': { 'deploy.yml': ['Beschuetzer'] } });
     const r = runWith(makeEnv({
