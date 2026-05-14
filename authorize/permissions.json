@@ -1,11 +1,6 @@
 {
-    "aSpIRe-DEMO": {
-        "auth-sucCEss.yml": [
-            "Adam Major"
-        ]
-    },
-    "CodeBits": {
-        "release-nuget.yml": [
+    "*": {
+        "*": [
             "Adam Major",
             "Bernard Carter",
             "Hilton Dahl"
@@ -13,29 +8,15 @@
     },
     "CSI-Connector": {
         "cd-docker.yml": [
-            "Adam Major",
-            "Bernard Carter",
-            "Hilton Dahl",
             "Stephen James"
         ],
         "release-nuget.yml": [
-            "Adam Major",
-            "Bernard Carter",
-            "Hilton Dahl",
             "Stephen James"
         ]
     },
     "WarrantyService": {
         "cd-docker.yml": [
-            "Adam Major",
-            "Bernard Carter",
-            "Hilton Dahl",
             "Stephen James"
-        ],
-        "release-nuget.yml": [
-            "Adam Major",
-            "Bernard Carter",
-            "Hilton Dahl"
         ]
     }
 }

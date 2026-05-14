@@ -57,26 +57,62 @@ function parseRegisteredSources(listOutput) {
     if (!listOutput) return entries;
     const lines = listOutput.split(/\r?\n/);
     for (let i = 0; i < lines.length; i += 1) {
-        const match = lines[i].match(/^\s*\d+\.\s+([^\[]+)/);
+        const match = lines[i].match(/^\s*(?:\d+\.\s+)?(.+?)\s+\[(?:Enabled|Disabled)\]\s*$/);
         if (!match) continue;
         const name = match[1].trim();
         let url = '';
-        if (i + 1 < lines.length) {
-            const candidate = lines[i + 1].trim();
+        for (let j = i + 1; j < lines.length; j += 1) {
+            const candidate = lines[j].trim();
+            if (!candidate) continue;
             if (candidate.startsWith('http')) {
                 url = candidate;
             }
+            break;
         }
         entries.push({ name, url });
     }
     return entries;
 }
 
+function stringifyExecError(err) {
+    if (!err) return '';
+
+    const parts = [];
+    if (err.stdout) {
+        const stdout = String(err.stdout).trim();
+        if (stdout) parts.push(`stdout:\n${stdout}`);
+    }
+    if (err.stderr) {
+        const stderr = String(err.stderr).trim();
+        if (stderr) parts.push(`stderr:\n${stderr}`);
+    }
+    if (err.message) {
+        parts.push(`message: ${err.message}`);
+    }
+
+    return parts.join('\n');
+}
+
+function isDuplicateSourceError(err) {
+    const text = stringifyExecError(err).toLowerCase();
+    return /already exists|same name|duplicate|cannot add a source with the same name/.test(text);
+}
+
 function runDotnet(exec, args, logFn, debugMode) {
     if (debugMode) {
         logFn(`exec: dotnet ${args.join(' ')}`);
     }
-    return exec('dotnet', args, { encoding: 'utf8' });
+    try {
+        return exec('dotnet', args, { encoding: 'utf8' });
+    } catch (err) {
+        const details = stringifyExecError(err);
+        const message = details
+            ? `dotnet ${args.join(' ')} failed:\n${details}`
+            : `dotnet ${args.join(' ')} failed.`;
+        const wrapped = new Error(message);
+        wrapped.cause = err;
+        throw wrapped;
+    }
 }
 
 function configureSources(env = process.env, options = {}) {
@@ -151,7 +187,7 @@ function configureSources(env = process.env, options = {}) {
             ], logFn, debugMode);
         } else {
             logFn(`Adding NuGet source '${entry.name}'...`);
-            runDotnet(exec, [
+            const addArgs = [
                 'nuget',
                 'add',
                 'source',
@@ -163,7 +199,29 @@ function configureSources(env = process.env, options = {}) {
                 '--name',
                 entry.name,
                 entry.url,
-            ], logFn, debugMode);
+            ];
+            try {
+                runDotnet(exec, addArgs, logFn, debugMode);
+            } catch (err) {
+                if (!isDuplicateSourceError(err)) {
+                    throw err;
+                }
+
+                logFn(`NuGet source '${entry.name}' may already exist. Retrying as an update...`);
+                runDotnet(exec, [
+                    'nuget',
+                    'update',
+                    'source',
+                    entry.name,
+                    '--username',
+                    entry.username,
+                    '--password',
+                    entry.password,
+                    '--store-password-in-clear-text',
+                    '--source',
+                    entry.url,
+                ], logFn, debugMode);
+            }
         }
     }
 

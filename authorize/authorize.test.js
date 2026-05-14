@@ -307,3 +307,112 @@ test('debug mode enabled prints 🔍 logs', () => {
     assert.match(r.out, /🔍 Workflow ref:/);
     assert.match(r.out, /🔍 Permissions:/);
 });
+
+// ---------------------------------------------------------------------------
+// Wildcard permission tests
+// ---------------------------------------------------------------------------
+
+test('actor in */* is authorized for any repo and workflow', () => {
+    const { actionDir } = makeActionDir({ '*': { '*': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('actor in */* is authorized for an entirely different repo and workflow', () => {
+    const { actionDir } = makeActionDir({ '*': { '*': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({
+        GITHUB_ACTION_PATH: actionDir,
+        INPUT_REPOSITORY: 'Now-Micro/SomeOtherRepo',
+        INPUT_WORKFLOW_REF: 'Now-Micro/SomeOtherRepo/.github/workflows/deploy.yml@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('actor NOT listed in */* is still unauthorized', () => {
+    const { actionDir } = makeActionDir({ '*': { '*': ['OtherUser'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /not authorized/);
+});
+
+test('actor in */specific-workflow is authorized for that workflow in any repo', () => {
+    const { actionDir } = makeActionDir({ '*': { 'release.yml': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('actor in */release.yml is not authorized for a different workflow', () => {
+    const { actionDir } = makeActionDir({ '*': { 'release.yml': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({
+        GITHUB_ACTION_PATH: actionDir,
+        INPUT_WORKFLOW_REF: 'Now-Micro/CodeBits/.github/workflows/deploy.yml@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /No permissions defined for workflow/);
+});
+
+test('actor in specific-repo/* is authorized for any workflow in that repo', () => {
+    const { actionDir } = makeActionDir({ 'CodeBits': { '*': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('actor in specific-repo/* is not authorized for a different repo', () => {
+    const { actionDir } = makeActionDir({ 'CodeBits': { '*': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({
+        GITHUB_ACTION_PATH: actionDir,
+        INPUT_REPOSITORY: 'Now-Micro/WarrantyService',
+        INPUT_WORKFLOW_REF: 'Now-Micro/WarrantyService/.github/workflows/release.yml@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /No permissions defined for repository/);
+});
+
+test('*/* grants access when actor is absent from specific repo/workflow entry', () => {
+    const { actionDir } = makeActionDir({
+        '*': { '*': ['Beschuetzer'] },
+        'CodeBits': { 'release.yml': ['Test123'] }
+    });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('specific repo/workflow entry grants access when actor absent from */*', () => {
+    const { actionDir } = makeActionDir({
+        '*': { '*': ['OtherUser'] },
+        'CodeBits': { 'release.yml': ['Beschuetzer'] }
+    });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('*/* supports alias resolution via users.json', () => {
+    const { actionDir } = makeActionDir({ '*': { '*': ['Adam Major'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('repo/* supports alias resolution via users.json', () => {
+    const { actionDir } = makeActionDir({ 'CodeBits': { '*': ['Adam Major'] } });
+    const r = runWith(makeEnv({ GITHUB_ACTION_PATH: actionDir }));
+    assert.strictEqual(r.exitCode, 0);
+    assert.match(r.out, /✅.*Beschuetzer.*is authorized/);
+});
+
+test('wildcard repo entry with specific workflow but no workflow match still errors on workflow not authorized', () => {
+    // There IS a wildcard repo entry but the workflow listed doesn't match and there's no */* entry
+    const { actionDir } = makeActionDir({ '*': { 'deploy.yml': ['Beschuetzer'] } });
+    const r = runWith(makeEnv({
+        GITHUB_ACTION_PATH: actionDir,
+        INPUT_WORKFLOW_REF: 'Now-Micro/CodeBits/.github/workflows/release.yml@refs/heads/main'
+    }));
+    assert.strictEqual(r.exitCode, 1);
+    assert.match(r.err, /No permissions defined for workflow/);
+});
