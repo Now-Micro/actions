@@ -1,0 +1,7 @@
+<Project>
+  <!-- Opt this project out of Central Package Management so inline Version= attributes in the .csproj are always respected,
+       regardless of whether the consumer solution has ManagePackageVersionsCentrally=true. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>
