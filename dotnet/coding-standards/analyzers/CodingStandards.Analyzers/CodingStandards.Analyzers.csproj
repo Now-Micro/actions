@@ -3,6 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <PackageId>CodingStandards.Analyzers</PackageId>
     <AssemblyName>CodingStandards.Analyzers</AssemblyName>
     <IncludeBuildOutput>true</IncludeBuildOutput>
