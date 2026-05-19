@@ -82,7 +82,7 @@ runs:
           steps.get-solution-root-directory.outputs.unique_root_directories }}
         INPUT_DIRECTORY: ${{ inputs.directory }}
         INPUT_CODE_ANALYZERS_NAME: ${{ inputs.code-analyzers-name }}
-        INPUT_SOURCE_DIR: ./dotnet/coding-standards
+        INPUT_SOURCE_DIR: ${{ github.action_path }}
         INPUT_ROSLYN_VERSION: ${{ inputs.roslyn-version }}
 
     - name: Get Relative Path
