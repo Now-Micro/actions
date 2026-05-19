@@ -1,0 +1,10 @@
+<Project>
+  <!-- This file intentionally exists to stop MSBuild from inheriting any
+       Directory.Build.props from parent directories (e.g. the consumer repository).
+       CodingStandards.Analyzers is fully self-contained and must not be affected
+       by consumer-level MSBuild customizations that could strip or conflict with
+       its package versions. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

@@ -261,3 +261,32 @@ test('run: no Roslyn override when input not provided', () => {
   assert.ok(/Version="4\.7\.0"/.test(destXml));
   assert.ok(!/Roslyn Version Override:/.test(r.out));
 });
+
+test('run: no Roslyn override when input is whitespace-only (prevents Version=" " corruption)', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'copy-'));
+  const source = path.join(tmp, 'src');
+  const analyzers = path.join(source, 'analyzers', 'CodeStandards.Analyzers');
+  fs.mkdirSync(analyzers, { recursive: true });
+  fs.writeFileSync(path.join(source, '.editorconfig'), 'root=true\n');
+  const csprojPath = path.join(analyzers, 'CodeStandards.Analyzers.csproj');
+  fs.writeFileSync(csprojPath, `
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.7.0" />
+  </ItemGroup>
+</Project>`);
+  const root = path.join(tmp, 'root');
+  const r = withEnv({
+    INPUT_UNIQUE_ROOT_DIRECTORIES: '["' + root.replace(/\\/g, '/') + '"]',
+    INPUT_DIRECTORY: root,
+    INPUT_CODE_ANALYZERS_NAME: 'CodeStandards.Analyzers',
+    INPUT_SOURCE_DIR: source,
+    INPUT_ROSLYN_VERSION: '  '
+  }, () => run());
+  const destCsproj = path.join(root, 'CodeStandards.Analyzers', 'CodeStandards.Analyzers.csproj');
+  const destXml = fs.readFileSync(destCsproj, 'utf8');
+  assert.ok(/Version="4\.7\.0"/.test(destXml), 'original version must be preserved');
+  assert.ok(!/Version=" "/.test(destXml), 'version must not be replaced with whitespace');
+  assert.ok(!/Roslyn Version Override:/.test(r.out), 'override must not be logged');
+});

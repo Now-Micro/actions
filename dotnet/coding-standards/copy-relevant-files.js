@@ -67,7 +67,7 @@ function run() {
     const directory = process.env.INPUT_DIRECTORY || '';
     const codeAnalyzersName = process.env.INPUT_CODE_ANALYZERS_NAME;
     const sourceDir = process.env.INPUT_SOURCE_DIR;
-    const roslynVersion = process.env.INPUT_ROSLYN_VERSION || '';
+    const roslynVersion = (process.env.INPUT_ROSLYN_VERSION || '').trim();
     
     const root = parseFirstRoot(rawRoots, directory);
 
