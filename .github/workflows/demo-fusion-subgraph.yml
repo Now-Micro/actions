@@ -22,7 +22,7 @@ on:
                 description: ".NET SDK version to install before running the schema export."
                 required: false
                 type: string
-                default: "9.0.x"
+                default: "8.0.x"
             fusion-release-tag:
                 description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
                 required: false
@@ -32,7 +32,7 @@ on:
                 description: "Path to the .csproj file used to export the GraphQL schema."
                 required: false
                 type: string
-                default: "src/Trafera.Warranty.HotChocolate/Trafera.Warranty.HotChocolate.csproj"
+                default: "src/demo/fusion/Reviews/Demo.Reviews.csproj"
             publish-dir:
                 description: "Directory where the .fsp artifact and metadata JSON are written."
                 required: false
@@ -42,7 +42,7 @@ on:
                 description: "Directory used for intermediate schema files."
                 required: false
                 type: string
-                default: "src/Trafera.Warranty.HotChocolate/schema"
+                default: "src/demo/fusion/Reviews/schema"
             source-repo-url:
                 description: "Source repository URL embedded in the artifact metadata."
                 required: false
@@ -52,12 +52,12 @@ on:
                 description: "HTTP URL registered in the subgraph config."
                 required: false
                 type: string
-                default: "http://localhost:4000"
+                default: "http://localhost:59092/graphql"
             subgraph-name:
                 description: "Name of the Fusion subgraph."
                 required: false
                 type: string
-                default: "Trafera.Warranty.HotChocolate"
+                default: "Reviews"
             working-directory:
                 description: "Working directory for dotnet commands."
                 required: false
