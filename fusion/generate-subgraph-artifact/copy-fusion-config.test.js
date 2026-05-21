@@ -29,6 +29,7 @@ function runWithEnv(env, fsHook) {
   Object.assign(process.env, env);
 
   const fsModule = require('fs');
+  const originalExistsSync = fsModule.existsSync;
   const originalReadFileSync = fsModule.readFileSync;
   if (typeof fsHook === 'function') {
     fsHook(fsModule);
@@ -70,6 +71,7 @@ function runWithEnv(env, fsHook) {
     process.exit = originalExit;
     process.stdout.write = originalOut;
     process.stderr.write = originalErr;
+    fsModule.existsSync = originalExistsSync;
     fsModule.readFileSync = originalReadFileSync;
     delete require.cache[require.resolve(MODULE_PATH)];
     for (const key of ['INPUT_WORKING_DIRECTORY']) {
@@ -169,6 +171,24 @@ test('adds Fusion tool to existing .config/dotnet-tools.json when missing', () =
   assert.match(stdout, /Added Fusion tool definition/);
 });
 
+test('adds Fusion tool when target manifest has no tools object', () => {
+  const root = makeTempDir();
+  const targetPath = path.join(root, '.config', 'dotnet-tools.json');
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, JSON.stringify({
+    version: 1,
+    isRoot: true
+  }, null, 2) + '\n');
+
+  const { exitCode, stdout } = withCwd(root, () => runWithEnv({}));
+
+  assert.strictEqual(exitCode, 0);
+  const parsed = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+  assert.ok(parsed.tools);
+  assert.ok(parsed.tools['hotchocolate.fusion.commandline']);
+  assert.match(stdout, /Added Fusion tool definition/);
+});
+
 test('exits 1 when the bundled template dotnet-tools.json is malformed', () => {
   const root = makeTempDir();
   const { exitCode, stderr } = withCwd(root, () => runWithEnv({}, fsModule => {
@@ -195,4 +215,22 @@ test('exits 1 when the target .config/dotnet-tools.json is malformed', () => {
 
   assert.strictEqual(exitCode, 1);
   assert.match(stderr, /Failed to read or parse .*\.config.*dotnet-tools\.json/i);
+});
+
+test('exits 1 when the bundled template manifest is missing', () => {
+  const root = makeTempDir();
+  const templateSuffix = path.join('fusion', 'generate-subgraph-artifact', 'dotnet-tools.json');
+
+  const { exitCode, stderr } = withCwd(root, () => runWithEnv({}, fsModule => {
+    const originalExists = fsModule.existsSync;
+    fsModule.existsSync = filePath => {
+      if (String(filePath).endsWith(templateSuffix)) {
+        return false;
+      }
+      return originalExists.call(fsModule, filePath);
+    };
+  }));
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /Missing Fusion tool template/i);
 });
