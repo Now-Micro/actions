@@ -19,6 +19,12 @@ runs:
       with:
         fetch-depth: 0
 
+    - name: Demo - Fusion subgraph demo composite
+      uses: ./.github/actions/demo-fusion-subgraph-workflow
+      with:
+        github-token: ${{ inputs.github-token }}
+        dotnet-version: "8.0.x"
+
     - name: Demo - github release
       uses: ./.github/actions/demo-github-release
       with:

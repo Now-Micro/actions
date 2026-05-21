@@ -1,0 +1,96 @@
+name: Demo - Fusion Subgraph Workflow
+
+on:
+    workflow_dispatch:
+        inputs:
+            artifact-retention-days:
+                description: "Artifact retention period in days."
+                required: false
+                type: string
+                default: "1"
+            artifact-version:
+                description: "Version string embedded in the artifact metadata and used to name the uploaded artifact."
+                required: false
+                type: string
+                default: "1.0.0-demo"
+            ci-debug-mode:
+                description: "Enable verbose debug logging for the generate step."
+                required: false
+                type: string
+                default: "true"
+            dotnet-version:
+                description: ".NET SDK version to install before running the schema export."
+                required: false
+                type: string
+                default: "8.0.x"
+            fusion-release-tag:
+                description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
+                required: false
+                type: string
+                default: ""
+            project-path:
+                description: "Path to the .csproj file used to export the GraphQL schema."
+                required: false
+                type: string
+                default: "src/demo/fusion/Reviews/Demo.Reviews.csproj"
+            publish-dir:
+                description: "Directory where the .fsp artifact and metadata JSON are written."
+                required: false
+                type: string
+                default: "fusion-artifacts"
+            schema-dir:
+                description: "Directory used for intermediate schema files."
+                required: false
+                type: string
+                default: "src/demo/fusion/Reviews/schema"
+            source-repo-url:
+                description: "Source repository URL embedded in the artifact metadata."
+                required: false
+                type: string
+                default: ""
+            subgraph-http-url:
+                description: "HTTP URL registered in the subgraph config."
+                required: false
+                type: string
+                default: "http://localhost:59092/graphql"
+            subgraph-name:
+                description: "Name of the Fusion subgraph."
+                required: false
+                type: string
+                default: "Reviews"
+            working-directory:
+                description: "Working directory for dotnet commands."
+                required: false
+                type: string
+                default: ""
+
+permissions:
+    contents: write
+
+jobs:
+    demo-fusion-subgraph:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
+            - name: Run demo Fusion subgraph workflow composite
+              uses: ./.github/actions/demo-fusion-subgraph-workflow
+              with:
+                  artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
+                  artifact-version: ${{ inputs['artifact-version'] }}
+                  ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  dotnet-version: ${{ inputs['dotnet-version'] }}
+                  fusion-release-tag: ${{ inputs['fusion-release-tag'] }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  project-path: ${{ inputs['project-path'] }}
+                  publish-dir: ${{ inputs['publish-dir'] }}
+                  schema-dir: ${{ inputs['schema-dir'] }}
+                  source-repo-url: ${{ inputs['source-repo-url'] }}
+                  subgraph-http-url: ${{ inputs['subgraph-http-url'] }}
+                  subgraph-name: ${{ inputs['subgraph-name'] }}
+                  working-directory: ${{ inputs['working-directory'] }}
