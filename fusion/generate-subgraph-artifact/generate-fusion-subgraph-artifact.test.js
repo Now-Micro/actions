@@ -147,6 +147,28 @@ test('success: writes subgraph-config.json with correct content', () => {
   assert.strictEqual(parsed.subgraph, 'my-subgraph');
 });
 
+test('debug mode logs generated schema and config contents', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_DEBUG_MODE: 'true' });
+
+  const spawnStub = (cmd, args) => {
+    if (cmd === 'dotnet' && Array.isArray(args) && args[0] === 'run' && args.includes('--output')) {
+      const outputPath = args[args.indexOf('--output') + 1];
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, 'type Query { hello: String }\n');
+    }
+    return { status: 0 };
+  };
+
+  const { exitCode, stdout } = runWithEnv(env, spawnStub);
+
+  assert.strictEqual(exitCode, 0);
+  assert.match(stdout, /Contents of .*schema\.graphql:/);
+  assert.match(stdout, /Contents of .*subgraph-config\.json:/);
+  assert.match(stdout, /"subgraph":"my-subgraph"/);
+  assert.match(stdout, /type Query/i);
+});
+
 test('success: writes metadata JSON with correct fields', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, { INPUT_COMMIT_SHA: 'deadbeef', INPUT_SOURCE_REPO_URL: 'https://example.com/repo' });
@@ -163,6 +185,18 @@ test('success: writes metadata JSON with correct fields', () => {
   assert.ok(meta.generationDateUtc, 'generationDateUtc should be present');
   // ISO 8601 format
   assert.match(meta.generationDateUtc, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+});
+
+test('debug mode logs generated metadata contents', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_DEBUG_MODE: 'true' });
+
+  const { exitCode, stdout } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.match(stdout, /Contents of .*metadata\.json:/);
+  assert.match(stdout, /"subgraphName": "my-subgraph"/);
+  assert.match(stdout, /"artifactVersion": "1\.0\.0"/);
 });
 
 test('success: writes artifact-path and metadata-path to GITHUB_OUTPUT', () => {
