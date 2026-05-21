@@ -39,8 +39,12 @@ inputs:
     description: "Library/package name to include in release metadata."
     required: true
   package-type:
-    description: "Package type to release. Supported values: npm or nuget."
+    description: "Package type to release. Supported values: npm, nuget, or generic."
     required: true
+  tag-name:
+    description: "Optional exact tag name. When set, overrides tag-prefix and release-version when building the git tag."
+    required: false
+    default: ""
   release-name-template:
     description: "Template for release name. Supports {library-name} and {release-version}."
     required: false
@@ -104,6 +108,7 @@ runs:
         INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
         INPUT_RELEASE_NAME_TEMPLATE: ${{ inputs.release-name-template }}
         INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_TAG_NAME: ${{ inputs.tag-name }}
         INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
 
     - name: Create git tag

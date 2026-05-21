@@ -8,6 +8,13 @@ function dlog(msg) {
   if (debug) console.log(`🔍 ${msg}`);
 }
 
+function dlogFileContents(filePath, content) {
+  if (!debug) return;
+  dlog(`Generated file: ${filePath}`);
+  dlog(`Contents of ${filePath}:`);
+  console.log(content);
+}
+
 function exitWith(msg) {
   console.error(`❌ ${msg}`);
   process.exit(1);
@@ -80,24 +87,31 @@ function run() {
   // Export schema from the project
   dlog('Running dotnet schema export.');
   runDotnet(['run', '--project', projectPath, '--', 'schema', 'export', '--output', schemaPath], execOpts);
+  if (debug && fs.existsSync(schemaPath)) {
+    dlogFileContents(schemaPath, fs.readFileSync(schemaPath, 'utf8'));
+  }
 
   // Write subgraph config JSON
   const configContent = JSON.stringify({ subgraph: subgraphName });
   dlog(`Writing subgraph config: ${configPath}`);
   fs.writeFileSync(configPath, configContent + '\n');
+  dlogFileContents(configPath, fs.readFileSync(configPath, 'utf8'));
 
   // Configure subgraph HTTP endpoint
   dlog('Configuring Fusion subgraph HTTP endpoint.');
   runDotnet(['fusion', 'subgraph', 'config', 'set', 'http', '--url', subgraphHttpUrl, '-w', schemaDir], execOpts);
 
   // Pack the subgraph artifact (optionally include schema extensions)
+  dlog(`Checking for schema extensions file at ${extensionsPath}`);
   const hasExtensions = fs.existsSync(extensionsPath);
+  dlog(hasExtensions
+    ? `Found schema extensions file: ${extensionsPath}`
+    : `No schema extensions file found at ${extensionsPath}`);
   const packArgs = ['fusion', 'subgraph', 'pack', '-s', schemaPath, '-c', configPath, '-p', artifactPath];
   if (hasExtensions) {
-    dlog(`Extensions file found: ${extensionsPath}`);
     packArgs.push('-e', extensionsPath);
   } else {
-    dlog(`No extensions file at ${extensionsPath} — skipping -e flag`);
+    dlog('Skipping -e flag for Fusion pack.');
   }
   dlog('Packing Fusion subgraph artifact.');
   runDotnet(packArgs, execOpts);
@@ -113,6 +127,7 @@ function run() {
   };
   dlog(`Writing metadata: ${metadataPath}`);
   fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
+  dlogFileContents(metadataPath, fs.readFileSync(metadataPath, 'utf8'));
 
   // Write step outputs
   if (githubOutput) {

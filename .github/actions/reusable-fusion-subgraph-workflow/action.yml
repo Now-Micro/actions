@@ -76,7 +76,7 @@ runs:
       uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs['dotnet-version'] }}
-  
+
     - name: Generate Fusion subgraph artifact
       id: generate
       uses: Now-Micro/actions/fusion/generate-subgraph-artifact@v1
@@ -110,16 +110,14 @@ runs:
 
     - name: Publish Fusion GitHub release
       if: ${{ inputs['fusion-release-tag'] != '' }}
-      uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+      uses: Now-Micro/actions/github/release@v1
       with:
-        tag_name: ${{ inputs['fusion-release-tag'] }}
-        target_commitish: ${{ github.sha }}
-        name: Fusion subgraph ${{ inputs['subgraph-name'] }} ${{ inputs['fusion-release-tag'] }}
-        generate_release_notes: false
-        draft: false
-        prerelease: false
-        files: |
-          ${{ steps.generate.outputs.artifact-path }}
-          ${{ steps.generate.outputs.metadata-path }}
-      env:
-        GITHUB_TOKEN: ${{ inputs['github-token'] }}
+        github-token: ${{ inputs['github-token'] }}
+        library-name: ${{ inputs['subgraph-name'] }}
+        package-type: generic
+        release-version: ${{ inputs['fusion-release-tag'] }}
+        release-name-template: Fusion subgraph {library-name} {release-version}
+        tag-name: ${{ inputs['artifact-version'] }}
+        artifacts-path: ${{ inputs['publish-dir'] }}
+        packages-path: release-assets
+        skip-download: true

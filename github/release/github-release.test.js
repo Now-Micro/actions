@@ -176,6 +176,23 @@ test('copyPackages matches expected extensions', () => {
     assert.deepStrictEqual(copied.sort(), ['a.nupkg', 'b.snupkg', 'c.symbols.nupkg'].sort());
 });
 
+test('copyPackages in generic mode copies all files', () => {
+    const root = makeTempDir('gh-rel-generic-');
+    const artifacts = path.join(root, 'artifacts');
+    fs.mkdirSync(artifacts, { recursive: true });
+    fs.writeFileSync(path.join(artifacts, 'artifact.fsp'), 'fsp');
+    fs.writeFileSync(path.join(artifacts, 'artifact.metadata.json'), '{}');
+    fs.writeFileSync(path.join(artifacts, 'ignore.txt'), 'x');
+    const dest = path.join(root, 'dest');
+
+    const copied = copyPackages(artifacts, dest, 'generic');
+
+    assert.deepStrictEqual(copied.sort(), ['artifact.fsp', 'artifact.metadata.json', 'ignore.txt'].sort());
+    assert.ok(fs.existsSync(path.join(dest, 'artifact.fsp')));
+    assert.ok(fs.existsSync(path.join(dest, 'artifact.metadata.json')));
+    assert.ok(fs.existsSync(path.join(dest, 'ignore.txt')));
+});
+
 
 test('buildReleaseNotes handles missing changelog', () => {
     const root = makeTempDir('gh-rel-notes-');
@@ -244,6 +261,34 @@ test('run honors custom tag prefix and release name template', () => {
     const outputs = parseOutput(r.outputContent);
     assert.strictEqual(outputs.tag_name, 'v9.9.9');
     assert.strictEqual(outputs.release_name, '9.9.9 - LibX');
+});
+
+
+test('run honors exact tag-name override for generic release assets', () => {
+    const root = makeTempDir('gh-rel-exact-');
+    const artifacts = path.join(root, 'artifacts');
+    const packagesPath = path.join(root, 'packages');
+    fs.mkdirSync(artifacts, { recursive: true });
+    fs.writeFileSync(path.join(artifacts, 'Reviews.fsp'), 'fsp');
+    fs.writeFileSync(path.join(artifacts, 'Reviews.metadata.json'), '{}');
+
+    const r = runWithEnv({
+        INPUT_LIBRARY_NAME: 'Reviews',
+        INPUT_RELEASE_VERSION: '1.2.3',
+        INPUT_PACKAGE_TYPE: 'generic',
+        INPUT_ARTIFACTS_PATH: artifacts,
+        INPUT_PACKAGES_PATH: packagesPath,
+        INPUT_TAG_NAME: 'Reviews-v1.2.3',
+        INPUT_RELEASE_NAME_TEMPLATE: 'Fusion subgraph {library-name} {release-version}',
+    });
+
+    assert.strictEqual(r.exitCode, 0);
+    const outputs = parseOutput(r.outputContent);
+    assert.strictEqual(outputs.tag_name, 'Reviews-v1.2.3');
+    assert.strictEqual(outputs.has_packages, '2');
+    assert.deepStrictEqual(JSON.parse(outputs.packages_json).sort(), ['Reviews.fsp', 'Reviews.metadata.json'].sort());
+    assert.ok(fs.existsSync(path.join(packagesPath, 'Reviews.fsp')));
+    assert.ok(fs.existsSync(path.join(packagesPath, 'Reviews.metadata.json')));
 });
 
 
