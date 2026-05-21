@@ -1,0 +1,134 @@
+name: Demo - Fusion Subgraph Workflow
+description: Demonstrates the reusable-fusion-subgraph workflow using the repo-local Fusion action chain.
+
+inputs:
+  artifact-retention-days:
+    description: "Number of days to retain the uploaded artifact."
+    required: false
+    default: "1"
+  artifact-version:
+    description: "Version string embedded in the artifact metadata and used to name the uploaded artifact."
+    required: false
+    default: "1.0.0-demo"
+  ci-debug-mode:
+    description: "Enable verbose debug logging for the generate step."
+    required: false
+    default: "true"
+  dotnet-version:
+    description: ".NET SDK version to install before running the schema export."
+    required: false
+    default: "9.0.x"
+  fusion-release-tag:
+    description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
+    required: false
+    default: ""
+  github-token:
+    description: "GitHub token used to create the GitHub release."
+    required: false
+    default: ""
+  project-path:
+    description: "Path to the .csproj file used to export the GraphQL schema."
+    required: false
+    default: "src/Trafera.Warranty.HotChocolate/Trafera.Warranty.HotChocolate.csproj"
+  publish-dir:
+    description: "Directory where the .fsp artifact and metadata JSON are written."
+    required: false
+    default: "fusion-artifacts"
+  schema-dir:
+    description: "Directory used for intermediate schema files."
+    required: false
+    default: "src/Trafera.Warranty.HotChocolate/schema"
+  source-repo-url:
+    description: "Source repository URL embedded in the artifact metadata."
+    required: false
+    default: ""
+  subgraph-http-url:
+    description: "HTTP URL registered in the subgraph config."
+    required: false
+    default: "http://localhost:4000"
+  subgraph-name:
+    description: "Name of the Fusion subgraph."
+    required: false
+    default: "Trafera.Warranty.HotChocolate"
+  working-directory:
+    description: "Working directory for dotnet commands."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Title - Fusion Subgraph Workflow Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Fusion Subgraph Workflow Demo
+        path: ./.github/actions/demo-fusion-subgraph-workflow
+
+    - name: Prepare summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/fusion-subgraph-demo-summary.txt" >> "$GITHUB_ENV"
+        : > "$GITHUB_WORKSPACE/fusion-subgraph-demo-summary.txt"
+
+    - name: Run reusable Fusion subgraph workflow
+      id: fusion
+      uses: ./.github/actions/reusable-fusion-subgraph-workflow
+      with:
+        artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
+        artifact-version: ${{ inputs['artifact-version'] }}
+        ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+        dotnet-version: ${{ inputs['dotnet-version'] }}
+        fusion-release-tag: ${{ inputs['fusion-release-tag'] }}
+        github-token: ${{ inputs['github-token'] }}
+        project-path: ${{ inputs['project-path'] }}
+        publish-dir: ${{ inputs['publish-dir'] }}
+        schema-dir: ${{ inputs['schema-dir'] }}
+        source-repo-url: ${{ inputs['source-repo-url'] }}
+        subgraph-http-url: ${{ inputs['subgraph-http-url'] }}
+        subgraph-name: ${{ inputs['subgraph-name'] }}
+        working-directory: ${{ inputs['working-directory'] }}
+
+    - name: Assert artifact path exists
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ steps.fusion.outputs.artifact-path != '' && 'present' || '' }}
+        test-name: fusion artifact path present
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Assert metadata path exists
+      uses: ./src/testing/assert
+      with:
+        expected: present
+        mode: present
+        actual: ${{ steps.fusion.outputs.metadata-path != '' && 'present' || '' }}
+        test-name: fusion metadata path present
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Assert Fusion tool manifest was copied
+      shell: bash
+      run: |
+        set -euo pipefail
+        manifest="${GITHUB_WORKSPACE}/.config/dotnet-tools.json"
+        if [ ! -f "$manifest" ]; then
+          echo "Missing Fusion manifest: $manifest" >&2
+          exit 1
+        fi
+
+        node - <<'NODE'
+        const fs = require('fs');
+        const manifestPath = process.env.MANIFEST_PATH;
+        const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const tool = data.tools && data.tools['hotchocolate.fusion.commandline'];
+        if (!tool) {
+          console.error('hotchocolate.fusion.commandline is missing from .config/dotnet-tools.json');
+          process.exit(1);
+        }
+        if (!Array.isArray(tool.commands) || !tool.commands.includes('fusion')) {
+          console.error('fusion command is missing from hotchocolate.fusion.commandline');
+          process.exit(1);
+        }
+        NODE
+      env:
+        MANIFEST_PATH: ${{ github.workspace }}/.config/dotnet-tools.json

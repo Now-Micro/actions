@@ -1,0 +1,28 @@
+schema {
+  query: Query
+}
+
+type Author {
+  id: Int!
+  name: String!
+  reviews: [Review!] @cost(weight: "10")
+}
+
+type Query {
+  reviewById(id: Int!): Review @cost(weight: "10")
+  reviews: [Review!]! @cost(weight: "10")
+  authorById(id: Int!): Author @cost(weight: "10")
+  authorsById(ids: [Int!]!): [Author] @cost(weight: "10")
+  authors: [Author!] @cost(weight: "10")
+}
+
+type Review {
+  id: Int!
+  body: String!
+  stars: Int!
+  productId: Int!
+  author: Author @cost(weight: "10")
+}
+
+"The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
+directive @cost("The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc." weight: String!) on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM | INPUT_FIELD_DEFINITION
