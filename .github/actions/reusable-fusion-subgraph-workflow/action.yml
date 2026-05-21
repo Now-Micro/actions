@@ -79,9 +79,7 @@ runs:
   
     - name: Generate Fusion subgraph artifact
       id: generate
-      # todo: switch to a custom action that wraps the existing generate-subgraph-artifact action and also handles the GitHub release step, to avoid code duplication between this workflow and the demo workflow
-      # uses: Now-Micro/fusion/generate-subgraph-artifact@v1
-      uses: ./fusion/generate-subgraph-artifact
+      uses: Now-Micro/actions/fusion/generate-subgraph-artifact@v1
       with:
         artifact-version: ${{ inputs['artifact-version'] }}
         debug-mode: ${{ inputs['ci-debug-mode'] }}
