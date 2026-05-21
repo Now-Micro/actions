@@ -51,6 +51,12 @@ runs:
     - name: Setup Node.js
       uses: Now-Micro/actions/setup-node@v1
 
+    - name: Copy Fusion tool manifest
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/copy-fusion-config.js"
+      env:
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+
     - name: Generate Fusion subgraph artifact
       id: generate
       shell: bash
