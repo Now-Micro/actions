@@ -26,8 +26,8 @@ function getRequiredEnv(name) {
 
 function getPackageType() {
     const packageType = (process.env.INPUT_PACKAGE_TYPE || '').trim().toLowerCase();
-    if (packageType !== 'npm' && packageType !== 'nuget') {
-        throw new Error('INPUT_PACKAGE_TYPE is required and must be either \'npm\' or \'nuget\'');
+    if (packageType !== 'npm' && packageType !== 'nuget' && packageType !== 'generic') {
+        throw new Error('INPUT_PACKAGE_TYPE is required and must be either \'npm\', \'nuget\', or \'generic\'');
     }
     return packageType;
 }
@@ -104,11 +104,13 @@ function extractChangelogSection(content, releaseVersion, debugMode = false) {
     return section;
 }
 
-function copyPackages(artifactsPath, packagesPath) {
+function copyPackages(artifactsPath, packagesPath, packageType = 'nuget') {
     const allFiles = fs.existsSync(artifactsPath) && fs.statSync(artifactsPath).isDirectory()
         ? listFilesRecursive(artifactsPath)
         : [];
-    const matches = allFiles.filter(f => /\.(nupkg|snupkg|symbols\.nupkg)$/i.test(f));
+    const matches = packageType === 'generic'
+        ? allFiles
+        : allFiles.filter(f => /\.(nupkg|snupkg|symbols\.nupkg)$/i.test(f));
     safeMkdir(packagesPath);
     const copied = [];
     for (const src of matches) {
@@ -126,28 +128,31 @@ function buildReleaseNotes({ libraryName, releaseVersion, packageType, packages,
     const nugetFeed = `https://nuget.pkg.github.com/${owner}/index.json`;
     const npmFeed = 'https://npm.pkg.github.com';
     const npmPackageName = libraryName.startsWith('@') ? libraryName : `@${owner.toLowerCase()}/${libraryName}`;
+    const releaseTypeLabel = packageType === 'generic' ? 'GENERIC' : packageType.toUpperCase();
 
     const lines = [];
     lines.push(`# ${libraryName} v${releaseVersion}`);
     lines.push('');
 
     lines.push('## Release Type');
-    lines.push(`This is a ${packageType.toUpperCase()} release for ${libraryName} version ${releaseVersion}.`);
+    lines.push(`This is a ${releaseTypeLabel} release for ${libraryName} version ${releaseVersion}.`);
     lines.push('');
 
     lines.push('## Installation');
     lines.push('```');
     if (packageType === 'npm') {
         lines.push(`npm install ${npmPackageName}@${releaseVersion}`);
-    } else {
+    } else if (packageType === 'nuget') {
         lines.push(`dotnet add package ${libraryName} --version ${releaseVersion}`);
+    } else {
+        lines.push('No package installation instructions for generic release assets.');
     }
     lines.push('```');
     lines.push('');
 
     lines.push('## Package Details');
     if (packages.length === 0) {
-        lines.push(packageType === 'npm' ? '- No attached npm package assets' : '- No packages found');
+        lines.push(packageType === 'npm' ? '- No attached npm package assets' : (packageType === 'nuget' ? '- No packages found' : '- No release assets found'));
     } else {
         for (const pkg of packages) {
             lines.push(`- ${pkg}`);
@@ -179,8 +184,10 @@ function buildReleaseNotes({ libraryName, releaseVersion, packageType, packages,
     if (packageType === 'npm') {
         lines.push(`@${owner.toLowerCase()}:registry=${npmFeed}`);
         lines.push('//npm.pkg.github.com/:_authToken=YOUR_PAT');
-    } else {
+    } else if (packageType === 'nuget') {
         lines.push('dotnet nuget add source --username YOUR_USERNAME --password YOUR_PAT --store-password-in-clear-text --name github "' + nugetFeed + '"');
+    } else {
+        lines.push('No package feed instructions for generic release assets.');
     }
     lines.push('```');
 
@@ -196,13 +203,14 @@ function run() {
         const artifactsPath = path.resolve(process.env.INPUT_ARTIFACTS_PATH || 'release-artifacts');
         const packagesPath = path.resolve(process.env.INPUT_PACKAGES_PATH || 'release-packages');
         const changelogPath = (process.env.INPUT_CHANGELOG_PATH || '').trim();
+        const exactTagName = (process.env.INPUT_TAG_NAME || '').trim();
         const tagPrefixInput = (process.env.INPUT_TAG_PREFIX || '').trim();
         const releaseNameTemplate = (process.env.INPUT_RELEASE_NAME_TEMPLATE || '{library-name} v{release-version}');
         const bodyFilename = (process.env.INPUT_BODY_FILENAME || 'RELEASE_NOTES.md').trim();
         const debugMode = parseBool(process.env.INPUT_DEBUG_MODE || 'false');
 
         const tagPrefix = tagPrefixInput || `${libraryName}-v`;
-        const tagName = `${tagPrefix}${releaseVersion}`;
+        const tagName = exactTagName || `${tagPrefix}${releaseVersion}`;
         const releaseName = releaseNameTemplate
             .replace('{library-name}', libraryName)
             .replace('{release-version}', releaseVersion);
@@ -213,6 +221,7 @@ function run() {
             console.log(`Debug: artifactsPath=${artifactsPath}`);
             console.log(`Debug: packagesPath=${packagesPath}`);
             console.log(`Debug: changelogPath=${changelogPath || '(none)'}`);
+            console.log(`Debug: exactTagName=${exactTagName || '(none)'}`);
             console.log(`Debug: tagPrefix=${tagPrefix}`);
             console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
             console.log(`Debug: tagName=${tagName}`);
@@ -220,7 +229,7 @@ function run() {
             console.log(`Debug: bodyFilename=${bodyFilename}`);
         }
 
-        const copied = copyPackages(artifactsPath, packagesPath);
+        const copied = copyPackages(artifactsPath, packagesPath, packageType);
         const hasPackages = copied.length;
 
         if (debugMode) {

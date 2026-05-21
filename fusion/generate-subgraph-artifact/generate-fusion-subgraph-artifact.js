@@ -91,13 +91,16 @@ function run() {
   runDotnet(['fusion', 'subgraph', 'config', 'set', 'http', '--url', subgraphHttpUrl, '-w', schemaDir], execOpts);
 
   // Pack the subgraph artifact (optionally include schema extensions)
+  dlog(`Checking for schema extensions file at ${extensionsPath}`);
   const hasExtensions = fs.existsSync(extensionsPath);
+  dlog(hasExtensions
+    ? `Found schema extensions file: ${extensionsPath}`
+    : `No schema extensions file found at ${extensionsPath}`);
   const packArgs = ['fusion', 'subgraph', 'pack', '-s', schemaPath, '-c', configPath, '-p', artifactPath];
   if (hasExtensions) {
-    dlog(`Extensions file found: ${extensionsPath}`);
     packArgs.push('-e', extensionsPath);
   } else {
-    dlog(`No extensions file at ${extensionsPath} — skipping -e flag`);
+    dlog('Skipping -e flag for Fusion pack.');
   }
   dlog('Packing Fusion subgraph artifact.');
   runDotnet(packArgs, execOpts);
