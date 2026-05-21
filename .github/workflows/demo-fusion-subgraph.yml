@@ -42,12 +42,12 @@ on:
                 description: "Directory used for intermediate schema files."
                 required: false
                 type: string
-                default: "src/demo/fusion/Reviews/schema"
+                default: "src/demo/fusion/Reviews"
             source-repo-url:
                 description: "Source repository URL embedded in the artifact metadata."
                 required: false
                 type: string
-                default: ""
+                default: "http://localhost:59092/graphql"
             subgraph-http-url:
                 description: "HTTP URL registered in the subgraph config."
                 required: false
