@@ -20,13 +20,19 @@ function withCwd(cwd, fn) {
   }
 }
 
-function runWithEnv(env) {
+function runWithEnv(env, fsHook) {
   const previous = {};
   for (const key of ['INPUT_WORKING_DIRECTORY']) {
     previous[key] = process.env[key];
     delete process.env[key];
   }
   Object.assign(process.env, env);
+
+  const fsModule = require('fs');
+  const originalReadFileSync = fsModule.readFileSync;
+  if (typeof fsHook === 'function') {
+    fsHook(fsModule);
+  }
 
   delete require.cache[require.resolve(MODULE_PATH)];
   const mod = require(MODULE_PATH);
@@ -64,6 +70,7 @@ function runWithEnv(env) {
     process.exit = originalExit;
     process.stdout.write = originalOut;
     process.stderr.write = originalErr;
+    fsModule.readFileSync = originalReadFileSync;
     delete require.cache[require.resolve(MODULE_PATH)];
     for (const key of ['INPUT_WORKING_DIRECTORY']) {
       delete process.env[key];
@@ -160,4 +167,32 @@ test('adds Fusion tool to existing .config/dotnet-tools.json when missing', () =
   assert.ok(parsed.tools['hotchocolate.fusion.commandline']);
   assert.strictEqual(parsed.tools['hotchocolate.fusion.commandline'].version, '15.1.16');
   assert.match(stdout, /Added Fusion tool definition/);
+});
+
+test('exits 1 when the bundled template dotnet-tools.json is malformed', () => {
+  const root = makeTempDir();
+  const { exitCode, stderr } = withCwd(root, () => runWithEnv({}, fsModule => {
+    const originalRead = fsModule.readFileSync;
+    fsModule.readFileSync = (filePath, encoding) => {
+      if (String(filePath).endsWith(path.join('fusion', 'generate-subgraph-artifact', 'dotnet-tools.json'))) {
+        return '{ malformed json';
+      }
+      return originalRead.call(fsModule, filePath, encoding);
+    };
+  }));
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /Failed to read or parse .*dotnet-tools\.json/i);
+});
+
+test('exits 1 when the target .config/dotnet-tools.json is malformed', () => {
+  const root = makeTempDir();
+  const targetPath = path.join(root, '.config', 'dotnet-tools.json');
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, '{ malformed json');
+
+  const { exitCode, stderr } = withCwd(root, () => runWithEnv({}));
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /Failed to read or parse .*\.config.*dotnet-tools\.json/i);
 });

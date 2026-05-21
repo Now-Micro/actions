@@ -17,14 +17,14 @@ function makeTempDir(prefix = 'fsg-test-') {
 
 /**
  * Run generate-fusion-subgraph.run() with the given env vars and an optional
- * execSync stub.  Automatically tears down all mocks and restores the
+ * spawnSync stub.  Automatically tears down all mocks and restores the
  * require cache afterwards.
  *
  * @param {Record<string,string>} env
- * @param {(cmd:string,opts:object)=>string} [execStub]  stub for child_process.execSync
- * @returns {{ exitCode, stdout, stderr, execCalls, outputContent, tmpDir }}
+ * @param {(cmd:string,args:string[],opts:object)=>object} [spawnStub]  stub for child_process.spawnSync
+ * @returns {{ exitCode, stdout, stderr, spawnCalls, outputContent, tmpDir }}
  */
-function runWithEnv(env, execStub = () => '') {
+function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
   const tmpDir = makeTempDir();
   const outputFile = path.join(tmpDir, 'github-output.txt');
   fs.writeFileSync(outputFile, '');
@@ -38,13 +38,13 @@ function runWithEnv(env, execStub = () => '') {
   process.env.GITHUB_OUTPUT = outputFile;
   Object.assign(process.env, env);
 
-  // Stub execSync
+  // Stub spawnSync
   const cp = require('child_process');
-  const origExec = cp.execSync;
-  const execCalls = [];
-  cp.execSync = (cmd, opts) => {
-    execCalls.push(String(cmd));
-    return execStub(cmd, opts);
+  const origSpawn = cp.spawnSync;
+  const spawnCalls = [];
+  cp.spawnSync = (cmd, args, opts) => {
+    spawnCalls.push({ cmd: String(cmd), args: Array.isArray(args) ? [...args] : [], opts: { ...opts } });
+    return spawnStub(cmd, args, opts);
   };
 
   // Fresh module load with the stub in place
@@ -74,7 +74,7 @@ function runWithEnv(env, execStub = () => '') {
     process.stdout.write = origOut;
     process.stderr.write = origErr;
     process.exit = origExit;
-    cp.execSync = origExec;
+    cp.spawnSync = origSpawn;
     delete require.cache[require.resolve(MOD_PATH)];
     [...Object.keys(process.env).filter(k => k.startsWith('INPUT_')), 'GITHUB_OUTPUT', 'GITHUB_SHA'].forEach(k => {
       delete process.env[k];
@@ -83,7 +83,7 @@ function runWithEnv(env, execStub = () => '') {
   }
 
   const outputContent = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-  return { exitCode, stdout, stderr, execCalls, outputContent, tmpDir, thrownError };
+  return { exitCode, stdout, stderr, spawnCalls, outputContent, tmpDir, thrownError };
 }
 
 /**
@@ -110,18 +110,19 @@ function baseEnv(base, overrides = {}) {
 
 test('success: runs expected dotnet commands in order', () => {
   const tmp = makeTempDir();
-  const { exitCode, execCalls } = runWithEnv(baseEnv(tmp));
+  const { exitCode, spawnCalls } = runWithEnv(baseEnv(tmp));
 
   assert.strictEqual(exitCode, 0);
 
   // Exact sequence of four dotnet calls
-  assert.strictEqual(execCalls.length, 4);
-  assert.strictEqual(execCalls[0], 'dotnet tool restore');
-  assert.match(execCalls[1], /dotnet run --project ".*App\.csproj" -- schema export --output ".*schema\.graphql"/);
-  assert.match(execCalls[2], /dotnet fusion subgraph config set http --url "http:\/\/localhost:4000" -w ".*schema"/);
-  assert.match(execCalls[3], /dotnet fusion subgraph pack -s ".*schema\.graphql" -c ".*subgraph-config\.json" -p ".*my-subgraph\.fsp"$/);
+  assert.strictEqual(spawnCalls.length, 4);
+  assert.deepStrictEqual(spawnCalls[0].args, ['tool', 'restore']);
+  assert.deepStrictEqual(spawnCalls[1].args.slice(0, 4), ['run', '--project', path.join(tmp, 'src', 'App.csproj'), '--']);
+  assert.deepStrictEqual(spawnCalls[1].args.slice(4), ['schema', 'export', '--output', path.join(tmp, 'schema', 'schema.graphql')]);
+  assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'config', 'set', 'http', '--url', 'http://localhost:4000', '-w', path.join(tmp, 'schema')]);
+  assert.deepStrictEqual(spawnCalls[3].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(tmp, 'publish', 'my-subgraph.fsp')]);
   // No -e flag when no extensions file
-  assert.doesNotMatch(execCalls[3], /-e /);
+  assert.ok(!spawnCalls[3].args.includes('-e'));
 });
 
 test('success: creates schema-dir and publish-dir', () => {
@@ -198,22 +199,22 @@ test('with extensions: pack command includes -e flag when schema.extensions.grap
   const extensionsPath = path.join(schemaDir, 'schema.extensions.graphql');
   fs.writeFileSync(extensionsPath, 'extend type Query { hello: String }');
 
-  const { exitCode, execCalls } = runWithEnv(env);
+  const { exitCode, spawnCalls } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  const packCmd = execCalls.find(c => c.includes('subgraph pack'));
-  assert.ok(packCmd, 'pack command should be present');
-  assert.match(packCmd, /-e ".*schema\.extensions\.graphql"/);
+  const packCall = spawnCalls.find(call => call.args.includes('pack'));
+  assert.ok(packCall, 'pack command should be present');
+  assert.deepStrictEqual(packCall.args.slice(-2), ['-e', path.join(tmp, 'schema', 'schema.extensions.graphql')]);
 });
 
 test('without extensions: pack command omits -e flag when no extensions file', () => {
   const tmp = makeTempDir();
-  const { exitCode, execCalls } = runWithEnv(baseEnv(tmp));
+  const { exitCode, spawnCalls } = runWithEnv(baseEnv(tmp));
 
   assert.strictEqual(exitCode, 0);
-  const packCmd = execCalls.find(c => c.includes('subgraph pack'));
-  assert.ok(packCmd, 'pack command should be present');
-  assert.doesNotMatch(packCmd, /-e /);
+  const packCall = spawnCalls.find(call => call.args.includes('pack'));
+  assert.ok(packCall, 'pack command should be present');
+  assert.ok(!packCall.args.includes('-e'));
 });
 
 // ─── custom inputs ────────────────────────────────────────────────────────────
@@ -221,12 +222,12 @@ test('without extensions: pack command omits -e flag when no extensions file', (
 test('custom subgraph-http-url is used in config set command', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, { INPUT_SUBGRAPH_HTTP_URL: 'https://myapi.example.com/graphql' });
-  const { exitCode, execCalls } = runWithEnv(env);
+  const { exitCode, spawnCalls } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  const configCmd = execCalls.find(c => c.includes('config set http'));
-  assert.ok(configCmd, 'config set http command should be present');
-  assert.match(configCmd, /--url "https:\/\/myapi\.example\.com\/graphql"/);
+  const configCall = spawnCalls.find(call => call.args.includes('config'));
+  assert.ok(configCall, 'config set http command should be present');
+  assert.ok(configCall.args.includes('https://myapi.example.com/graphql'));
 });
 
 test('working-directory is passed as cwd to execSync', () => {
@@ -238,7 +239,7 @@ test('working-directory is passed as cwd to execSync', () => {
   const cwdsSeen = [];
   const { exitCode } = runWithEnv(env, (_cmd, opts) => {
     if (opts && opts.cwd) cwdsSeen.push(opts.cwd);
-    return '';
+    return { status: 0 };
   });
 
   assert.strictEqual(exitCode, 0);
@@ -253,12 +254,49 @@ test('empty working-directory omits cwd from execSync options', () => {
   const cwdsSeen = [];
   const { exitCode } = runWithEnv(env, (_cmd, opts) => {
     if (opts && opts.cwd) cwdsSeen.push(opts.cwd);
-    return '';
+    return { status: 0 };
   });
 
   assert.strictEqual(exitCode, 0);
   assert.strictEqual(cwdsSeen.length, 0, 'no cwd should be set when working-directory is empty');
 });
+
+test('relative schema-dir and publish-dir resolve to absolute output paths', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, {
+    INPUT_SCHEMA_DIR: 'schema',
+    INPUT_PUBLISH_DIR: 'publish',
+    INPUT_WORKING_DIRECTORY: tmp,
+  });
+
+  const { exitCode, outputContent } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const expectedArtifactPath = path.join(tmp, 'publish', 'my-subgraph.fsp');
+  const expectedMetadataPath = path.join(tmp, 'publish', 'my-subgraph.metadata.json');
+  assert.match(outputContent, new RegExp(`artifact-path=${escapeRegExp(expectedArtifactPath)}`));
+  assert.match(outputContent, new RegExp(`metadata-path=${escapeRegExp(expectedMetadataPath)}`));
+  assert.ok(path.isAbsolute(expectedArtifactPath));
+  assert.ok(path.isAbsolute(expectedMetadataPath));
+});
+
+test('quote-bearing URL input is preserved as a single spawn argument', () => {
+  const tmp = makeTempDir();
+  const maliciousUrl = 'http://localhost:4000/" --fake-flag';
+  const env = baseEnv(tmp, { INPUT_SUBGRAPH_HTTP_URL: maliciousUrl });
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const configCall = spawnCalls.find(call => call.args.includes('config'));
+  assert.ok(configCall, 'config call should be present');
+  assert.ok(configCall.args.includes(maliciousUrl));
+  assert.strictEqual(configCall.args.filter(arg => arg === '--fake-flag').length, 0);
+});
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // ─── missing required inputs ──────────────────────────────────────────────────
 

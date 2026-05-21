@@ -6,32 +6,29 @@ param(
     [string]$ProjectPath
 )
 
-function Write-Log {
-    param([string]$Message)
-
-    Write-Host "[export-schema] $Message"
-}
-
-Write-Log "Starting schema export."
-Write-Log "SubgraphName: $SubgraphName"
-Write-Log "Url: $Url"
-Write-Log "SrcDir: $SrcDir"
-Write-Log "OutputDir: $OutputDir"
-if ($ProjectPath) {
-    Write-Log "ProjectPath: $ProjectPath"
-}
-else {
-    Write-Log "ProjectPath: (not provided)"
-}
+$schemaPath = Join-Path $SrcDir "schema.graphql"
+$configPath = Join-Path $SrcDir "subgraph-config.json"
+$extensionsPath = Join-Path $SrcDir "schema.extensions.graphql"
+$outputPath = Join-Path $OutputDir "$SubgraphName.fsp"
 
 if ($ProjectPath) {
-    Write-Log "Running schema export command."
-    dotnet run --project $ProjectPath -- schema export --output "$SrcDir\schema.graphql"
+    dotnet run --project $ProjectPath -- schema export --output $schemaPath
 }
-Write-Log "Writing subgraph config to $SrcDir\subgraph-config.json"
-"{`"subgraph`":`"$SubgraphName`"}" | Set-Content "$SrcDir\subgraph-config.json"
-Write-Log "Configuring Fusion subgraph HTTP endpoint."
+[pscustomobject]@{
+    subgraph = $SubgraphName
+} | ConvertTo-Json -Compress | Set-Content -LiteralPath $configPath -Encoding utf8
+
 dotnet fusion subgraph config set http --url $Url -w $SrcDir
-Write-Log "Packing Fusion subgraph artifact to $OutputDir\$SubgraphName.fsp"
-dotnet fusion subgraph pack -s "$SrcDir\schema.graphql" -c "$SrcDir\subgraph-config.json" -e "$SrcDir\schema.extensions.graphql" -p "$OutputDir\$SubgraphName.fsp"
-Write-Log "Schema export completed."
+
+$packArguments = @(
+    'subgraph', 'pack',
+    '-s', $schemaPath,
+    '-c', $configPath,
+    '-p', $outputPath
+)
+
+if (Test-Path -LiteralPath $extensionsPath) {
+    $packArguments += @('-e', $extensionsPath)
+}
+
+dotnet fusion @packArguments
