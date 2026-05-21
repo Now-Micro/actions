@@ -9,6 +9,5 @@ public sealed class Product
 
     public int Id { get; }
 
-    public IQueryable<Review> GetReviews(ReviewContext context)
-        => context.Reviews;
+    public IQueryable<Review> GetReviews(ReviewContext context) => context.Reviews;
 }

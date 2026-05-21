@@ -10,15 +10,9 @@ public static class DatabaseHelper
         var context = scope.ServiceProvider.GetRequiredService<ReviewContext>();
         if (await context.Database.EnsureCreatedAsync())
         {
-            var ada = new Author
-            {
-                Name = "Ada Lovelace"
-            };
+            var ada = new Author { Name = "Ada Lovelace" };
 
-            var alan = new Author
-            {
-                Name = "Alan Turing"
-            };
+            var alan = new Author { Name = "Alan Turing" };
 
             await context.Authors.AddRangeAsync(ada, alan);
 
@@ -28,14 +22,14 @@ public static class DatabaseHelper
                     Body = "Love it!",
                     Stars = 5,
                     ProductId = 1,
-                    Author = ada
+                    Author = ada,
                 },
                 new Review
                 {
                     Body = "Too expensive.",
                     Stars = 1,
                     ProductId = 2,
-                    Author = alan
+                    Author = alan,
                 },
                 new Review
                 {
@@ -49,10 +43,10 @@ public static class DatabaseHelper
                     Body = "Prefer something else.",
                     Stars = 3,
                     ProductId = 2,
-                    Author = alan
-                });
+                    Author = alan,
+                }
+            );
             await context.SaveChangesAsync();
         }
     }
-
 }
