@@ -63,7 +63,7 @@ runs:
   using: composite
   steps:
     - name: Authorization Check
-      uses: ./authorize
+      uses: Now-Micro/actions/authorize@v1
       with:
         debug-mode: ${{ inputs['ci-debug-mode'] }}
 
@@ -73,12 +73,14 @@ runs:
         fetch-depth: 0
 
     - name: Setup .NET SDK
-      uses: ./dotnet/install
+      uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs['dotnet-version'] }}
-
+  
     - name: Generate Fusion subgraph artifact
       id: generate
+      # todo: switch to a custom action that wraps the existing generate-subgraph-artifact action and also handles the GitHub release step, to avoid code duplication between this workflow and the demo workflow
+      # uses: Now-Micro/fusion/generate-subgraph-artifact@v1
       uses: ./fusion/generate-subgraph-artifact
       with:
         artifact-version: ${{ inputs['artifact-version'] }}

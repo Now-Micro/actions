@@ -17,7 +17,7 @@ inputs:
   dotnet-version:
     description: ".NET SDK version to install before running the schema export."
     required: false
-    default: "9.0.x"
+    default: "8.0.x"
   fusion-release-tag:
     description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
     required: false
