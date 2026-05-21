@@ -7,6 +7,12 @@
       "commands": [
         "csharpier"
       ]
+    },
+    "hotchocolate.fusion.commandline": {
+      "version": "15.1.16",
+      "commands": [
+        "fusion"
+      ]
     }
   }
 }
