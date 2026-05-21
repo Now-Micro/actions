@@ -145,6 +145,7 @@ test('success: writes subgraph-config.json with correct content', () => {
   assert.ok(fs.existsSync(configPath), 'subgraph-config.json should be written');
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.strictEqual(parsed.subgraph, 'my-subgraph');
+  assert.deepStrictEqual(parsed.http, { baseAddress: 'http://localhost:4000' });
 });
 
 test('debug mode logs generated schema and config contents', () => {
@@ -166,7 +167,21 @@ test('debug mode logs generated schema and config contents', () => {
   assert.match(stdout, /Contents of .*schema\.graphql:/);
   assert.match(stdout, /Contents of .*subgraph-config\.json:/);
   assert.match(stdout, /"subgraph":"my-subgraph"/);
+  assert.match(stdout, /"http":\{"baseAddress":"http:\/\/localhost:4000"\}/);
   assert.match(stdout, /type Query/i);
+});
+
+test('debug mode logs fusion pack arguments', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_DEBUG_MODE: 'true' });
+
+  const { exitCode, stdout } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.match(stdout, /Running Fusion pack with args:/);
+  assert.match(stdout, /"fusion"/);
+  assert.match(stdout, /"subgraph"/);
+  assert.match(stdout, /"pack"/);
 });
 
 test('success: writes metadata JSON with correct fields', () => {

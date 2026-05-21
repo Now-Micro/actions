@@ -92,7 +92,12 @@ function run() {
   }
 
   // Write subgraph config JSON
-  const configContent = JSON.stringify({ subgraph: subgraphName });
+  const configContent = JSON.stringify({
+    subgraph: subgraphName,
+    http: {
+      baseAddress: subgraphHttpUrl,
+    },
+  });
   dlog(`Writing subgraph config: ${configPath}`);
   fs.writeFileSync(configPath, configContent + '\n');
   dlogFileContents(configPath, fs.readFileSync(configPath, 'utf8'));
@@ -113,7 +118,7 @@ function run() {
   } else {
     dlog('Skipping -e flag for Fusion pack.');
   }
-  dlog('Packing Fusion subgraph artifact.');
+  dlog(`Running Fusion pack with args: ${JSON.stringify(packArgs)}`);
   runDotnet(packArgs, execOpts);
 
   // Write metadata JSON
