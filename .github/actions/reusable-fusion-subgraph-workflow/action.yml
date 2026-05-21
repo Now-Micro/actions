@@ -110,14 +110,14 @@ runs:
 
     - name: Publish Fusion GitHub release
       if: ${{ inputs['fusion-release-tag'] != '' }}
-      uses: ./github/release
+      uses: Now-Micro/actions/github/release@v1
       with:
         github-token: ${{ inputs['github-token'] }}
         library-name: ${{ inputs['subgraph-name'] }}
         package-type: generic
         release-version: ${{ inputs['fusion-release-tag'] }}
         release-name-template: Fusion subgraph {library-name} {release-version}
-        tag-name: ${{ inputs['fusion-release-tag'] }}
+        tag-name: ${{ inputs['artifact-version'] }}
         artifacts-path: ${{ inputs['publish-dir'] }}
         packages-path: release-assets
         skip-download: true

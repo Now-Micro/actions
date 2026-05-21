@@ -108,6 +108,7 @@ runs:
         INPUT_PACKAGES_PATH: ${{ inputs.packages-path }}
         INPUT_RELEASE_NAME_TEMPLATE: ${{ inputs.release-name-template }}
         INPUT_RELEASE_VERSION: ${{ inputs.release-version }}
+        INPUT_TAG_NAME: ${{ inputs.tag-name }}
         INPUT_TAG_PREFIX: ${{ inputs.tag-prefix }}
 
     - name: Create git tag
