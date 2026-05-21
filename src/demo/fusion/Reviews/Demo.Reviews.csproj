@@ -3,9 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
   <ItemGroup Condition="'$(ImplicitUsings)' == 'enable'">
     <Using Include="Demo.Reviews" />
     <Using Include="Demo.Reviews.Data" />
@@ -13,7 +11,6 @@
     <Using Include="Microsoft.EntityFrameworkCore" />
     <Using Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.16" />
     <PackageReference Include="HotChocolate.AspNetCore.CommandLine" Version="15.1.16" />
@@ -22,7 +19,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.27" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.27">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

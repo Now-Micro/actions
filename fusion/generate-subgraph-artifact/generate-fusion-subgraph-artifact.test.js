@@ -230,35 +230,27 @@ test('custom subgraph-http-url is used in config set command', () => {
   assert.ok(configCall.args.includes('https://myapi.example.com/graphql'));
 });
 
-test('working-directory is passed as cwd to execSync', () => {
+test('working-directory is passed as cwd to spawnSync', () => {
   const tmp = makeTempDir();
   const workDir = path.join(tmp, 'workspace');
   fs.mkdirSync(workDir, { recursive: true });
   const env = baseEnv(tmp, { INPUT_WORKING_DIRECTORY: workDir });
 
-  const cwdsSeen = [];
-  const { exitCode } = runWithEnv(env, (_cmd, opts) => {
-    if (opts && opts.cwd) cwdsSeen.push(opts.cwd);
-    return { status: 0 };
-  });
+  const { exitCode, spawnCalls } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  assert.ok(cwdsSeen.length > 0, 'cwd should be passed to execSync calls');
-  assert.ok(cwdsSeen.every(c => c === workDir), 'all exec calls should use the working-directory');
+  assert.ok(spawnCalls.length > 0, 'spawn calls should be recorded');
+  assert.ok(spawnCalls.every(call => call.opts.cwd === workDir), 'all spawn calls should use the working-directory');
 });
 
-test('empty working-directory omits cwd from execSync options', () => {
+test('empty working-directory omits cwd from spawnSync options', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, { INPUT_WORKING_DIRECTORY: '' });
 
-  const cwdsSeen = [];
-  const { exitCode } = runWithEnv(env, (_cmd, opts) => {
-    if (opts && opts.cwd) cwdsSeen.push(opts.cwd);
-    return { status: 0 };
-  });
+  const { exitCode, spawnCalls } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  assert.strictEqual(cwdsSeen.length, 0, 'no cwd should be set when working-directory is empty');
+  assert.ok(spawnCalls.every(call => !call.opts.cwd), 'no cwd should be set when working-directory is empty');
 });
 
 test('relative schema-dir and publish-dir resolve to absolute output paths', () => {
@@ -349,8 +341,8 @@ test('exits 1 when artifact-version is missing', () => {
 
 test('propagates error when dotnet tool restore fails', () => {
   const tmp = makeTempDir();
-  const { exitCode, thrownError } = runWithEnv(baseEnv(tmp), (cmd) => {
-    if (cmd === 'dotnet tool restore') {
+  const { exitCode, thrownError } = runWithEnv(baseEnv(tmp), (cmd, args) => {
+    if (cmd === 'dotnet' && Array.isArray(args) && args[0] === 'tool' && args[1] === 'restore') {
       const e = new Error('dotnet not found'); e.status = 1; throw e;
     }
     return '';
@@ -361,8 +353,8 @@ test('propagates error when dotnet tool restore fails', () => {
 
 test('propagates error when dotnet fusion pack fails', () => {
   const tmp = makeTempDir();
-  const { exitCode, thrownError } = runWithEnv(baseEnv(tmp), (cmd) => {
-    if (cmd.includes('subgraph pack')) {
+  const { exitCode, thrownError } = runWithEnv(baseEnv(tmp), (cmd, args) => {
+    if (cmd === 'dotnet' && Array.isArray(args) && args[0] === 'fusion' && args[1] === 'subgraph' && args[2] === 'pack') {
       const e = new Error('pack failed'); e.status = 1; throw e;
     }
     return '';

@@ -29,7 +29,7 @@ inputs:
   project-path:
     description: "Path to the .csproj file used to export the GraphQL schema."
     required: false
-    default: "src/Trafera.Warranty.HotChocolate/Trafera.Warranty.HotChocolate.csproj"
+    default: "src/demo/fusion/Reviews/Demo.Reviews.csproj"
   publish-dir:
     description: "Directory where the .fsp artifact and metadata JSON are written."
     required: false
@@ -37,7 +37,7 @@ inputs:
   schema-dir:
     description: "Directory used for intermediate schema files."
     required: false
-    default: "src/Trafera.Warranty.HotChocolate/schema"
+    default: "src/demo/fusion/Reviews"
   source-repo-url:
     description: "Source repository URL embedded in the artifact metadata."
     required: false
@@ -45,11 +45,11 @@ inputs:
   subgraph-http-url:
     description: "HTTP URL registered in the subgraph config."
     required: false
-    default: "http://localhost:4000"
+    default: "http://localhost:59092/graphql"
   subgraph-name:
     description: "Name of the Fusion subgraph."
     required: false
-    default: "Trafera.Warranty.HotChocolate"
+    default: "Reviews"
   working-directory:
     description: "Working directory for dotnet commands."
     required: false
