@@ -1,0 +1,68 @@
+name: "Generate Fusion Subgraph Artifact"
+description: "Exports a Hot Chocolate schema, builds subgraph config, packs a .fsp artifact, and writes a metadata JSON file."
+
+inputs:
+  artifact-version:
+    description: "Version string for the artifact (written into metadata JSON)."
+    required: true
+  commit-sha:
+    description: "Commit SHA to embed in metadata. Defaults to GITHUB_SHA when empty."
+    required: false
+    default: ""
+  debug-mode:
+    description: "Enable verbose debug logging."
+    required: false
+    default: "false"
+  project-path:
+    description: "Path to the .csproj file used to export the GraphQL schema."
+    required: true
+  publish-dir:
+    description: "Directory where the .fsp artifact and metadata JSON are written."
+    required: true
+  schema-dir:
+    description: "Directory used for intermediate schema files (schema.graphql, subgraph-config.json, and optional schema.extensions.graphql)."
+    required: true
+  source-repo-url:
+    description: "URL of the source repository — embedded in metadata JSON."
+    required: false
+    default: ""
+  subgraph-http-url:
+    description: "HTTP URL registered in the subgraph config."
+    required: true
+  subgraph-name:
+    description: "Name of the Fusion subgraph."
+    required: true
+  working-directory:
+    description: "Working directory for dotnet commands (e.g. the repo workspace root). Defaults to the job working directory."
+    required: false
+    default: ""
+
+outputs:
+  artifact-path:
+    description: "Absolute path to the generated .fsp artifact."
+    value: ${{ steps.generate.outputs.artifact-path }}
+  metadata-path:
+    description: "Absolute path to the generated metadata JSON file."
+    value: ${{ steps.generate.outputs.metadata-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Generate Fusion subgraph artifact
+      id: generate
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/generate-fusion-subgraph-artifact.js"
+      env:
+        INPUT_ARTIFACT_VERSION:    ${{ inputs.artifact-version }}
+        INPUT_COMMIT_SHA:          ${{ inputs.commit-sha }}
+        INPUT_DEBUG_MODE:          ${{ inputs.debug-mode }}
+        INPUT_PROJECT_PATH:        ${{ inputs.project-path }}
+        INPUT_PUBLISH_DIR:         ${{ inputs.publish-dir }}
+        INPUT_SCHEMA_DIR:          ${{ inputs.schema-dir }}
+        INPUT_SOURCE_REPO_URL:     ${{ inputs.source-repo-url }}
+        INPUT_SUBGRAPH_HTTP_URL:   ${{ inputs.subgraph-http-url }}
+        INPUT_SUBGRAPH_NAME:       ${{ inputs.subgraph-name }}
+        INPUT_WORKING_DIRECTORY:   ${{ inputs.working-directory }}

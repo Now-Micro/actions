@@ -1,0 +1,129 @@
+name: Reusable - Generate Fusion Subgraph
+
+permissions:
+    contents: write
+
+on:
+    workflow_call:
+        inputs:
+            artifact-retention-days:
+                description: "Number of days to retain the uploaded artifact."
+                required: false
+                type: string
+                default: "1"
+            artifact-version:
+                description: "Version string embedded in the artifact metadata and used to name the uploaded artifact."
+                required: true
+                type: string
+            ci-debug-mode:
+                description: "Enable verbose debug logging for the generate step."
+                required: false
+                type: string
+                default: "false"
+            dotnet-version:
+                description: ".NET SDK version to install before running the schema export."
+                required: false
+                type: string
+                default: "9.0.x"
+            fusion-release-tag:
+                description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
+                required: false
+                type: string
+                default: ""
+            project-path:
+                description: "Path to the .csproj file used to export the GraphQL schema. Relative to the repository root (or to working-directory when set)."
+                required: true
+                type: string
+            publish-dir:
+                description: "Directory where the .fsp artifact and metadata JSON are written."
+                required: false
+                type: string
+                default: "fusion-artifacts"
+            schema-dir:
+                description: "Directory used for intermediate schema files."
+                required: false
+                type: string
+                default: "schema"
+            source-repo-url:
+                description: "Source repository URL embedded in the artifact metadata."
+                required: false
+                type: string
+                default: ""
+            subgraph-http-url:
+                description: "HTTP URL registered in the subgraph config (consumed by the Fusion gateway)."
+                required: true
+                type: string
+            subgraph-name:
+                description: "Name of the Fusion subgraph. Used as the base file name for the .fsp artifact and metadata JSON."
+                required: true
+                type: string
+            working-directory:
+                description: "Working directory for dotnet commands. Defaults to the repository root."
+                required: false
+                type: string
+                default: ""
+        secrets:
+            github-token:
+                description: "GitHub token used to create the GitHub release. Required only when fusion-release-tag is non-empty."
+                required: false
+
+jobs:
+    fusion-subgraph:
+        name: Build Fusion subgraph artifact
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Authorization Check
+              uses: Now-Micro/actions/authorize@v1
+              with:
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+
+            - name: Checkout repository
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup .NET SDK
+              uses: Now-Micro/actions/dotnet/install@v1
+              with:
+                dotnet-version: ${{ inputs['dotnet-version'] }}
+
+            - name: Generate Fusion subgraph artifact
+              id: generate
+              uses: Now-Micro/actions/fusion/generate-subgraph-artifact@v1
+              with:
+                  artifact-version: ${{ inputs['artifact-version'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  project-path: ${{ inputs['project-path'] }}
+                  publish-dir: ${{ inputs['publish-dir'] }}
+                  schema-dir: ${{ inputs['schema-dir'] }}
+                  source-repo-url: ${{ inputs['source-repo-url'] }}
+                  subgraph-http-url: ${{ inputs['subgraph-http-url'] }}
+                  subgraph-name: ${{ inputs['subgraph-name'] }}
+                  working-directory: ${{ inputs['working-directory'] }}
+
+            - name: Upload Fusion subgraph artifact
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+              with:
+                  name: fusion-subgraph-${{ inputs['subgraph-name'] }}-${{ inputs['artifact-version'] }}
+                  path: |
+                      ${{ steps.generate.outputs.artifact-path }}
+                      ${{ steps.generate.outputs.metadata-path }}
+                  if-no-files-found: error
+                  retention-days: ${{ inputs['artifact-retention-days'] }}
+
+            - name: Publish Fusion GitHub release
+              if: ${{ inputs['fusion-release-tag'] != '' }}
+              uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+              with:
+                  tag_name: ${{ inputs['fusion-release-tag'] }}
+                  target_commitish: ${{ github.sha }}
+                  name: Fusion subgraph ${{ inputs['subgraph-name'] }} ${{ inputs['fusion-release-tag'] }}
+                  generate_release_notes: false
+                  draft: false
+                  prerelease: false
+                  files: |
+                      ${{ steps.generate.outputs.artifact-path }}
+                      ${{ steps.generate.outputs.metadata-path }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets['github-token'] }}
