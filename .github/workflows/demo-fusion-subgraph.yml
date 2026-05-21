@@ -47,7 +47,7 @@ on:
                 description: "Source repository URL embedded in the artifact metadata."
                 required: false
                 type: string
-                default: "http://localhost:59092/graphql"
+                default: "https://github.com/Now-Micro/actions"
             subgraph-http-url:
                 description: "HTTP URL registered in the subgraph config."
                 required: false

@@ -171,6 +171,19 @@ test('debug mode logs generated schema and config contents', () => {
   assert.match(stdout, /type Query/i);
 });
 
+test('debug mode logs fusion pack arguments', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_DEBUG_MODE: 'true' });
+
+  const { exitCode, stdout } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.match(stdout, /Running Fusion pack with args:/);
+  assert.match(stdout, /"fusion"/);
+  assert.match(stdout, /"subgraph"/);
+  assert.match(stdout, /"pack"/);
+});
+
 test('success: writes metadata JSON with correct fields', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, { INPUT_COMMIT_SHA: 'deadbeef', INPUT_SOURCE_REPO_URL: 'https://example.com/repo' });

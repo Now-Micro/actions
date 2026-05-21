@@ -118,7 +118,7 @@ function run() {
   } else {
     dlog('Skipping -e flag for Fusion pack.');
   }
-  dlog('Packing Fusion subgraph artifact.');
+  dlog(`Running Fusion pack with args: ${JSON.stringify(packArgs)}`);
   runDotnet(packArgs, execOpts);
 
   // Write metadata JSON
