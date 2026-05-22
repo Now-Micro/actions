@@ -33,16 +33,16 @@ function runDotnet(args, execOpts) {
 function run() {
   debug = (process.env.INPUT_DEBUG_MODE || 'false').toLowerCase() === 'true';
 
-  const artifactVersion = process.env.INPUT_ARTIFACT_VERSION || '';
-  const commitSha       = process.env.INPUT_COMMIT_SHA       || process.env.GITHUB_SHA || '';
+  const artifactVersion = (process.env.INPUT_ARTIFACT_VERSION || '').trim();
+  const commitSha       = (process.env.INPUT_COMMIT_SHA || '').trim() || (process.env.GITHUB_SHA || '').trim();
   const githubOutput    = process.env.GITHUB_OUTPUT          || '';
-  const projectPath     = process.env.INPUT_PROJECT_PATH     || '';
-  const rawPublishDir   = process.env.INPUT_PUBLISH_DIR      || '';
-  const rawSchemaDir    = process.env.INPUT_SCHEMA_DIR       || '';
-  const sourceRepoUrl   = process.env.INPUT_SOURCE_REPO_URL  || '';
-  const subgraphHttpUrl = process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000';
-  const subgraphName    = process.env.INPUT_SUBGRAPH_NAME    || '';
-  const workingDir      = process.env.INPUT_WORKING_DIRECTORY || '';
+  const projectPath     = (process.env.INPUT_PROJECT_PATH || '').trim();
+  const rawPublishDir   = (process.env.INPUT_PUBLISH_DIR || '').trim();
+  const rawSchemaDir    = (process.env.INPUT_SCHEMA_DIR || '').trim();
+  const sourceRepoUrl   = (process.env.INPUT_SOURCE_REPO_URL || '').trim();
+  const subgraphHttpUrl = (process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000').trim() || 'http://localhost:4000';
+  const subgraphName    = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
+  const workingDir      = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
 
   if (!artifactVersion) exitWith('Input "artifact-version" is required.');
   if (!rawPublishDir)   exitWith('Input "publish-dir" is required.');

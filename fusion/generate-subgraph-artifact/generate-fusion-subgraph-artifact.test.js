@@ -168,6 +168,28 @@ test('success: no project-path works when schema.graphql is already present', ()
   assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(tmp, 'publish', 'my-subgraph.fsp')]);
 });
 
+test('success: trims whitespace around project-path and directory inputs', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, {
+    INPUT_PROJECT_PATH: '   ',
+    INPUT_SCHEMA_DIR: '  schema  ',
+    INPUT_PUBLISH_DIR: '  publish  ',
+    INPUT_WORKING_DIRECTORY: tmp,
+  });
+
+  const schemaDir = path.join(tmp, 'schema');
+  fs.mkdirSync(schemaDir, { recursive: true });
+  fs.writeFileSync(path.join(schemaDir, 'schema.graphql'), 'type Query { hello: String }\n');
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(spawnCalls.length, 3);
+  assert.strictEqual(fs.existsSync(path.join(tmp, 'publish')), true);
+  assert.strictEqual(fs.existsSync(path.join(tmp, 'publish', 'my-subgraph.metadata.json')), true);
+  assert.ok(spawnCalls.every(call => call.opts.cwd === tmp), 'working-directory should still be respected');
+});
+
 test('exits 1 when project-path is empty and schema.graphql is missing', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, { INPUT_PROJECT_PATH: '' });
