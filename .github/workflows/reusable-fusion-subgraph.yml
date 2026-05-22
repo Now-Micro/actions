@@ -72,6 +72,16 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
+            - name: Authorization Check
+              uses: Now-Micro/actions/authorize@v1
+              with:
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+
+            - name: Check out code
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
             - name: Run reusable Fusion subgraph workflow
               uses: ./.github/actions/reusable-fusion-subgraph-workflow
               with:
