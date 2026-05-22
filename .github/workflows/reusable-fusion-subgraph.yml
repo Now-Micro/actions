@@ -31,8 +31,8 @@ on:
                 type: string
                 default: ""
             project-path:
-                description: "Path to the .csproj file used to export the GraphQL schema. Relative to the repository root (or to working-directory when set)."
-                required: true
+                description: "Path to the .csproj file used to export the GraphQL schema. Relative to the repository root (or to working-directory when set). When omitted or empty, the workflow expects a pre-existing schema.graphql in schema-dir; if that file is missing, the job fails."
+                required: false
                 type: string
             publish-dir:
                 description: "Directory where the .fsp artifact and metadata JSON are written."
