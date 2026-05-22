@@ -62,16 +62,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Authorization Check
-      uses: Now-Micro/actions/authorize@v1
-      with:
-        debug-mode: ${{ inputs['ci-debug-mode'] }}
-
-    - name: Checkout repository
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      with:
-        fetch-depth: 0
-
     - name: Setup .NET SDK
       uses: Now-Micro/actions/dotnet/install@v1
       with:
