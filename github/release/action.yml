@@ -42,7 +42,7 @@ inputs:
     description: "Package type to release. Supported values: npm, nuget, or generic."
     required: true
   tag-name:
-    description: "Optional exact tag name. When set, overrides tag-prefix and release-version when building the git tag."
+    description: "Optional tag override. The value is normalized to kebab-case before use, with a trailing semantic version preserved, and overrides tag-prefix plus release-version when building the git tag."
     required: false
     default: ""
   release-name-template:

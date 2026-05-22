@@ -15,11 +15,12 @@ Composite action that prepares release assets, builds release notes, and (option
 - `release-name-template` (default `{library-name} v{release-version}`): Template for release display name.
 - `release-version` (required): Version used in tag and release name.
 - `skip-download` (default `false`): When true, does not call `actions/download-artifact`.
-- `tag-prefix` (default `<library-name>-v`): Prefix concatenated with version to form the tag.
+- `tag-name` (optional): Override tag value. The action normalizes it to kebab-case before use, preserving a trailing semantic version when present.
+- `tag-prefix` (default `<library-name>-v`): Prefix concatenated with version to form the tag when `tag-name` is not provided.
 
 ## Outputs
 
-- `tag-name`: Computed tag (prefix + version).
+- `tag-name`: Computed tag after normalization/rewrite.
 - `release-name`: Rendered release name.
 - `release-notes-path`: Absolute path to generated notes.
 - `has-packages`: Count of copied packages.
