@@ -83,7 +83,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Run reusable Fusion subgraph workflow
-              uses: ./.github/actions/reusable-fusion-subgraph-workflow
+              uses: Now-Micro/actions/.github/actions/reusable-fusion-subgraph-workflow@v1
               with:
                   artifact-retention-days: ${{ inputs['artifact-retention-days'] }}
                   artifact-version: ${{ inputs['artifact-version'] }}
