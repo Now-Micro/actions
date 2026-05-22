@@ -229,14 +229,14 @@ function run() {
         const artifactsPath = path.resolve(process.env.INPUT_ARTIFACTS_PATH || 'release-artifacts');
         const packagesPath = path.resolve(process.env.INPUT_PACKAGES_PATH || 'release-packages');
         const changelogPath = (process.env.INPUT_CHANGELOG_PATH || '').trim();
-        const exactTagName = normalizeTagName(process.env.INPUT_TAG_NAME || '');
+        const normalizedTagName = normalizeTagName(process.env.INPUT_TAG_NAME || '');
         const tagPrefixInput = (process.env.INPUT_TAG_PREFIX || '').trim();
         const releaseNameTemplate = (process.env.INPUT_RELEASE_NAME_TEMPLATE || '{library-name} v{release-version}');
         const bodyFilename = (process.env.INPUT_BODY_FILENAME || 'RELEASE_NOTES.md').trim();
         const debugMode = parseBool(process.env.INPUT_DEBUG_MODE || 'false');
 
         const tagPrefix = tagPrefixInput || `${libraryName}-v`;
-        const tagName = exactTagName || `${tagPrefix}${releaseVersion}`;
+        const tagName = normalizedTagName || `${tagPrefix}${releaseVersion}`;
         const releaseName = releaseNameTemplate
             .replace('{library-name}', libraryName)
             .replace('{release-version}', releaseVersion);
@@ -247,7 +247,7 @@ function run() {
             console.log(`Debug: artifactsPath=${artifactsPath}`);
             console.log(`Debug: packagesPath=${packagesPath}`);
             console.log(`Debug: changelogPath=${changelogPath || '(none)'}`);
-            console.log(`Debug: exactTagName=${exactTagName || '(none)'}`);
+            console.log(`Debug: normalizedTagName=${normalizedTagName || '(none)'}`);
             console.log(`Debug: tagPrefix=${tagPrefix}`);
             console.log(`Debug: releaseNameTemplate=${releaseNameTemplate}`);
             console.log(`Debug: tagName=${tagName}`);
