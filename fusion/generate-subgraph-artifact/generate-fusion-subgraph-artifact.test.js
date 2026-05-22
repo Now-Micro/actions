@@ -44,6 +44,11 @@ function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
   const spawnCalls = [];
   cp.spawnSync = (cmd, args, opts) => {
     spawnCalls.push({ cmd: String(cmd), args: Array.isArray(args) ? [...args] : [], opts: { ...opts } });
+    if (cmd === 'dotnet' && Array.isArray(args) && args[0] === 'run' && args.includes('--output')) {
+      const outputPath = args[args.indexOf('--output') + 1];
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, 'type Query { hello: String }\n');
+    }
     return spawnStub(cmd, args, opts);
   };
 
@@ -146,6 +151,32 @@ test('success: writes subgraph-config.json with correct content', () => {
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.strictEqual(parsed.subgraph, 'my-subgraph');
   assert.deepStrictEqual(parsed.http, { baseAddress: 'http://localhost:4000' });
+});
+
+test('success: no project-path works when schema.graphql is already present', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_PROJECT_PATH: '' });
+  fs.mkdirSync(env.INPUT_SCHEMA_DIR, { recursive: true });
+  fs.writeFileSync(path.join(env.INPUT_SCHEMA_DIR, 'schema.graphql'), 'type Query { hello: String }\n');
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.strictEqual(spawnCalls.length, 3);
+  assert.deepStrictEqual(spawnCalls[0].args, ['tool', 'restore']);
+  assert.deepStrictEqual(spawnCalls[1].args, ['fusion', 'subgraph', 'config', 'set', 'http', '--url', 'http://localhost:4000', '-w', path.join(tmp, 'schema')]);
+  assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(tmp, 'publish', 'my-subgraph.fsp')]);
+});
+
+test('exits 1 when project-path is empty and schema.graphql is missing', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_PROJECT_PATH: '' });
+
+  const { exitCode, stderr } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /schema file not found/i);
+  assert.match(stderr, /provide project-path/i);
 });
 
 test('debug mode logs generated schema and config contents', () => {
@@ -368,15 +399,6 @@ function escapeRegExp(value) {
 }
 
 // ─── missing required inputs ──────────────────────────────────────────────────
-
-test('exits 1 when project-path is missing', () => {
-  const tmp = makeTempDir();
-  const env = baseEnv(tmp);
-  delete env.INPUT_PROJECT_PATH;
-  const { exitCode, stderr } = runWithEnv(env);
-  assert.strictEqual(exitCode, 1);
-  assert.match(stderr, /project-path/i);
-});
 
 test('exits 1 when schema-dir is missing', () => {
   const tmp = makeTempDir();
