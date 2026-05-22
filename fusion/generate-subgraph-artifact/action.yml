@@ -14,7 +14,7 @@ inputs:
     required: false
     default: "false"
   project-path:
-    description: "Path to the .csproj file used to export the GraphQL schema."
+    description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/schema.graphql must already exist (pre-populated) or the action will fail."
     required: false
   publish-dir:
     description: "Directory where the .fsp artifact and metadata JSON are written."
