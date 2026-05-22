@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { run, copyPackages, buildReleaseNotes } = require('./github-release');
+const { run, copyPackages, buildReleaseNotes, toKebabCase, normalizeTagName } = require('./github-release');
 
 const ROOT_RELEASE_NOTES = path.join(process.cwd(), 'RELEASE_NOTES.md');
 
@@ -278,17 +278,30 @@ test('run honors exact tag-name override for generic release assets', () => {
         INPUT_PACKAGE_TYPE: 'generic',
         INPUT_ARTIFACTS_PATH: artifacts,
         INPUT_PACKAGES_PATH: packagesPath,
-        INPUT_TAG_NAME: 'Reviews-v1.2.3',
+        INPUT_TAG_NAME: 'Review Subgraph 1.2.3',
         INPUT_RELEASE_NAME_TEMPLATE: 'Fusion subgraph {library-name} {release-version}',
     });
 
     assert.strictEqual(r.exitCode, 0);
     const outputs = parseOutput(r.outputContent);
-    assert.strictEqual(outputs.tag_name, 'Reviews-v1.2.3');
+    assert.strictEqual(outputs.tag_name, 'review-subgraph-1.2.3');
     assert.strictEqual(outputs.has_packages, '2');
     assert.deepStrictEqual(JSON.parse(outputs.packages_json).sort(), ['Reviews.fsp', 'Reviews.metadata.json'].sort());
     assert.ok(fs.existsSync(path.join(packagesPath, 'Reviews.fsp')));
     assert.ok(fs.existsSync(path.join(packagesPath, 'Reviews.metadata.json')));
+});
+
+
+test('toKebabCase normalizes spaces and punctuation', () => {
+    assert.strictEqual(toKebabCase(' Review Subgraph 1.2.3 '), 'review-subgraph-1-2-3');
+    assert.strictEqual(toKebabCase('Already-kebab'), 'already-kebab');
+    assert.strictEqual(toKebabCase(''), '');
+});
+
+test('normalizeTagName preserves trailing semantic version', () => {
+    assert.strictEqual(normalizeTagName(' Review Subgraph 1.2.3 '), 'review-subgraph-1.2.3');
+    assert.strictEqual(normalizeTagName('Account Subgraph-2.0.0-beta.1'), 'account-subgraph-2.0.0-beta.1');
+    assert.strictEqual(normalizeTagName('Already-kebab'), 'already-kebab');
 });
 
 

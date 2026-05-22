@@ -107,7 +107,7 @@ runs:
         package-type: generic
         release-version: ${{ inputs['fusion-release-tag'] }}
         release-name-template: Fusion subgraph {library-name} {release-version}
-        tag-name: ${{ inputs['artifact-version'] }}
+        tag-name: ${{ inputs['fusion-release-tag'] }}-${{ inputs['artifact-version'] }}
         artifacts-path: ${{ inputs['publish-dir'] }}
         packages-path: release-assets
         skip-download: true

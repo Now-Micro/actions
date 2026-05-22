@@ -32,6 +32,32 @@ function getPackageType() {
     return packageType;
 }
 
+function toKebabCase(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function normalizeTagName(value) {
+    const trimmed = String(value || '').trim().toLowerCase();
+    const semverMatch = trimmed.match(/^(.*?)(?:[\s._-]+)?(v?\d+\.\d+\.\d+(?:[-+][0-9a-z.-]+)?)$/i);
+
+    if (!semverMatch) {
+        return toKebabCase(trimmed);
+    }
+
+    const prefix = toKebabCase(semverMatch[1]);
+    const version = semverMatch[2].replace(/^v/, '');
+
+    if (!prefix) {
+        return version;
+    }
+
+    return `${prefix}-${version}`;
+}
+
 function safeMkdir(dir) {
     fs.mkdirSync(dir, { recursive: true });
 }
@@ -203,7 +229,7 @@ function run() {
         const artifactsPath = path.resolve(process.env.INPUT_ARTIFACTS_PATH || 'release-artifacts');
         const packagesPath = path.resolve(process.env.INPUT_PACKAGES_PATH || 'release-packages');
         const changelogPath = (process.env.INPUT_CHANGELOG_PATH || '').trim();
-        const exactTagName = (process.env.INPUT_TAG_NAME || '').trim();
+        const exactTagName = normalizeTagName(process.env.INPUT_TAG_NAME || '');
         const tagPrefixInput = (process.env.INPUT_TAG_PREFIX || '').trim();
         const releaseNameTemplate = (process.env.INPUT_RELEASE_NAME_TEMPLATE || '{library-name} v{release-version}');
         const bodyFilename = (process.env.INPUT_BODY_FILENAME || 'RELEASE_NOTES.md').trim();
@@ -276,4 +302,4 @@ if (require.main === module) {
     run();
 }
 
-module.exports = { run, copyPackages, listFilesRecursive, buildReleaseNotes, getPackageType };
+module.exports = { run, copyPackages, listFilesRecursive, buildReleaseNotes, getPackageType, toKebabCase, normalizeTagName };
