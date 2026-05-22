@@ -7,7 +7,7 @@ inputs:
     required: false
     default: "1"
   artifact-version:
-    description: "Version string embedded in the artifact metadata and used to name the uploaded artifact."
+    description: "Semantic version for the artifact and release. Used in the artifact metadata, upload name, and release title."
     required: true
   ci-debug-mode:
     description: "Enable verbose debug logging for the generate step."
@@ -18,7 +18,7 @@ inputs:
     required: false
     default: "9.0.x"
   fusion-release-tag:
-    description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
+    description: "Human-readable label used as the release tag prefix. The final release tag is normalized from this value plus artifact-version. Leave empty to skip the release step."
     required: false
     default: ""
   github-token:
@@ -105,7 +105,7 @@ runs:
         github-token: ${{ inputs['github-token'] }}
         library-name: ${{ inputs['subgraph-name'] }}
         package-type: generic
-        release-version: ${{ inputs['fusion-release-tag'] }}
+        release-version: ${{ inputs['artifact-version'] }}
         release-name-template: Fusion subgraph {library-name} {release-version}
         tag-name: ${{ inputs['fusion-release-tag'] }}-${{ inputs['artifact-version'] }}
         artifacts-path: ${{ inputs['publish-dir'] }}
