@@ -4,6 +4,7 @@ Restores Fusion subgraph artifacts from GitHub releases and composes them into a
 
 ## Inputs
 
+- `dotnet-version` (optional, default `8.0.x`): .NET SDK version installed before compose.
 - `debug-mode` (optional, default `false`): Enables verbose logging.
 - `dotnet-tools-manifest-path` (optional, default `.config/dotnet-tools.json`): Path to the local dotnet tools manifest.
 - `gh-token` (optional, default empty): GitHub token used for `gh release download`.
@@ -12,6 +13,10 @@ Restores Fusion subgraph artifacts from GitHub releases and composes them into a
 - `subgraph-artifacts-json` (optional, default empty): Inline JSON manifest for restore details. When provided, this overrides `manifest-path`.
 - `output-directory` (optional, default empty): Directory used for staged downloads. If empty, `manifest.outputDirectory` is used.
 - `output-file` (required): Output path for composed gateway file.
+- `nuget-source-names` (optional, default `Now-Micro, Trafera-LLC`): Comma-separated NuGet source names used by `nuget/configure-sources`.
+- `nuget-source-passwords` (optional, default empty): Comma-separated NuGet source passwords. Defaults to `gh-token` when empty.
+- `nuget-source-urls` (optional, default `https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json`): Comma-separated NuGet source URLs.
+- `nuget-source-usernames` (optional, default empty): Comma-separated NuGet usernames. Defaults to `github.actor` when empty.
 - `run-dotnet-tool-restore` (optional, default `true`): Runs `dotnet tool restore` before compose.
 - `subgraph-file-extension` (optional, default `.fsp`): Extension used when discovering subgraph files.
 - `verify-fusion-command` (optional, default `true`): Runs `dotnet tool run fusion -- --help` before compose.
