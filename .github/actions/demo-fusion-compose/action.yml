@@ -1,0 +1,112 @@
+name: Demo - Fusion Compose
+description: Demonstrates fusion/compose using inline subgraph artifact JSON and prints SHA-256 of gateway output.
+
+inputs:
+  dotnet-version:
+    description: ".NET SDK version used to run Fusion compose."
+    required: false
+    default: "8.0.x"
+  github-token:
+    description: "GitHub token used by gh release download for subgraph artifacts."
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Title - Fusion Compose Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Fusion Compose Demo
+        path: ./.github/actions/demo-fusion-compose
+
+    - name: Setup summary file
+      shell: bash
+      run: |
+        echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-fusion-compose-summary.txt" >> "$GITHUB_ENV"
+        : > "$GITHUB_WORKSPACE/demo-fusion-compose-summary.txt"
+
+    - name: Install .NET SDK for Fusion compose
+      uses: ./dotnet/install
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Configure GitHub NuGet sources
+      uses: ./nuget/configure-sources
+      with:
+        names: "Now-Micro, Trafera-LLC"
+        passwords: ${{ inputs.github-token }}
+        urls: "https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json"
+        usernames: ${{ github.actor }}
+
+    - name: Run fusion/compose with inline subgraph JSON
+      id: compose
+      uses: ./fusion/compose
+      with:
+        debug-mode: "true"
+        gh-token: ${{ inputs.github-token }}
+        output-file: artifacts/gateway/gateway-placeholder.fgp
+        subgraph-artifacts-json: |
+          {
+              "outputDirectory": "artifacts/subgraphs",
+              "gatewayFileName": "gateway.fgp",
+              "subgraphs": [
+                  {
+                      "name": "Account",
+                      "repository": "Now-Micro/actions",
+                      "releaseTag": "account-subgraph-0.0.1",
+                      "assetName": "Account.fsp"
+                  },
+                  {
+                      "name": "Review",
+                      "repository": "Now-Micro/actions",
+                      "releaseTag": "review-subgraph-0.0.1",
+                      "assetName": "Reviews.fsp"
+                  }
+              ]
+          }
+
+    - name: Assert gateway output path ends with gateway.fgp
+      uses: ./src/testing/assert
+      with:
+        expected: gateway.fgp
+        actual: ${{ steps.compose.outputs.output-file || ' ' }}
+        mode: endswith
+        test-name: output-file ends with gateway.fgp
+        summary-file: ${{ env.SUMMARY_FILE }}
+
+    - name: Compute gateway SHA-256 hash
+      id: hash
+      shell: bash
+      run: |
+        set -euo pipefail
+        gateway_file="${{ steps.compose.outputs.output-file }}"
+        if [ ! -f "$gateway_file" ]; then
+          echo "Expected gateway file not found: $gateway_file" >&2
+          exit 1
+        fi
+
+        gateway_sha256="$(sha256sum "$gateway_file" | awk '{print $1}')"
+        echo "gateway.fgp sha256=$gateway_sha256"
+        echo "gateway_sha256=$gateway_sha256" >> "$GITHUB_OUTPUT"
+        echo "gateway_sha256=$gateway_sha256" >> "$SUMMARY_FILE"
+        echo "gateway_file=$gateway_file" >> "$SUMMARY_FILE"
+
+    - name: Assert SHA-256 hash shape
+      uses: ./src/testing/assert
+      with:
+        expected: "^[a-f0-9]{64}$"
+        actual: ${{ steps.hash.outputs.gateway_sha256 || ' ' }}
+        mode: regex
+        test-name: gateway sha256 is 64 hex chars
+        summary-file: ${{ env.SUMMARY_FILE }}
+        
+    - name: Publish summary
+      if: always()
+      shell: bash
+      run: |
+        echo "### Demo fusion/compose" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f "$SUMMARY_FILE" ]; then
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "(summary file missing)" >> "$GITHUB_STEP_SUMMARY"
+        fi
