@@ -30,6 +30,7 @@ Provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shap
 ```json
 {
   "outputDirectory": "artifacts/subgraphs",
+  "gatewayFileName": "gateway.fgp",
   "subgraphs": [
     {
       "name": "accounts",
@@ -42,6 +43,8 @@ Provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shap
 ```
 
 Each downloaded `assetName` is staged under `<outputDirectory>/<name>/` and copied to `<outputDirectory>/<name>/<name>.fsp` for stable composition inputs.
+
+When `gatewayFileName` is provided, it overrides the file name segment from `output-file` while keeping the same output directory.
 
 If both `manifest-path` and `subgraph-artifacts-json` are set, inline JSON takes precedence.
 
@@ -65,6 +68,7 @@ If both `manifest-path` and `subgraph-artifacts-json` are set, inline JSON takes
     subgraph-artifacts-json: |
       {
         "outputDirectory": "artifacts/subgraphs",
+        "gatewayFileName": "gateway.fgp",
         "subgraphs": [
           {
             "name": "accounts",

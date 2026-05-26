@@ -276,6 +276,44 @@ test('success: inline subgraph artifacts JSON overrides manifest file path', () 
   assert.ok(fs.existsSync(path.join(root, 'inline', 'subgraphs', 'catalog', 'catalog.fsp')));
 });
 
+test('success: manifest gatewayFileName overrides output-file name', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_INPUT_DIRECTORY: 'artifacts/subgraphs',
+    INPUT_OUTPUT_FILE: 'src/Trafera.GraphQL.Gateway/ignored-name.fgp',
+  });
+
+  writeJson(path.join(root, 'gateway-release.json'), {
+    outputDirectory: 'artifacts/subgraphs',
+    gatewayFileName: 'gateway-manifest.fgp',
+    subgraphs: [],
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 0);
+  assert.match(result.outputContent, /output-file=.*gateway-manifest\.fgp/);
+  assert.ok(fs.existsSync(path.join(root, 'src', 'Trafera.GraphQL.Gateway', 'gateway-manifest.fgp')));
+});
+
+test('success: inline gatewayFileName overrides output-file name', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_OUTPUT_FILE: 'src/Trafera.GraphQL.Gateway/will-be-overridden.fgp',
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: JSON.stringify({
+      outputDirectory: 'artifacts/subgraphs',
+      gatewayFileName: 'gateway-inline.fgp',
+      subgraphs: [],
+    }),
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 0);
+  assert.match(result.outputContent, /output-file=.*gateway-inline\.fgp/);
+  assert.ok(fs.existsSync(path.join(root, 'src', 'Trafera.GraphQL.Gateway', 'gateway-inline.fgp')));
+});
+
 test('fails when dotnet is unavailable', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root);
@@ -452,6 +490,38 @@ test('fails when downloaded gh asset path does not exist', () => {
 
   assert.strictEqual(result.exitCode, 1);
   assert.match(result.stderr, /Expected downloaded asset/);
+});
+
+test('fails when gatewayFileName is not a string', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: JSON.stringify({
+      outputDirectory: 'artifacts/subgraphs',
+      gatewayFileName: 123,
+      subgraphs: [],
+    }),
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 1);
+  assert.match(result.stderr, /gatewayFileName" must be a string/);
+});
+
+test('fails when gatewayFileName contains directory segments', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: JSON.stringify({
+      outputDirectory: 'artifacts/subgraphs',
+      gatewayFileName: 'nested/gateway.fgp',
+      subgraphs: [],
+    }),
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 1);
+  assert.match(result.stderr, /gatewayFileName" must be a file name only/);
 });
 
 test('fails when input directory does not exist', () => {

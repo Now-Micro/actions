@@ -97,6 +97,28 @@ function loadRestoreManifest(options) {
   };
 }
 
+function parseGatewayFileName(manifest, source) {
+  if (!Object.prototype.hasOwnProperty.call(manifest, 'gatewayFileName')) {
+    return '';
+  }
+
+  if (typeof manifest.gatewayFileName !== 'string') {
+    exitWith(`${source} field "gatewayFileName" must be a string when provided.`);
+  }
+
+  const gatewayFileName = manifest.gatewayFileName.trim();
+  if (!gatewayFileName) {
+    return '';
+  }
+
+  const baseName = path.basename(gatewayFileName);
+  if (baseName !== gatewayFileName) {
+    exitWith(`${source} field "gatewayFileName" must be a file name only (no directory segments).`);
+  }
+
+  return gatewayFileName;
+}
+
 function collectSubgraphFiles(directoryPath, extension) {
   const discovered = [];
 
@@ -136,6 +158,7 @@ function restoreSubgraphArtifacts(options) {
     inlineManifestJson,
     manifestPath,
   });
+  const gatewayFileName = parseGatewayFileName(manifest, source);
   const manifestOutputDirectory = typeof manifest.outputDirectory === 'string' ? manifest.outputDirectory.trim() : '';
   const outputDirectorySetting = configuredOutputDirectory || manifestOutputDirectory;
 
@@ -209,7 +232,10 @@ function restoreSubgraphArtifacts(options) {
     }
   }
 
-  return outputDirectory;
+  return {
+    outputDirectory,
+    gatewayFileName,
+  };
 }
 
 function composeGateway(options) {
@@ -314,7 +340,7 @@ function run() {
 
   const manifestPath = manifestPathInput ? resolveFrom(baseDirectory, manifestPathInput) : '';
 
-  const restoreOutputDirectory = restoreSubgraphArtifacts({
+  const restoreResult = restoreSubgraphArtifacts({
     debugMode,
     baseDirectory,
     manifestPath,
@@ -322,16 +348,23 @@ function run() {
     configuredOutputDirectory,
     ghToken,
   });
+  const restoreOutputDirectory = restoreResult.outputDirectory;
 
   const inputDirectory = resolveFrom(
     baseDirectory,
     inputDirectoryInput || restoreOutputDirectory || 'artifacts/subgraphs'
   );
-  const outputFile = resolveFrom(baseDirectory, outputFileInput);
+  const requestedOutputFile = resolveFrom(baseDirectory, outputFileInput);
+  const outputFile = restoreResult.gatewayFileName
+    ? path.join(path.dirname(requestedOutputFile), restoreResult.gatewayFileName)
+    : requestedOutputFile;
 
   logDebug(debugMode, `base directory: ${baseDirectory}`);
   logDebug(debugMode, `manifest path: ${manifestPath}`);
   logDebug(debugMode, `input directory: ${inputDirectory}`);
+  if (restoreResult.gatewayFileName) {
+    logDebug(debugMode, `gateway file name override from manifest: ${restoreResult.gatewayFileName}`);
+  }
   logDebug(debugMode, `output file: ${outputFile}`);
 
   const composeResult = composeGateway({
