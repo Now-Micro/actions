@@ -53,14 +53,14 @@ runs:
                   {
                       "name": "Account",
                       "repository": "Now-Micro/actions",
-                      "releaseTag": "account-0.0.1",
+                      "releaseTag": "account-subgraph-0.0.1",
                       "assetName": "Account.fsp"
                   },
                   {
                       "name": "Review",
                       "repository": "Now-Micro/actions",
                       "releaseTag": "review-subgraph-1.0.0",
-                      "assetName": "Review.fsp"
+                      "assetName": "Reviews.fsp"
                   }
               ]
           }
