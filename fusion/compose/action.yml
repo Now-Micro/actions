@@ -10,6 +10,10 @@ inputs:
     description: "Path to the dotnet local tools manifest file."
     required: false
     default: ".config/dotnet-tools.json"
+  dotnet-version:
+    description: ".NET SDK version to install before running compose."
+    required: false
+    default: "8.0.x"
   gh-token:
     description: "GitHub token used by gh release download when restoring subgraph artifacts."
     required: false
@@ -33,6 +37,22 @@ inputs:
   output-file:
     description: "Destination path for the composed gateway .fgp file."
     required: true
+  nuget-source-names:
+    description: "Comma-separated NuGet source names passed to nuget/configure-sources."
+    required: false
+    default: "Now-Micro, Trafera-LLC"
+  nuget-source-passwords:
+    description: "Comma-separated NuGet source passwords. Defaults to gh-token when empty."
+    required: false
+    default: ""
+  nuget-source-urls:
+    description: "Comma-separated NuGet source URLs passed to nuget/configure-sources."
+    required: false
+    default: "https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json"
+  nuget-source-usernames:
+    description: "Comma-separated NuGet source usernames. Defaults to github.actor when empty."
+    required: false
+    default: ""
   run-dotnet-tool-restore:
     description: "When true, run dotnet tool restore before composing."
     required: false
@@ -64,8 +84,19 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Node.js
-      uses: Now-Micro/actions/setup-node@v1
+    - name: Install .NET SDK for Fusion compose
+      uses: Now-Micro/actions/dotnet/install@v1
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Configure GitHub NuGet sources
+      uses: Now-Micro/actions/nuget/configure-sources@v1
+      with:
+        debug-mode: ${{ inputs.debug-mode }}
+        names: ${{ inputs.nuget-source-names }}
+        passwords: ${{ inputs.nuget-source-passwords != '' && inputs.nuget-source-passwords || inputs.gh-token }}
+        urls: ${{ inputs.nuget-source-urls }}
+        usernames: ${{ inputs.nuget-source-usernames != '' && inputs.nuget-source-usernames || github.actor }}
 
     - name: Compose Fusion gateway
       id: compose
