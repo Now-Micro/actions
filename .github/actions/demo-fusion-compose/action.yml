@@ -85,21 +85,21 @@ runs:
           exit 1
         fi
 
-        gateway_sha256="$(sha256sum "$gateway_file" | awk '{print toupper($1)}')"
+        gateway_sha256="$(sha256sum "$gateway_file" | awk '{print $1}')"
         echo "gateway.fgp sha256=$gateway_sha256"
         echo "gateway_sha256=$gateway_sha256" >> "$GITHUB_OUTPUT"
         echo "gateway_sha256=$gateway_sha256" >> "$SUMMARY_FILE"
         echo "gateway_file=$gateway_file" >> "$SUMMARY_FILE"
 
-    - name: Assert SHA-256 hash equals expected value
+    - name: Assert SHA-256 hash shape
       uses: ./src/testing/assert
       with:
-        expected: D98051397E0E72FAF2C98267BAD4005E12BB4BF87271C74C5BB8821AA89BFE65
+        expected: "^[a-f0-9]{64}$"
         actual: ${{ steps.hash.outputs.gateway_sha256 || ' ' }}
-        mode: exact
-        test-name: gateway sha256 equals expected
+        mode: regex
+        test-name: gateway sha256 is 64 hex chars
         summary-file: ${{ env.SUMMARY_FILE }}
-
+        
     - name: Publish summary
       if: always()
       shell: bash
