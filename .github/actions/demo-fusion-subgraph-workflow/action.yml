@@ -35,7 +35,7 @@ inputs:
     required: false
     default: "fusion-artifacts"
   schema-dir:
-    description: "Directory used for intermediate schema files."
+    description: "Path to the schema files.  Needed if no project-path is provided.  Can be used together with project-path if the schema needs to be copied from its original location before export."
     required: false
     default: "src/demo/fusion/Reviews"
   source-repo-url:
