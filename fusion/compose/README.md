@@ -8,7 +8,8 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 - `dotnet-tools-manifest-path` (optional, default `.config/dotnet-tools.json`): Path to the local dotnet tools manifest.
 - `gh-token` (optional, default empty): GitHub token used for `gh release download`.
 - `input-directory` (optional, default `artifacts/subgraphs`): Directory recursively scanned for subgraph files.
-- `manifest-path` (required): Path to manifest JSON containing release assets.
+- `manifest-path` (optional, default empty): Path to manifest JSON containing release assets. Used when `subgraph-artifacts-json` is empty.
+- `subgraph-artifacts-json` (optional, default empty): Inline JSON manifest for restore details. When provided, this overrides `manifest-path`.
 - `output-directory` (optional, default empty): Directory used for staged downloads. If empty, `manifest.outputDirectory` is used.
 - `output-file` (required): Output path for composed gateway file.
 - `restore-subgraph-artifacts` (optional, default `true`): Enables artifact restoration from manifest.
@@ -25,7 +26,7 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 
 ## Manifest Shape
 
-When `restore-subgraph-artifacts` is `true`, `manifest-path` must point to a JSON file with this shape:
+When `restore-subgraph-artifacts` is `true`, provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shape:
 
 ```json
 {
@@ -43,6 +44,8 @@ When `restore-subgraph-artifacts` is `true`, `manifest-path` must point to a JSO
 
 Each downloaded `assetName` is staged under `<outputDirectory>/<name>/` and copied to `<outputDirectory>/<name>/<name>.fsp` for stable composition inputs.
 
+If both `manifest-path` and `subgraph-artifacts-json` are set, inline JSON takes precedence.
+
 ## Usage
 
 ```yaml
@@ -51,6 +54,27 @@ Each downloaded `assetName` is staged under `<outputDirectory>/<name>/` and copi
   with:
     gh-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
     manifest-path: gateway-release.json
+    input-directory: artifacts/subgraphs
+    output-file: src/Trafera.GraphQL.Gateway/gateway.fgp
+```
+
+```yaml
+- name: Compose gateway with inline restore details
+  uses: Now-Micro/actions/fusion/compose@v1
+  with:
+    gh-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+    subgraph-artifacts-json: |
+      {
+        "outputDirectory": "artifacts/subgraphs",
+        "subgraphs": [
+          {
+            "name": "accounts",
+            "repository": "Now-Micro/accounts",
+            "releaseTag": "v1.2.3",
+            "assetName": "accounts-release.fsp"
+          }
+        ]
+      }
     input-directory: artifacts/subgraphs
     output-file: src/Trafera.GraphQL.Gateway/gateway.fgp
 ```

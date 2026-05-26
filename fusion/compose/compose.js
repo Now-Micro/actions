@@ -68,6 +68,35 @@ function readManifestJson(manifestPath) {
   }
 }
 
+function parseInlineManifestJson(rawInlineJson) {
+  try {
+    return JSON.parse(rawInlineJson);
+  } catch (error) {
+    exitWith(`Failed to parse inline JSON from input "subgraph-artifacts-json": ${error.message}`);
+  }
+}
+
+function loadRestoreManifest(options) {
+  const { inlineManifestJson, manifestPath } = options;
+  const inlineValue = (inlineManifestJson || '').trim();
+
+  if (inlineValue) {
+    return {
+      manifest: parseInlineManifestJson(inlineValue),
+      source: 'input "subgraph-artifacts-json"',
+    };
+  }
+
+  if (!manifestPath) {
+    exitWith('Input "manifest-path" or "subgraph-artifacts-json" is required when "restore-subgraph-artifacts" is true.');
+  }
+
+  return {
+    manifest: readManifestJson(manifestPath),
+    source: `manifest '${manifestPath}'`,
+  };
+}
+
 function collectSubgraphFiles(directoryPath, extension) {
   const discovered = [];
 
@@ -96,13 +125,17 @@ function restoreSubgraphArtifacts(options) {
     debugMode,
     baseDirectory,
     manifestPath,
+    inlineManifestJson,
     configuredOutputDirectory,
     ghToken,
   } = options;
 
   ensureCommandAvailable('gh', ['--version'], 'GitHub CLI (gh)');
 
-  const manifest = readManifestJson(manifestPath);
+  const { manifest, source } = loadRestoreManifest({
+    inlineManifestJson,
+    manifestPath,
+  });
   const manifestOutputDirectory = typeof manifest.outputDirectory === 'string' ? manifest.outputDirectory.trim() : '';
   const outputDirectorySetting = configuredOutputDirectory || manifestOutputDirectory;
 
@@ -114,7 +147,7 @@ function restoreSubgraphArtifacts(options) {
   fs.mkdirSync(outputDirectory, { recursive: true });
 
   if (!Array.isArray(manifest.subgraphs)) {
-    exitWith(`Manifest '${manifestPath}' must contain a "subgraphs" array.`);
+    exitWith(`${source} must contain a "subgraphs" array.`);
   }
 
   const commandEnvironment = ghToken
@@ -123,7 +156,7 @@ function restoreSubgraphArtifacts(options) {
 
   for (const [index, subgraph] of manifest.subgraphs.entries()) {
     if (!subgraph || typeof subgraph !== 'object') {
-      exitWith(`Manifest subgraphs[${index}] must be an object.`);
+      exitWith(`${source} subgraphs[${index}] must be an object.`);
     }
 
     const subgraphName = String(subgraph.name || '').trim();
@@ -132,7 +165,7 @@ function restoreSubgraphArtifacts(options) {
     const subgraphAssetName = String(subgraph.assetName || '').trim();
 
     if (!subgraphName || !subgraphRepository || !subgraphReleaseTag || !subgraphAssetName) {
-      exitWith(`Manifest subgraphs[${index}] must include name, repository, releaseTag, and assetName.`);
+      exitWith(`${source} subgraphs[${index}] must include name, repository, releaseTag, and assetName.`);
     }
 
     const stagingDirectory = path.join(outputDirectory, subgraphName);
@@ -235,16 +268,13 @@ function run() {
   const baseDirectory = resolveBaseDirectory();
   const dotnetToolsManifestInput = (process.env.INPUT_DOTNET_TOOLS_MANIFEST_PATH || '.config/dotnet-tools.json').trim();
   const manifestPathInput = (process.env.INPUT_MANIFEST_PATH || '').trim();
+  const subgraphArtifactsJsonInput = (process.env.INPUT_SUBGRAPH_ARTIFACTS_JSON || '').trim();
   const configuredOutputDirectory = (process.env.INPUT_OUTPUT_DIRECTORY || '').trim();
   const inputDirectoryInput = (process.env.INPUT_INPUT_DIRECTORY || 'artifacts/subgraphs').trim();
   const outputFileInput = (process.env.INPUT_OUTPUT_FILE || '').trim();
   const subgraphFileExtension = (process.env.INPUT_SUBGRAPH_FILE_EXTENSION || '.fsp').trim();
   const ghToken = (process.env.INPUT_GH_TOKEN || '').trim();
   const githubOutput = process.env.GITHUB_OUTPUT || '';
-
-  if (!manifestPathInput) {
-    exitWith('Input "manifest-path" is required.');
-  }
 
   if (!outputFileInput) {
     exitWith('Input "output-file" is required.');
@@ -283,7 +313,7 @@ function run() {
     }
   }
 
-  const manifestPath = resolveFrom(baseDirectory, manifestPathInput);
+  const manifestPath = manifestPathInput ? resolveFrom(baseDirectory, manifestPathInput) : '';
 
   let restoreOutputDirectory = '';
   if (restoreSubgraphArtifactsEnabled) {
@@ -291,6 +321,7 @@ function run() {
       debugMode,
       baseDirectory,
       manifestPath,
+      inlineManifestJson: subgraphArtifactsJsonInput,
       configuredOutputDirectory,
       ghToken,
     });

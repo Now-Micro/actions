@@ -152,6 +152,7 @@ function createValidEnvironment(root, overrides = {}) {
     INPUT_WORKING_DIRECTORY: root,
     INPUT_DOTNET_TOOLS_MANIFEST_PATH: '.config/dotnet-tools.json',
     INPUT_MANIFEST_PATH: 'gateway-release.json',
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: '',
     INPUT_INPUT_DIRECTORY: 'artifacts/subgraphs',
     INPUT_OUTPUT_FILE: 'src/Trafera.GraphQL.Gateway/gateway.fgp',
     INPUT_OUTPUT_DIRECTORY: '',
@@ -250,6 +251,35 @@ test('success: output-directory input overrides manifest outputDirectory', () =>
   assert.ok(fs.existsSync(path.join(root, 'custom', 'subgraphs', 'inventory', 'inventory.fsp')));
 });
 
+test('success: inline subgraph artifacts JSON overrides manifest file path', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
+    INPUT_MANIFEST_PATH: 'missing-manifest.json',
+    INPUT_INPUT_DIRECTORY: 'inline/subgraphs',
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: JSON.stringify({
+      outputDirectory: 'inline/subgraphs',
+      subgraphs: [
+        {
+          name: 'catalog',
+          repository: 'Now-Micro/catalog',
+          releaseTag: 'v3.4.5',
+          assetName: 'catalog-release.fsp',
+        },
+      ],
+    }),
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 0);
+  const ghDownloadCalls = result.spawnCalls.filter(
+    c => c.command === 'gh' && c.args[0] === 'release' && c.args[1] === 'download'
+  );
+  assert.strictEqual(ghDownloadCalls.length, 1);
+  assert.ok(fs.existsSync(path.join(root, 'inline', 'subgraphs', 'catalog', 'catalog.fsp')));
+});
+
 test('fails when dotnet is unavailable', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root);
@@ -343,6 +373,19 @@ test('fails when restore mode is enabled and manifest file is missing', () => {
 
   assert.strictEqual(result.exitCode, 1);
   assert.match(result.stderr, /Failed to read manifest/);
+});
+
+test('fails when inline subgraph artifacts JSON is invalid', () => {
+  const root = makeTempDir();
+  const env = createValidEnvironment(root, {
+    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: '{bad json',
+  });
+
+  const result = runWithEnv(env);
+
+  assert.strictEqual(result.exitCode, 1);
+  assert.match(result.stderr, /Failed to parse inline JSON/);
 });
 
 test('fails when restore mode is enabled and manifest JSON is invalid', () => {
@@ -465,12 +508,14 @@ test('fails when manifest path input is empty', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
     INPUT_MANIFEST_PATH: '   ',
+    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
+    INPUT_SUBGRAPH_ARTIFACTS_JSON: '',
   });
 
   const result = runWithEnv(env);
 
   assert.strictEqual(result.exitCode, 1);
-  assert.match(result.stderr, /manifest-path/);
+  assert.match(result.stderr, /manifest-path.*subgraph-artifacts-json/);
 });
 
 test('fails when subgraph extension does not start with dot', () => {

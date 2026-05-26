@@ -20,7 +20,12 @@ inputs:
     default: "artifacts/subgraphs"
   manifest-path:
     description: "Path to the gateway release manifest JSON file."
-    required: true
+    required: false
+    default: ""
+  subgraph-artifacts-json:
+    description: "Inline JSON manifest for subgraph artifact restore. When set, this overrides manifest-path."
+    required: false
+    default: ""
   output-directory:
     description: "Directory where downloaded subgraph assets are staged. Empty means use manifest.outputDirectory."
     required: false
@@ -76,6 +81,7 @@ runs:
         INPUT_GH_TOKEN: ${{ inputs.gh-token }}
         INPUT_INPUT_DIRECTORY: ${{ inputs.input-directory }}
         INPUT_MANIFEST_PATH: ${{ inputs.manifest-path }}
+        INPUT_SUBGRAPH_ARTIFACTS_JSON: ${{ inputs.subgraph-artifacts-json }}
         INPUT_OUTPUT_DIRECTORY: ${{ inputs.output-directory }}
         INPUT_OUTPUT_FILE: ${{ inputs.output-file }}
         INPUT_RESTORE_SUBGRAPH_ARTIFACTS: ${{ inputs.restore-subgraph-artifacts }}
