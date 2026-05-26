@@ -59,7 +59,7 @@ runs:
                   {
                       "name": "Review",
                       "repository": "Now-Micro/actions",
-                      "releaseTag": "review-subgraph-1.0.0",
+                      "releaseTag": "review-subgraph-0.0.1",
                       "assetName": "Reviews.fsp"
                   }
               ]
