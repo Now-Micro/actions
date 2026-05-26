@@ -1,0 +1,90 @@
+name: Gateway Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Version to release (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup .NET
+        uses: Now-Micro/actions/dotnet/install@v1
+        with:
+          dotnet-version: ${{ vars.CHECKS_DOTNET_SDK_VERSION }}
+
+      - name: Configure Github NuGet sources
+        uses: Now-Micro/actions/nuget/configure-sources@v1
+        with:
+          names: "Now-Micro, Trafera-LLC"
+          passwords: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          urls: "https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json"
+          usernames: ${{ github.actor }}
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Log prerequisites
+        run: |
+          set -euo pipefail
+          echo "Workspace: $(pwd)"
+          echo "dotnet path: $(command -v dotnet)"
+          dotnet --info
+          echo "gh path: $(command -v gh || true)"
+          gh --version
+          echo "jq path: $(command -v jq || true)"
+          jq --version
+          echo "Tool manifest exists?"
+          ls -la ./.config/dotnet-tools.json
+          echo "Tool manifest contents:"
+          cat ./.config/dotnet-tools.json
+          echo "Scripts directory contents:"
+          ls -la ./scripts
+          echo "Manifest exists?"
+          ls -la ./gateway-release.json
+          echo "Installed local tools:"
+          dotnet tool list --local
+
+      - name: Verify Fusion command is available
+        run: |
+          set -euo pipefail
+          dotnet tool run fusion -- --help
+
+      - name: Make scripts executable
+        run: chmod +x ./scripts/*.sh
+
+      - name: Restore subgraph artifacts
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+        run: bash ./scripts/restore-subgraph-artifacts.sh --manifest-path ./gateway-release.json
+
+      - name: Compose gateway configuration
+        run: bash ./scripts/compose-gateway.sh --input-directory ./artifacts/subgraphs --output-file ./src/Trafera.GraphQL.Gateway/gateway.fgp
+
+      - name: Upload gateway configuration artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: gateway-fgp
+          path: ./src/Trafera.GraphQL.Gateway/gateway.fgp
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: Now-Micro/actions/github/release@v1
+        with:
+          artifact-name: Trafera.GraphQL.Gateway
+          artifacts-path: ./src/Trafera.GraphQL.Gateway/gateway.fgp
+          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
+          library-name: Trafera.GraphQL.Gateway
+          package-type: nuget
+          release-version: ${{ github.event.inputs.release_version }}
+          skip-download: true
