@@ -84,17 +84,15 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Node.js
-      uses: Now-Micro/actions/setup-node@v1
-
     - name: Install .NET SDK for Fusion compose
       uses: Now-Micro/actions/dotnet/install@v1
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Configure GitHub NuGet sources
-      uses: ./nuget/configure-sources
+      uses: Now-Micro/actions/nuget/configure-sources@v1
       with:
+        debug-mode: ${{ inputs.debug-mode }}
         names: ${{ inputs.nuget-source-names }}
         passwords: ${{ inputs.nuget-source-passwords != '' && inputs.nuget-source-passwords || inputs.gh-token }}
         urls: ${{ inputs.nuget-source-urls }}
