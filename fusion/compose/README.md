@@ -1,6 +1,6 @@
 # Compose Fusion Gateway
 
-Restores Fusion subgraph artifacts from GitHub releases (optional) and composes them into a gateway `.fgp` file.
+Restores Fusion subgraph artifacts from GitHub releases and composes them into a gateway `.fgp` file.
 
 ## Inputs
 
@@ -17,6 +17,8 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 - `verify-fusion-command` (optional, default `true`): Runs `dotnet tool run fusion -- --help` before compose.
 - `working-directory` (optional, default empty): Base directory for resolving relative paths. Defaults to current working directory.
 
+At least one manifest input is required: provide either `manifest-path` or `subgraph-artifacts-json`.
+
 ## Outputs
 
 - `input-directory`: Resolved absolute directory used for composition.
@@ -25,7 +27,7 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 
 ## Manifest Shape
 
-Provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shape:
+Manifest input is required. Provide it using either `manifest-path` or `subgraph-artifacts-json` with this JSON shape:
 
 ```json
 {

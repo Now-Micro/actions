@@ -226,7 +226,8 @@ function restoreSubgraphArtifacts(options) {
       exitWith(`Expected downloaded asset '${downloadedAssetPath}' was not found.`);
     }
 
-    const stableAssetPath = path.join(stagingDirectory, `${subgraphName}.fsp`);
+     const subgraphAssetExtension = path.extname(subgraphAssetName);
+     const stableAssetPath = path.join(stagingDirectory, `${subgraphName}${subgraphAssetExtension}`);
     if (stableAssetPath !== downloadedAssetPath) {
       fs.copyFileSync(downloadedAssetPath, stableAssetPath);
     }
