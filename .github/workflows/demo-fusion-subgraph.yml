@@ -12,7 +12,7 @@ on:
                 description: "Version string embedded in the artifact metadata and used to name the uploaded artifact."
                 required: false
                 type: string
-                default: "1.0.0-demo"
+                default: "0.0.1"
             ci-debug-mode:
                 description: "Enable verbose debug logging for the generate step."
                 required: false
@@ -27,12 +27,12 @@ on:
                 description: "When non-empty, create a GitHub release with this tag and attach the artifact files. Leave empty to skip the release step."
                 required: false
                 type: string
-                default: ""
+                default: "account-subgraph"
             project-path:
                 description: "Path to the .csproj file used to export the GraphQL schema."
                 required: false
                 type: string
-                default: "src/demo/fusion/Reviews/Demo.Reviews.csproj"
+                default: ""
             publish-dir:
                 description: "Directory where the .fsp artifact and metadata JSON are written."
                 required: false
@@ -42,7 +42,7 @@ on:
                 description: "Directory used for intermediate schema files."
                 required: false
                 type: string
-                default: "src/demo/fusion/Reviews"
+                default: "src/demo/fusion/Accounts/src"
             source-repo-url:
                 description: "Source repository URL embedded in the artifact metadata."
                 required: false
@@ -52,12 +52,12 @@ on:
                 description: "HTTP URL registered in the subgraph config."
                 required: false
                 type: string
-                default: "http://localhost:59092/graphql"
+                default: "http://localhost:4000"
             subgraph-name:
                 description: "Name of the Fusion subgraph."
                 required: false
                 type: string
-                default: "Reviews"
+                default: "Account"
             working-directory:
                 description: "Working directory for dotnet commands."
                 required: false
