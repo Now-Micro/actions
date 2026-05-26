@@ -25,6 +25,12 @@ runs:
         github-token: ${{ inputs.github-token }}
         dotnet-version: "8.0.x"
 
+    - name: Demo - fusion compose
+      uses: ./.github/actions/demo-fusion-compose
+      with:
+        github-token: ${{ inputs.github-token }}
+        dotnet-version: "8.0.x"
+
     - name: Demo - github release
       uses: ./.github/actions/demo-github-release
       with:
