@@ -29,7 +29,7 @@ inputs:
   project-path:
     description: "Path to the .csproj file used to export the GraphQL schema."
     required: false
-    default: "src/demo/fusion/Reviews/Demo.Reviews.csproj"
+    default: ""
   publish-dir:
     description: "Directory where the .fsp artifact and metadata JSON are written."
     required: false
