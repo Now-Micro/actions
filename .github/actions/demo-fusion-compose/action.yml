@@ -30,7 +30,7 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
-    - name: Configure Github NuGet sources
+    - name: Configure GitHub NuGet sources
       uses: ./nuget/configure-sources
       with:
         names: "Now-Micro, Trafera-LLC"
@@ -85,19 +85,19 @@ runs:
           exit 1
         fi
 
-        gateway_sha256="$(sha256sum "$gateway_file" | awk '{print $1}')"
+        gateway_sha256="$(sha256sum "$gateway_file" | awk '{print toupper($1)}')"
         echo "gateway.fgp sha256=$gateway_sha256"
         echo "gateway_sha256=$gateway_sha256" >> "$GITHUB_OUTPUT"
         echo "gateway_sha256=$gateway_sha256" >> "$SUMMARY_FILE"
         echo "gateway_file=$gateway_file" >> "$SUMMARY_FILE"
 
-    - name: Assert SHA-256 hash shape
+    - name: Assert SHA-256 hash equals expected value
       uses: ./src/testing/assert
       with:
-        expected: "^[a-f0-9]{64}$"
+        expected: D98051397E0E72FAF2C98267BAD4005E12BB4BF87271C74C5BB8821AA89BFE65
         actual: ${{ steps.hash.outputs.gateway_sha256 || ' ' }}
-        mode: regex
-        test-name: gateway sha256 is 64 hex chars
+        mode: exact
+        test-name: gateway sha256 equals expected
         summary-file: ${{ env.SUMMARY_FILE }}
 
     - name: Publish summary
