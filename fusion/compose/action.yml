@@ -33,10 +33,6 @@ inputs:
   output-file:
     description: "Destination path for the composed gateway .fgp file."
     required: true
-  restore-subgraph-artifacts:
-    description: "When true, download subgraph release assets declared in the manifest before composition."
-    required: false
-    default: "true"
   run-dotnet-tool-restore:
     description: "When true, run dotnet tool restore before composing."
     required: false
@@ -84,7 +80,6 @@ runs:
         INPUT_SUBGRAPH_ARTIFACTS_JSON: ${{ inputs.subgraph-artifacts-json }}
         INPUT_OUTPUT_DIRECTORY: ${{ inputs.output-directory }}
         INPUT_OUTPUT_FILE: ${{ inputs.output-file }}
-        INPUT_RESTORE_SUBGRAPH_ARTIFACTS: ${{ inputs.restore-subgraph-artifacts }}
         INPUT_RUN_DOTNET_TOOL_RESTORE: ${{ inputs.run-dotnet-tool-restore }}
         INPUT_SUBGRAPH_FILE_EXTENSION: ${{ inputs.subgraph-file-extension }}
         INPUT_VERIFY_FUSION_COMMAND: ${{ inputs.verify-fusion-command }}

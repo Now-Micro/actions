@@ -156,7 +156,6 @@ function createValidEnvironment(root, overrides = {}) {
     INPUT_INPUT_DIRECTORY: 'artifacts/subgraphs',
     INPUT_OUTPUT_FILE: 'src/Trafera.GraphQL.Gateway/gateway.fgp',
     INPUT_OUTPUT_DIRECTORY: '',
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'false',
     INPUT_RUN_DOTNET_TOOL_RESTORE: 'true',
     INPUT_VERIFY_FUSION_COMMAND: 'true',
     INPUT_SUBGRAPH_FILE_EXTENSION: '.fsp',
@@ -189,7 +188,6 @@ test('success: compose only writes output and outputs metadata', () => {
 test('success: restore mode downloads assets and composes renamed .fsp files', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_INPUT_DIRECTORY: 'artifacts/subgraphs',
     INPUT_GH_TOKEN: 'ghp_test',
   });
@@ -228,7 +226,6 @@ test('success: restore mode downloads assets and composes renamed .fsp files', (
 test('success: output-directory input overrides manifest outputDirectory', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_OUTPUT_DIRECTORY: 'custom/subgraphs',
     INPUT_INPUT_DIRECTORY: 'custom/subgraphs',
   });
@@ -254,7 +251,6 @@ test('success: output-directory input overrides manifest outputDirectory', () =>
 test('success: inline subgraph artifacts JSON overrides manifest file path', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_MANIFEST_PATH: 'missing-manifest.json',
     INPUT_INPUT_DIRECTORY: 'inline/subgraphs',
     INPUT_SUBGRAPH_ARTIFACTS_JSON: JSON.stringify({
@@ -365,7 +361,6 @@ test('skips dotnet tool restore when run-dotnet-tool-restore is false', () => {
 test('fails when restore mode is enabled and manifest file is missing', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_MANIFEST_PATH: 'missing.json',
   });
 
@@ -378,7 +373,6 @@ test('fails when restore mode is enabled and manifest file is missing', () => {
 test('fails when inline subgraph artifacts JSON is invalid', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_SUBGRAPH_ARTIFACTS_JSON: '{bad json',
   });
 
@@ -390,9 +384,7 @@ test('fails when inline subgraph artifacts JSON is invalid', () => {
 
 test('fails when restore mode is enabled and manifest JSON is invalid', () => {
   const root = makeTempDir();
-  const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
-  });
+  const env = createValidEnvironment(root);
   fs.writeFileSync(path.join(root, 'gateway-release.json'), '{ malformed json');
 
   const result = runWithEnv(env);
@@ -403,9 +395,7 @@ test('fails when restore mode is enabled and manifest JSON is invalid', () => {
 
 test('fails when restore mode is enabled and gh is unavailable', () => {
   const root = makeTempDir();
-  const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
-  });
+  const env = createValidEnvironment(root);
 
   const result = runWithEnv(env, {
     spawnHook: (call) => {
@@ -422,9 +412,7 @@ test('fails when restore mode is enabled and gh is unavailable', () => {
 
 test('fails when manifest subgraph entry is missing required fields', () => {
   const root = makeTempDir();
-  const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
-  });
+  const env = createValidEnvironment(root);
 
   writeJson(path.join(root, 'gateway-release.json'), {
     outputDirectory: 'artifacts/subgraphs',
@@ -439,9 +427,7 @@ test('fails when manifest subgraph entry is missing required fields', () => {
 
 test('fails when downloaded gh asset path does not exist', () => {
   const root = makeTempDir();
-  const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
-  });
+  const env = createValidEnvironment(root);
 
   writeJson(path.join(root, 'gateway-release.json'), {
     outputDirectory: 'artifacts/subgraphs',
@@ -508,7 +494,6 @@ test('fails when manifest path input is empty', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
     INPUT_MANIFEST_PATH: '   ',
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
     INPUT_SUBGRAPH_ARTIFACTS_JSON: '',
   });
 
@@ -567,9 +552,7 @@ test('compose command failure exits 1', () => {
 
 test('restore download failure exits 1', () => {
   const root = makeTempDir();
-  const env = createValidEnvironment(root, {
-    INPUT_RESTORE_SUBGRAPH_ARTIFACTS: 'true',
-  });
+  const env = createValidEnvironment(root);
 
   writeJson(path.join(root, 'gateway-release.json'), {
     outputDirectory: 'artifacts/subgraphs',

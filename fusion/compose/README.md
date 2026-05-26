@@ -12,7 +12,6 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 - `subgraph-artifacts-json` (optional, default empty): Inline JSON manifest for restore details. When provided, this overrides `manifest-path`.
 - `output-directory` (optional, default empty): Directory used for staged downloads. If empty, `manifest.outputDirectory` is used.
 - `output-file` (required): Output path for composed gateway file.
-- `restore-subgraph-artifacts` (optional, default `true`): Enables artifact restoration from manifest.
 - `run-dotnet-tool-restore` (optional, default `true`): Runs `dotnet tool restore` before compose.
 - `subgraph-file-extension` (optional, default `.fsp`): Extension used when discovering subgraph files.
 - `verify-fusion-command` (optional, default `true`): Runs `dotnet tool run fusion -- --help` before compose.
@@ -26,7 +25,7 @@ Restores Fusion subgraph artifacts from GitHub releases (optional) and composes 
 
 ## Manifest Shape
 
-When `restore-subgraph-artifacts` is `true`, provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shape:
+Provide either `manifest-path` or `subgraph-artifacts-json` using this JSON shape:
 
 ```json
 {

@@ -88,7 +88,7 @@ function loadRestoreManifest(options) {
   }
 
   if (!manifestPath) {
-    exitWith('Input "manifest-path" or "subgraph-artifacts-json" is required when "restore-subgraph-artifacts" is true.');
+    exitWith('Input "manifest-path" or "subgraph-artifacts-json" is required.');
   }
 
   return {
@@ -261,7 +261,6 @@ function composeGateway(options) {
 
 function run() {
   const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
-  const restoreSubgraphArtifactsEnabled = parseBool(process.env.INPUT_RESTORE_SUBGRAPH_ARTIFACTS, true);
   const runDotnetToolRestore = parseBool(process.env.INPUT_RUN_DOTNET_TOOL_RESTORE, true);
   const verifyFusionCommand = parseBool(process.env.INPUT_VERIFY_FUSION_COMMAND, true);
 
@@ -315,17 +314,14 @@ function run() {
 
   const manifestPath = manifestPathInput ? resolveFrom(baseDirectory, manifestPathInput) : '';
 
-  let restoreOutputDirectory = '';
-  if (restoreSubgraphArtifactsEnabled) {
-    restoreOutputDirectory = restoreSubgraphArtifacts({
-      debugMode,
-      baseDirectory,
-      manifestPath,
-      inlineManifestJson: subgraphArtifactsJsonInput,
-      configuredOutputDirectory,
-      ghToken,
-    });
-  }
+  const restoreOutputDirectory = restoreSubgraphArtifacts({
+    debugMode,
+    baseDirectory,
+    manifestPath,
+    inlineManifestJson: subgraphArtifactsJsonInput,
+    configuredOutputDirectory,
+    ghToken,
+  });
 
   const inputDirectory = resolveFrom(
     baseDirectory,
