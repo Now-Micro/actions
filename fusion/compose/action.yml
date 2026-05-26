@@ -1,90 +1,85 @@
-name: Gateway Release
+name: "Compose Fusion Gateway"
+description: "Restores Fusion subgraph assets from GitHub releases and composes a gateway .fgp file."
 
-on:
-  workflow_dispatch:
-    inputs:
-      release_version:
-        description: "Version to release (e.g. 1.0.0)"
-        required: true
-        default: "1.0.0"
+inputs:
+  debug-mode:
+    description: "Enable verbose logging."
+    required: false
+    default: "false"
+  dotnet-tools-manifest-path:
+    description: "Path to the dotnet local tools manifest file."
+    required: false
+    default: ".config/dotnet-tools.json"
+  gh-token:
+    description: "GitHub token used by gh release download when restoring subgraph artifacts."
+    required: false
+    default: ""
+  input-directory:
+    description: "Directory to scan recursively for subgraph files used during composition."
+    required: false
+    default: "artifacts/subgraphs"
+  manifest-path:
+    description: "Path to the gateway release manifest JSON file."
+    required: true
+  output-directory:
+    description: "Directory where downloaded subgraph assets are staged. Empty means use manifest.outputDirectory."
+    required: false
+    default: ""
+  output-file:
+    description: "Destination path for the composed gateway .fgp file."
+    required: true
+  restore-subgraph-artifacts:
+    description: "When true, download subgraph release assets declared in the manifest before composition."
+    required: false
+    default: "true"
+  run-dotnet-tool-restore:
+    description: "When true, run dotnet tool restore before composing."
+    required: false
+    default: "true"
+  subgraph-file-extension:
+    description: "Subgraph file extension to include when scanning input-directory."
+    required: false
+    default: ".fsp"
+  verify-fusion-command:
+    description: "When true, verify the local Fusion tool can run by invoking help."
+    required: false
+    default: "true"
+  working-directory:
+    description: "Base directory used to resolve relative input/output paths. Defaults to the current working directory."
+    required: false
+    default: ""
 
-jobs:
-  build-and-package:
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
+outputs:
+  input-directory:
+    description: "Resolved absolute input directory used for composition."
+    value: ${{ steps.compose.outputs.input-directory }}
+  output-file:
+    description: "Resolved absolute output .fgp path."
+    value: ${{ steps.compose.outputs.output-file }}
+  subgraph-count:
+    description: "Number of subgraph files composed into the gateway output."
+    value: ${{ steps.compose.outputs.subgraph-count }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
 
-      - name: Setup .NET
-        uses: Now-Micro/actions/dotnet/install@v1
-        with:
-          dotnet-version: ${{ vars.CHECKS_DOTNET_SDK_VERSION }}
-
-      - name: Configure Github NuGet sources
-        uses: Now-Micro/actions/nuget/configure-sources@v1
-        with:
-          names: "Now-Micro, Trafera-LLC"
-          passwords: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
-          urls: "https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json"
-          usernames: ${{ github.actor }}
-
-      - name: Restore local tools
-        run: dotnet tool restore
-
-      - name: Log prerequisites
-        run: |
-          set -euo pipefail
-          echo "Workspace: $(pwd)"
-          echo "dotnet path: $(command -v dotnet)"
-          dotnet --info
-          echo "gh path: $(command -v gh || true)"
-          gh --version
-          echo "jq path: $(command -v jq || true)"
-          jq --version
-          echo "Tool manifest exists?"
-          ls -la ./.config/dotnet-tools.json
-          echo "Tool manifest contents:"
-          cat ./.config/dotnet-tools.json
-          echo "Scripts directory contents:"
-          ls -la ./scripts
-          echo "Manifest exists?"
-          ls -la ./gateway-release.json
-          echo "Installed local tools:"
-          dotnet tool list --local
-
-      - name: Verify Fusion command is available
-        run: |
-          set -euo pipefail
-          dotnet tool run fusion -- --help
-
-      - name: Make scripts executable
-        run: chmod +x ./scripts/*.sh
-
-      - name: Restore subgraph artifacts
-        env:
-          GH_TOKEN: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
-        run: bash ./scripts/restore-subgraph-artifacts.sh --manifest-path ./gateway-release.json
-
-      - name: Compose gateway configuration
-        run: bash ./scripts/compose-gateway.sh --input-directory ./artifacts/subgraphs --output-file ./src/Trafera.GraphQL.Gateway/gateway.fgp
-
-      - name: Upload gateway configuration artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: gateway-fgp
-          path: ./src/Trafera.GraphQL.Gateway/gateway.fgp
-          if-no-files-found: error
-
-      - name: Create GitHub Release
-        uses: Now-Micro/actions/github/release@v1
-        with:
-          artifact-name: Trafera.GraphQL.Gateway
-          artifacts-path: ./src/Trafera.GraphQL.Gateway/gateway.fgp
-          github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
-          library-name: Trafera.GraphQL.Gateway
-          package-type: nuget
-          release-version: ${{ github.event.inputs.release_version }}
-          skip-download: true
+    - name: Compose Fusion gateway
+      id: compose
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/compose.js"
+      env:
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_DOTNET_TOOLS_MANIFEST_PATH: ${{ inputs.dotnet-tools-manifest-path }}
+        INPUT_GH_TOKEN: ${{ inputs.gh-token }}
+        INPUT_INPUT_DIRECTORY: ${{ inputs.input-directory }}
+        INPUT_MANIFEST_PATH: ${{ inputs.manifest-path }}
+        INPUT_OUTPUT_DIRECTORY: ${{ inputs.output-directory }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output-file }}
+        INPUT_RESTORE_SUBGRAPH_ARTIFACTS: ${{ inputs.restore-subgraph-artifacts }}
+        INPUT_RUN_DOTNET_TOOL_RESTORE: ${{ inputs.run-dotnet-tool-restore }}
+        INPUT_SUBGRAPH_FILE_EXTENSION: ${{ inputs.subgraph-file-extension }}
+        INPUT_VERIFY_FUSION_COMMAND: ${{ inputs.verify-fusion-command }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
