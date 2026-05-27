@@ -1,5 +1,6 @@
 const fs = require('fs');
 const os = require('os');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -45,6 +46,20 @@ function sanitizeRunId(value) {
   return 'local';
 }
 
+function sanitizeRunId(value) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    return 'local';
+  }
+
+  // Restrict to safe path-segment characters to avoid traversal/path injection.
+  if (/^[A-Za-z0-9._-]+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return 'local';
+}
+
 function run() {
   debug = (process.env.INPUT_DEBUG_MODE || 'false').toLowerCase() === 'true';
 
@@ -62,14 +77,20 @@ function run() {
   const subgraphHttpUrl = (process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000').trim() || 'http://localhost:4000';
   const subgraphName = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
   const workingDir = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
+  const subgraphName = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
+  const workingDir = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
 
   if (!artifactVersion) exitWith('Input "artifact-version" is required.');
+  if (!rawSchemaDir) exitWith('Input "schema-dir" is required.');
+  if (!subgraphName) exitWith('Input "subgraph-name" is required.');
   if (!rawSchemaDir) exitWith('Input "schema-dir" is required.');
   if (!subgraphName) exitWith('Input "subgraph-name" is required.');
 
   const baseDir = workingDir ? path.resolve(workingDir) : process.cwd();
   const resolvedWorkingDir = workingDir ? path.resolve(workingDir) : '';
   const schemaDir = path.resolve(baseDir, rawSchemaDir);
+  const publishRoot = runnerTemp || os.tmpdir();
+  const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const publishRoot = runnerTemp || os.tmpdir();
   const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const execOpts = { stdio: 'inherit', ...(resolvedWorkingDir ? { cwd: resolvedWorkingDir } : {}) };
@@ -86,6 +107,7 @@ function run() {
   dlog(`metadata-path:      ${metadataPath}`);
   dlog(`project-path:       ${projectPath}`);
   dlog(`publish-root:       ${publishRoot}`);
+  dlog(`publish-root:       ${publishRoot}`);
   dlog(`publish-dir:        ${publishDir}`);
   dlog(`schema-dir:         ${schemaDir}`);
   dlog(`schema-file-name:   ${schemaFileName}`);
@@ -94,6 +116,8 @@ function run() {
   dlog(`source-repo-url:    ${sourceRepoUrl}`);
   dlog(`subgraph-http-url:  ${subgraphHttpUrl}`);
   dlog(`subgraph-name:      ${subgraphName}`);
+  dlog(`raw-run-id:         ${rawRunId || '(empty)'}`);
+  dlog(`sanitized-run-id:   ${runId}`);
   dlog(`raw-run-id:         ${rawRunId || '(empty)'}`);
   dlog(`sanitized-run-id:   ${runId}`);
   dlog(`working-directory:  ${resolvedWorkingDir || '(default)'}`);
@@ -172,6 +196,7 @@ function run() {
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `artifact-path=${artifactPath}\n`);
     fs.appendFileSync(githubOutput, `metadata-path=${metadataPath}\n`);
+    fs.appendFileSync(githubOutput, `publish-dir=${publishDir}\n`);
     fs.appendFileSync(githubOutput, `publish-dir=${publishDir}\n`);
     dlog('Outputs written to GITHUB_OUTPUT');
   }

@@ -49,9 +49,6 @@ outputs:
   metadata-path:
     description: "Absolute path to the generated metadata JSON file."
     value: ${{ steps.generate.outputs.metadata-path }}
-  publish-dir:
-    description: "Absolute path to the runner-safe directory containing generated artifact files."
-    value: ${{ steps.generate.outputs.publish-dir }}
 
 runs:
   using: "composite"

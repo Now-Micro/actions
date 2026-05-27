@@ -68,7 +68,9 @@ runs:
 
     - name: Generate Fusion subgraph artifact
       id: generate
-      uses: Now-Micro/actions/fusion/generate-subgraph-artifact@v1
+      uses: ./fusion/generate-subgraph-artifact
+      # TODO: Uncomment this when new version up
+      # uses: Now-Micro/actions/fusion/generate-subgraph-artifact@v1
       with:
         artifact-version: ${{ inputs['artifact-version'] }}
         debug-mode: ${{ inputs['ci-debug-mode'] }}
