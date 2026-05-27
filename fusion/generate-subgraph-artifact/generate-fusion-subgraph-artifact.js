@@ -77,20 +77,14 @@ function run() {
   const subgraphHttpUrl = (process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000').trim() || 'http://localhost:4000';
   const subgraphName = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
   const workingDir = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
-  const subgraphName = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
-  const workingDir = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
 
   if (!artifactVersion) exitWith('Input "artifact-version" is required.');
-  if (!rawSchemaDir) exitWith('Input "schema-dir" is required.');
-  if (!subgraphName) exitWith('Input "subgraph-name" is required.');
   if (!rawSchemaDir) exitWith('Input "schema-dir" is required.');
   if (!subgraphName) exitWith('Input "subgraph-name" is required.');
 
   const baseDir = workingDir ? path.resolve(workingDir) : process.cwd();
   const resolvedWorkingDir = workingDir ? path.resolve(workingDir) : '';
   const schemaDir = path.resolve(baseDir, rawSchemaDir);
-  const publishRoot = runnerTemp || os.tmpdir();
-  const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const publishRoot = runnerTemp || os.tmpdir();
   const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const execOpts = { stdio: 'inherit', ...(resolvedWorkingDir ? { cwd: resolvedWorkingDir } : {}) };
