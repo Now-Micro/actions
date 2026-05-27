@@ -185,7 +185,7 @@ test('success: compose only writes output and outputs metadata', () => {
   assert.strictEqual(composeCall.args.filter(a => a === '-s').length, 2);
 });
 
-test('success: restore mode downloads assets and composes renamed .fsp files', () => {
+test('success: restore mode downloads assets and composes manifest-named .fsp files', () => {
   const root = makeTempDir();
   const env = createValidEnvironment(root, {
     INPUT_INPUT_DIRECTORY: 'artifacts/subgraphs',
@@ -219,8 +219,10 @@ test('success: restore mode downloads assets and composes renamed .fsp files', (
   assert.strictEqual(ghDownloadCalls.length, 2);
   assert.ok(ghDownloadCalls.every(c => c.options && c.options.env && c.options.env.GH_TOKEN === 'ghp_test'));
 
-  assert.ok(fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'accounts', 'accounts.fsp')));
-  assert.ok(fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'products', 'products.fsp')));
+  assert.ok(fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'accounts', 'accounts-release.fsp')));
+  assert.ok(fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'products', 'products-release.fsp')));
+  assert.ok(!fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'accounts', 'accounts.fsp')));
+  assert.ok(!fs.existsSync(path.join(root, 'artifacts', 'subgraphs', 'products', 'products.fsp')));
 });
 
 test('success: output-directory input overrides manifest outputDirectory', () => {
@@ -273,7 +275,8 @@ test('success: inline subgraph artifacts JSON overrides manifest file path', () 
     c => c.command === 'gh' && c.args[0] === 'release' && c.args[1] === 'download'
   );
   assert.strictEqual(ghDownloadCalls.length, 1);
-  assert.ok(fs.existsSync(path.join(root, 'inline', 'subgraphs', 'catalog', 'catalog.fsp')));
+  assert.ok(fs.existsSync(path.join(root, 'inline', 'subgraphs', 'catalog', 'catalog-release.fsp')));
+  assert.ok(!fs.existsSync(path.join(root, 'inline', 'subgraphs', 'catalog', 'catalog.fsp')));
 });
 
 test('success: manifest gatewayFileName overrides output-file name', () => {

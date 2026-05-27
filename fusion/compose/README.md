@@ -49,7 +49,7 @@ Manifest input is required. Provide it using either `manifest-path` or `subgraph
 }
 ```
 
-Each downloaded `assetName` is staged under `<outputDirectory>/<name>/` and copied to `<outputDirectory>/<name>/<name>.fsp` for stable composition inputs.
+Each downloaded `assetName` is staged under `<outputDirectory>/<name>/` and composed directly using that manifest-defined file name.
 
 When `gatewayFileName` is provided, it overrides the file name segment from `output-file` while keeping the same output directory.
 
