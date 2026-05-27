@@ -359,6 +359,34 @@ test('without extensions: debug log says schema.extensions.graphql was not found
   assert.match(stdout, new RegExp(`No schema extensions file found at ${escapeRegExp(extensionsPath)}`));
 });
 
+test('custom schema-file-name is used for export and pack arguments', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_FILE_NAME: 'custom-schema.graphql' });
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.deepStrictEqual(spawnCalls[1].args.slice(4), ['schema', 'export', '--output', path.join(tmp, 'schema', 'custom-schema.graphql')]);
+  assert.deepStrictEqual(spawnCalls[3].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'custom-schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(expectedPublishDir(env), 'my-subgraph.fsp')]);
+});
+
+test('custom schema-extensions-file-name is used for pack -e when file exists', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_EXTENSIONS_FILE_NAME: 'custom.extensions.graphql' });
+  const schemaDir = env.INPUT_SCHEMA_DIR;
+
+  fs.mkdirSync(schemaDir, { recursive: true });
+  const extensionsPath = path.join(schemaDir, 'custom.extensions.graphql');
+  fs.writeFileSync(extensionsPath, 'extend type Query { hello: String }');
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const packCall = spawnCalls.find(call => call.args.includes('pack'));
+  assert.ok(packCall, 'pack command should be present');
+  assert.deepStrictEqual(packCall.args.slice(-2), ['-e', extensionsPath]);
+});
+
 // ─── custom inputs ────────────────────────────────────────────────────────────
 
 test('custom subgraph-http-url is used in config set command', () => {

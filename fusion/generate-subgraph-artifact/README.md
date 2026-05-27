@@ -9,6 +9,8 @@ Exports a Hot Chocolate schema, builds subgraph config, packs a `.fsp` artifact,
 - `debug-mode` (optional, default `false`): Enables verbose logging.
 - `project-path` (optional, default empty): Path to the `.csproj` used for `dotnet run ... schema export`. If empty, `schema-dir/schema.graphql` must already exist.
 - `schema-dir` (required): Directory used for `schema.graphql`, `subgraph-config.json`, and optional `schema.extensions.graphql`.
+- `schema-extensions-file-name` (optional, default `schema.extensions.graphql`): Schema extensions file name resolved under `schema-dir`.
+- `schema-file-name` (optional, default `schema.graphql`): Schema file name resolved under `schema-dir`.
 - `source-repo-url` (optional, default empty): Source repository URL written to metadata JSON.
 - `subgraph-http-url` (required): HTTP URL written into subgraph config and used for Fusion config.
 - `subgraph-name` (required): Subgraph name used in config and output file names.
@@ -27,7 +29,7 @@ Exports a Hot Chocolate schema, builds subgraph config, packs a `.fsp` artifact,
 3. Exports `schema.graphql` when `project-path` is provided.
 4. Writes `subgraph-config.json` with subgraph name and HTTP base address.
 5. Runs `dotnet fusion subgraph config set http`.
-6. Runs `dotnet fusion subgraph pack` and includes `-e schema.extensions.graphql` when that file exists.
+6. Runs `dotnet fusion subgraph pack` and includes `-e` when the configured schema extensions file exists.
 7. Writes `<subgraph-name>.metadata.json` with:
    - `subgraphName`
    - `artifactVersion`
