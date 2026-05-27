@@ -1,5 +1,3 @@
-// Run with coverage:
-// npx c8 -r text -r lcov node --test generate-fusion-subgraph/generate-fusion-subgraph.test.js
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -92,7 +90,8 @@ function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
 }
 
 function expectedPublishDir(env = {}) {
-  const runId = (env.GITHUB_RUN_ID || '').trim() || 'local';
+  const rawRunId = (env.GITHUB_RUN_ID || '').trim();
+  const runId = /^[A-Za-z0-9._-]+$/.test(rawRunId) ? rawRunId : 'local';
   const publishRoot = (env.RUNNER_TEMP || '').trim() || os.tmpdir();
   return path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
 }
@@ -101,6 +100,9 @@ function expectedPublishDir(env = {}) {
  * Build a minimal valid env for the action.
  */
 function baseEnv(base, overrides = {}) {
+  const defaultRunnerTemp = path.join(base, 'runner-temp');
+  const defaultRunId = path.basename(base);
+
   return {
     INPUT_PROJECT_PATH: path.join(base, 'src', 'App.csproj'),
     INPUT_SCHEMA_DIR: path.join(base, 'schema'),
@@ -111,6 +113,8 @@ function baseEnv(base, overrides = {}) {
     INPUT_SUBGRAPH_HTTP_URL: 'http://localhost:4000',
     INPUT_DEBUG_MODE: 'false',
     INPUT_WORKING_DIRECTORY: '',
+    RUNNER_TEMP: defaultRunnerTemp,
+    GITHUB_RUN_ID: defaultRunId,
     ...overrides,
   };
 }
@@ -452,6 +456,20 @@ test('uses RUNNER_TEMP when provided for output location', () => {
   const expectedArtifactPath = path.join(publishDir, 'my-subgraph.fsp');
   assert.match(outputContent, new RegExp(`artifact-path=${escapeRegExp(expectedArtifactPath)}`));
   assert.ok(fs.existsSync(publishDir), 'publish-dir under RUNNER_TEMP should be created');
+});
+
+test('invalid GITHUB_RUN_ID falls back to local publish segment', () => {
+  const tmp = makeTempDir();
+  const runnerTemp = path.join(tmp, 'runner-temp');
+  const env = baseEnv(tmp, { RUNNER_TEMP: runnerTemp, GITHUB_RUN_ID: '../escape/attempt' });
+
+  const { exitCode, outputContent } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const publishDir = expectedPublishDir(env);
+  assert.strictEqual(path.basename(publishDir), 'local');
+  assert.match(outputContent, new RegExp(`publish-dir=${escapeRegExp(publishDir)}`));
+  assert.ok(fs.existsSync(publishDir), 'fallback local publish-dir should be created for invalid run id');
 });
 
 test('exits 1 when subgraph-name is missing', () => {

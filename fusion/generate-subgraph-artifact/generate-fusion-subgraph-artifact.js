@@ -31,6 +31,20 @@ function runDotnet(args, execOpts) {
   }
 }
 
+function sanitizeRunId(value) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    return 'local';
+  }
+
+  // Restrict to safe path-segment characters to avoid traversal/path injection.
+  if (/^[A-Za-z0-9._-]+$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return 'local';
+}
+
 function run() {
   debug = (process.env.INPUT_DEBUG_MODE || 'false').toLowerCase() === 'true';
 
@@ -39,7 +53,8 @@ function run() {
   const githubOutput = process.env.GITHUB_OUTPUT || '';
   const projectPath = (process.env.INPUT_PROJECT_PATH || '').trim();
   const rawSchemaDir = (process.env.INPUT_SCHEMA_DIR || '').trim();
-  const runId = (process.env.GITHUB_RUN_ID || '').trim() || 'local';
+  const rawRunId = (process.env.GITHUB_RUN_ID || '').trim();
+  const runId = sanitizeRunId(rawRunId);
   const runnerTemp = (process.env.RUNNER_TEMP || '').trim();
   const sourceRepoUrl = (process.env.INPUT_SOURCE_REPO_URL || '').trim();
   const subgraphHttpUrl = (process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000').trim() || 'http://localhost:4000';
@@ -75,6 +90,8 @@ function run() {
   dlog(`source-repo-url:    ${sourceRepoUrl}`);
   dlog(`subgraph-http-url:  ${subgraphHttpUrl}`);
   dlog(`subgraph-name:      ${subgraphName}`);
+  dlog(`raw-run-id:         ${rawRunId || '(empty)'}`);
+  dlog(`sanitized-run-id:   ${runId}`);
   dlog(`working-directory:  ${resolvedWorkingDir || '(default)'}`);
 
   // Create required directories
