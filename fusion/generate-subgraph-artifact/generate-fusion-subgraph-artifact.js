@@ -45,6 +45,20 @@ function sanitizeRunId(value) {
   return 'local';
 }
 
+function validateFileBasename(value, inputName) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    exitWith(`Input "${inputName}" must not be empty.`);
+  }
+
+  // Prevent directory traversal and absolute path usage.
+  if (path.basename(trimmed) !== trimmed || path.isAbsolute(trimmed) || trimmed === '.' || trimmed === '..' || /[\\/]/.test(trimmed)) {
+    exitWith(`Input "${inputName}" must be a file basename without path separators.`);
+  }
+
+  return trimmed;
+}
+
 function run() {
   debug = (process.env.INPUT_DEBUG_MODE || 'false').toLowerCase() === 'true';
 
@@ -53,6 +67,8 @@ function run() {
   const githubOutput = process.env.GITHUB_OUTPUT || '';
   const projectPath = (process.env.INPUT_PROJECT_PATH || '').trim();
   const rawSchemaDir = (process.env.INPUT_SCHEMA_DIR || '').trim();
+  const schemaFileName = validateFileBasename((process.env.INPUT_SCHEMA_FILE_NAME || 'schema.graphql').trim() || 'schema.graphql', 'schema-file-name');
+  const schemaExtensionsFileName = validateFileBasename((process.env.INPUT_SCHEMA_EXTENSIONS_FILE_NAME || 'schema.extensions.graphql').trim() || 'schema.extensions.graphql', 'schema-extensions-file-name');
   const rawRunId = (process.env.GITHUB_RUN_ID || '').trim();
   const runId = sanitizeRunId(rawRunId);
   const runnerTemp = (process.env.RUNNER_TEMP || '').trim();
@@ -72,9 +88,9 @@ function run() {
   const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const execOpts = { stdio: 'inherit', ...(resolvedWorkingDir ? { cwd: resolvedWorkingDir } : {}) };
 
-  const schemaPath = path.join(schemaDir, 'schema.graphql');
   const configPath = path.join(schemaDir, 'subgraph-config.json');
-  const extensionsPath = path.join(schemaDir, 'schema.extensions.graphql');
+  const extensionsPath = path.join(schemaDir, schemaExtensionsFileName);
+  const schemaPath = path.join(schemaDir, schemaFileName);
   const artifactPath = path.join(publishDir, `${subgraphName}.fsp`);
   const metadataPath = path.join(publishDir, `${subgraphName}.metadata.json`);
 
@@ -86,6 +102,8 @@ function run() {
   dlog(`publish-root:       ${publishRoot}`);
   dlog(`publish-dir:        ${publishDir}`);
   dlog(`schema-dir:         ${schemaDir}`);
+  dlog(`schema-file-name:   ${schemaFileName}`);
+  dlog(`schema-ext-name:    ${schemaExtensionsFileName}`);
   dlog(`schema-path:        ${schemaPath}`);
   dlog(`source-repo-url:    ${sourceRepoUrl}`);
   dlog(`subgraph-http-url:  ${subgraphHttpUrl}`);
@@ -114,7 +132,7 @@ function run() {
   }
 
   if (!fs.existsSync(schemaPath)) {
-    exitWith(`Schema file not found at ${schemaPath}. Provide project-path or pre-populate schema.graphql in schema-dir.`);
+    exitWith(`Schema file not found at ${schemaPath}. Provide project-path or pre-populate ${schemaFileName} in schema-dir.`);
   }
 
   if (debug && fs.existsSync(schemaPath)) {

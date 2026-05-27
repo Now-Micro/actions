@@ -359,6 +359,34 @@ test('without extensions: debug log says schema.extensions.graphql was not found
   assert.match(stdout, new RegExp(`No schema extensions file found at ${escapeRegExp(extensionsPath)}`));
 });
 
+test('custom schema-file-name is used for export and pack arguments', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_FILE_NAME: 'custom-schema.graphql' });
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  assert.deepStrictEqual(spawnCalls[1].args.slice(4), ['schema', 'export', '--output', path.join(tmp, 'schema', 'custom-schema.graphql')]);
+  assert.deepStrictEqual(spawnCalls[3].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'custom-schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(expectedPublishDir(env), 'my-subgraph.fsp')]);
+});
+
+test('custom schema-extensions-file-name is used for pack -e when file exists', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_EXTENSIONS_FILE_NAME: 'custom.extensions.graphql' });
+  const schemaDir = env.INPUT_SCHEMA_DIR;
+
+  fs.mkdirSync(schemaDir, { recursive: true });
+  const extensionsPath = path.join(schemaDir, 'custom.extensions.graphql');
+  fs.writeFileSync(extensionsPath, 'extend type Query { hello: String }');
+
+  const { exitCode, spawnCalls } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const packCall = spawnCalls.find(call => call.args.includes('pack'));
+  assert.ok(packCall, 'pack command should be present');
+  assert.deepStrictEqual(packCall.args.slice(-2), ['-e', extensionsPath]);
+});
+
 // ─── custom inputs ────────────────────────────────────────────────────────────
 
 test('custom subgraph-http-url is used in config set command', () => {
@@ -470,6 +498,29 @@ test('invalid GITHUB_RUN_ID falls back to local publish segment', () => {
   assert.strictEqual(path.basename(publishDir), 'local');
   assert.match(outputContent, new RegExp(`publish-dir=${escapeRegExp(publishDir)}`));
   assert.ok(fs.existsSync(publishDir), 'fallback local publish-dir should be created for invalid run id');
+});
+
+test('exits 1 when schema-file-name includes path traversal', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_FILE_NAME: '../schema.graphql' });
+
+  const { exitCode, stderr } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /schema-file-name/i);
+  assert.match(stderr, /basename/i);
+});
+
+test('exits 1 when schema-extensions-file-name is absolute path', () => {
+  const tmp = makeTempDir();
+  const absoluteName = path.resolve(tmp, 'schema.extensions.graphql');
+  const env = baseEnv(tmp, { INPUT_SCHEMA_EXTENSIONS_FILE_NAME: absoluteName });
+
+  const { exitCode, stderr } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /schema-extensions-file-name/i);
+  assert.match(stderr, /basename/i);
 });
 
 test('exits 1 when subgraph-name is missing', () => {

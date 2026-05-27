@@ -14,11 +14,19 @@ inputs:
     required: false
     default: "false"
   project-path:
-    description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/schema.graphql must already exist (pre-populated) or the action will fail."
+    description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/<schema-file-name> must already exist (default schema.graphql) or the action will fail."
     required: false
   schema-dir:
     description: "Directory used for intermediate schema files (schema.graphql, subgraph-config.json, and optional schema.extensions.graphql)."
     required: true
+  schema-file-name:
+    description: "Schema file name inside schema-dir."
+    required: false
+    default: "schema.graphql"
+  schema-extensions-file-name:
+    description: "Schema extensions file name inside schema-dir."
+    required: false
+    default: "schema.extensions.graphql"
   source-repo-url:
     description: "URL of the source repository — embedded in metadata JSON."
     required: false
@@ -67,6 +75,8 @@ runs:
         INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
         INPUT_PROJECT_PATH: ${{ inputs.project-path }}
         INPUT_SCHEMA_DIR: ${{ inputs.schema-dir }}
+        INPUT_SCHEMA_EXTENSIONS_FILE_NAME: ${{ inputs.schema-extensions-file-name }}
+        INPUT_SCHEMA_FILE_NAME: ${{ inputs.schema-file-name }}
         INPUT_SOURCE_REPO_URL: ${{ inputs.source-repo-url }}
         INPUT_SUBGRAPH_HTTP_URL: ${{ inputs.subgraph-http-url }}
         INPUT_SUBGRAPH_NAME: ${{ inputs.subgraph-name }}
