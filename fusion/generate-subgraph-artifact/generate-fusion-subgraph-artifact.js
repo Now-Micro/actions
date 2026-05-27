@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -34,38 +35,40 @@ function run() {
   debug = (process.env.INPUT_DEBUG_MODE || 'false').toLowerCase() === 'true';
 
   const artifactVersion = (process.env.INPUT_ARTIFACT_VERSION || '').trim();
-  const commitSha       = (process.env.INPUT_COMMIT_SHA || '').trim() || (process.env.GITHUB_SHA || '').trim();
-  const githubOutput    = process.env.GITHUB_OUTPUT          || '';
-  const projectPath     = (process.env.INPUT_PROJECT_PATH || '').trim();
-  const rawPublishDir   = (process.env.INPUT_PUBLISH_DIR || '').trim();
-  const rawSchemaDir    = (process.env.INPUT_SCHEMA_DIR || '').trim();
-  const sourceRepoUrl   = (process.env.INPUT_SOURCE_REPO_URL || '').trim();
+  const commitSha = (process.env.INPUT_COMMIT_SHA || '').trim() || (process.env.GITHUB_SHA || '').trim();
+  const githubOutput = process.env.GITHUB_OUTPUT || '';
+  const projectPath = (process.env.INPUT_PROJECT_PATH || '').trim();
+  const rawSchemaDir = (process.env.INPUT_SCHEMA_DIR || '').trim();
+  const runId = (process.env.GITHUB_RUN_ID || '').trim() || 'local';
+  const runnerTemp = (process.env.RUNNER_TEMP || '').trim();
+  const sourceRepoUrl = (process.env.INPUT_SOURCE_REPO_URL || '').trim();
   const subgraphHttpUrl = (process.env.INPUT_SUBGRAPH_HTTP_URL || 'http://localhost:4000').trim() || 'http://localhost:4000';
-  const subgraphName    = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
-  const workingDir      = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
+  const subgraphName = (process.env.INPUT_SUBGRAPH_NAME || '').trim();
+  const workingDir = (process.env.INPUT_WORKING_DIRECTORY || '').trim();
 
   if (!artifactVersion) exitWith('Input "artifact-version" is required.');
-  if (!rawPublishDir)   exitWith('Input "publish-dir" is required.');
-  if (!rawSchemaDir)    exitWith('Input "schema-dir" is required.');
-  if (!subgraphName)    exitWith('Input "subgraph-name" is required.');
+  if (!rawSchemaDir) exitWith('Input "schema-dir" is required.');
+  if (!subgraphName) exitWith('Input "subgraph-name" is required.');
 
   const baseDir = workingDir ? path.resolve(workingDir) : process.cwd();
   const resolvedWorkingDir = workingDir ? path.resolve(workingDir) : '';
   const schemaDir = path.resolve(baseDir, rawSchemaDir);
-  const publishDir = path.resolve(baseDir, rawPublishDir);
+  const publishRoot = runnerTemp || os.tmpdir();
+  const publishDir = path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
   const execOpts = { stdio: 'inherit', ...(resolvedWorkingDir ? { cwd: resolvedWorkingDir } : {}) };
 
-  const schemaPath     = path.join(schemaDir, 'schema.graphql');
-  const configPath     = path.join(schemaDir, 'subgraph-config.json');
+  const schemaPath = path.join(schemaDir, 'schema.graphql');
+  const configPath = path.join(schemaDir, 'subgraph-config.json');
   const extensionsPath = path.join(schemaDir, 'schema.extensions.graphql');
-  const artifactPath   = path.join(publishDir, `${subgraphName}.fsp`);
-  const metadataPath   = path.join(publishDir, `${subgraphName}.metadata.json`);
+  const artifactPath = path.join(publishDir, `${subgraphName}.fsp`);
+  const metadataPath = path.join(publishDir, `${subgraphName}.metadata.json`);
 
   dlog(`artifact-path:      ${artifactPath}`);
   dlog(`artifact-version:   ${artifactVersion}`);
   dlog(`commit-sha:         ${commitSha}`);
   dlog(`metadata-path:      ${metadataPath}`);
   dlog(`project-path:       ${projectPath}`);
+  dlog(`publish-root:       ${publishRoot}`);
   dlog(`publish-dir:        ${publishDir}`);
   dlog(`schema-dir:         ${schemaDir}`);
   dlog(`schema-path:        ${schemaPath}`);
@@ -148,6 +151,7 @@ function run() {
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `artifact-path=${artifactPath}\n`);
     fs.appendFileSync(githubOutput, `metadata-path=${metadataPath}\n`);
+    fs.appendFileSync(githubOutput, `publish-dir=${publishDir}\n`);
     dlog('Outputs written to GITHUB_OUTPUT');
   }
 

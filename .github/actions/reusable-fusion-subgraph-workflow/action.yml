@@ -28,10 +28,6 @@ inputs:
   project-path:
     description: "Path to the .csproj file used to export the GraphQL schema. Relative to the repository root (or to working-directory when set). Leave empty only when schema.graphql has already been created under schema-dir; otherwise the action fails."
     required: false
-  publish-dir:
-    description: "Directory where the .fsp artifact and metadata JSON are written."
-    required: false
-    default: "fusion-artifacts"
   schema-dir:
     description: "Directory used for intermediate schema files."
     required: false
@@ -58,6 +54,9 @@ outputs:
   metadata-path:
     description: "Absolute path to the generated metadata JSON file."
     value: ${{ steps.generate.outputs.metadata-path }}
+  publish-dir:
+    description: "Absolute path to the runner-safe directory containing generated artifact files."
+    value: ${{ steps.generate.outputs.publish-dir }}
 
 runs:
   using: composite
@@ -74,7 +73,6 @@ runs:
         artifact-version: ${{ inputs['artifact-version'] }}
         debug-mode: ${{ inputs['ci-debug-mode'] }}
         project-path: ${{ inputs['project-path'] }}
-        publish-dir: ${{ inputs['publish-dir'] }}
         schema-dir: ${{ inputs['schema-dir'] }}
         source-repo-url: ${{ inputs['source-repo-url'] }}
         subgraph-http-url: ${{ inputs['subgraph-http-url'] }}
@@ -108,6 +106,6 @@ runs:
         release-version: ${{ inputs['artifact-version'] }}
         release-name-template: Fusion subgraph {library-name} v{release-version}
         tag-name: ${{ inputs['fusion-release-tag'] }}-${{ inputs['artifact-version'] }}
-        artifacts-path: ${{ inputs['publish-dir'] }}
+        artifacts-path: ${{ steps.generate.outputs.publish-dir }}
         packages-path: release-assets
         skip-download: true

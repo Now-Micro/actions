@@ -16,9 +16,6 @@ inputs:
   project-path:
     description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/schema.graphql must already exist (pre-populated) or the action will fail."
     required: false
-  publish-dir:
-    description: "Directory where the .fsp artifact and metadata JSON are written."
-    required: true
   schema-dir:
     description: "Directory used for intermediate schema files (schema.graphql, subgraph-config.json, and optional schema.extensions.graphql)."
     required: true
@@ -44,6 +41,9 @@ outputs:
   metadata-path:
     description: "Absolute path to the generated metadata JSON file."
     value: ${{ steps.generate.outputs.metadata-path }}
+  publish-dir:
+    description: "Absolute path to the runner-safe directory containing generated artifact files."
+    value: ${{ steps.generate.outputs.publish-dir }}
 
 runs:
   using: "composite"
@@ -62,13 +62,12 @@ runs:
       shell: bash
       run: node "$GITHUB_ACTION_PATH/generate-fusion-subgraph-artifact.js"
       env:
-        INPUT_ARTIFACT_VERSION:    ${{ inputs.artifact-version }}
-        INPUT_COMMIT_SHA:          ${{ inputs.commit-sha }}
-        INPUT_DEBUG_MODE:          ${{ inputs.debug-mode }}
-        INPUT_PROJECT_PATH:        ${{ inputs.project-path }}
-        INPUT_PUBLISH_DIR:         ${{ inputs.publish-dir }}
-        INPUT_SCHEMA_DIR:          ${{ inputs.schema-dir }}
-        INPUT_SOURCE_REPO_URL:     ${{ inputs.source-repo-url }}
-        INPUT_SUBGRAPH_HTTP_URL:   ${{ inputs.subgraph-http-url }}
-        INPUT_SUBGRAPH_NAME:       ${{ inputs.subgraph-name }}
-        INPUT_WORKING_DIRECTORY:   ${{ inputs.working-directory }}
+        INPUT_ARTIFACT_VERSION: ${{ inputs.artifact-version }}
+        INPUT_COMMIT_SHA: ${{ inputs.commit-sha }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}
+        INPUT_PROJECT_PATH: ${{ inputs.project-path }}
+        INPUT_SCHEMA_DIR: ${{ inputs.schema-dir }}
+        INPUT_SOURCE_REPO_URL: ${{ inputs.source-repo-url }}
+        INPUT_SUBGRAPH_HTTP_URL: ${{ inputs.subgraph-http-url }}
+        INPUT_SUBGRAPH_NAME: ${{ inputs.subgraph-name }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
