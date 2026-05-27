@@ -1,5 +1,3 @@
-// Run with coverage:
-// npx c8 -r text -r lcov node --test generate-fusion-subgraph/generate-fusion-subgraph.test.js
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -31,7 +29,7 @@ function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
 
   // Save and clear INPUT_* / GITHUB_OUTPUT
   const prev = {};
-  [...Object.keys(process.env).filter(k => k.startsWith('INPUT_')), 'GITHUB_OUTPUT', 'GITHUB_SHA'].forEach(k => {
+  [...Object.keys(process.env).filter(k => k.startsWith('INPUT_')), 'GITHUB_OUTPUT', 'GITHUB_SHA', 'RUNNER_TEMP', 'GITHUB_RUN_ID'].forEach(k => {
     prev[k] = process.env[k];
     delete process.env[k];
   });
@@ -81,7 +79,7 @@ function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
     process.exit = origExit;
     cp.spawnSync = origSpawn;
     delete require.cache[require.resolve(MOD_PATH)];
-    [...Object.keys(process.env).filter(k => k.startsWith('INPUT_')), 'GITHUB_OUTPUT', 'GITHUB_SHA'].forEach(k => {
+    [...Object.keys(process.env).filter(k => k.startsWith('INPUT_')), 'GITHUB_OUTPUT', 'GITHUB_SHA', 'RUNNER_TEMP', 'GITHUB_RUN_ID'].forEach(k => {
       delete process.env[k];
     });
     Object.entries(prev).forEach(([k, v]) => { if (v !== undefined) process.env[k] = v; });
@@ -91,22 +89,32 @@ function runWithEnv(env, spawnStub = () => ({ status: 0 })) {
   return { exitCode, stdout, stderr, spawnCalls, outputContent, tmpDir, thrownError };
 }
 
+function expectedPublishDir(env = {}) {
+  const rawRunId = (env.GITHUB_RUN_ID || '').trim();
+  const runId = /^[A-Za-z0-9._-]+$/.test(rawRunId) ? rawRunId : 'local';
+  const publishRoot = (env.RUNNER_TEMP || '').trim() || os.tmpdir();
+  return path.resolve(publishRoot, 'now-micro-fusion-subgraph-artifacts', runId);
+}
+
 /**
- * Build a minimal valid env for the action, with schema-dir and publish-dir
- * rooted under the given base directory.
+ * Build a minimal valid env for the action.
  */
 function baseEnv(base, overrides = {}) {
+  const defaultRunnerTemp = path.join(base, 'runner-temp');
+  const defaultRunId = path.basename(base);
+
   return {
-    INPUT_PROJECT_PATH:       path.join(base, 'src', 'App.csproj'),
-    INPUT_SCHEMA_DIR:         path.join(base, 'schema'),
-    INPUT_PUBLISH_DIR:        path.join(base, 'publish'),
-    INPUT_SUBGRAPH_NAME:      'my-subgraph',
-    INPUT_ARTIFACT_VERSION:   '1.0.0',
-    INPUT_COMMIT_SHA:         'abc1234',
-    INPUT_SOURCE_REPO_URL:    'https://github.com/org/repo',
-    INPUT_SUBGRAPH_HTTP_URL:  'http://localhost:4000',
-    INPUT_DEBUG_MODE:         'false',
-    INPUT_WORKING_DIRECTORY:  '',
+    INPUT_PROJECT_PATH: path.join(base, 'src', 'App.csproj'),
+    INPUT_SCHEMA_DIR: path.join(base, 'schema'),
+    INPUT_SUBGRAPH_NAME: 'my-subgraph',
+    INPUT_ARTIFACT_VERSION: '1.0.0',
+    INPUT_COMMIT_SHA: 'abc1234',
+    INPUT_SOURCE_REPO_URL: 'https://github.com/org/repo',
+    INPUT_SUBGRAPH_HTTP_URL: 'http://localhost:4000',
+    INPUT_DEBUG_MODE: 'false',
+    INPUT_WORKING_DIRECTORY: '',
+    RUNNER_TEMP: defaultRunnerTemp,
+    GITHUB_RUN_ID: defaultRunId,
     ...overrides,
   };
 }
@@ -115,7 +123,8 @@ function baseEnv(base, overrides = {}) {
 
 test('success: runs expected dotnet commands in order', () => {
   const tmp = makeTempDir();
-  const { exitCode, spawnCalls } = runWithEnv(baseEnv(tmp));
+  const env = baseEnv(tmp);
+  const { exitCode, spawnCalls } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
 
@@ -125,19 +134,22 @@ test('success: runs expected dotnet commands in order', () => {
   assert.deepStrictEqual(spawnCalls[1].args.slice(0, 4), ['run', '--project', path.join(tmp, 'src', 'App.csproj'), '--']);
   assert.deepStrictEqual(spawnCalls[1].args.slice(4), ['schema', 'export', '--output', path.join(tmp, 'schema', 'schema.graphql')]);
   assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'config', 'set', 'http', '--url', 'http://localhost:4000', '-w', path.join(tmp, 'schema')]);
-  assert.deepStrictEqual(spawnCalls[3].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(tmp, 'publish', 'my-subgraph.fsp')]);
+  assert.deepStrictEqual(spawnCalls[3].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(expectedPublishDir(env), 'my-subgraph.fsp')]);
   // No -e flag when no extensions file
   assert.ok(!spawnCalls[3].args.includes('-e'));
 });
 
-test('success: creates schema-dir and publish-dir', () => {
+test('success: creates schema-dir and runner-safe publish-dir', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp);
-  const { exitCode } = runWithEnv(env);
+  const { exitCode, outputContent } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
   assert.ok(fs.existsSync(env.INPUT_SCHEMA_DIR), 'schema-dir should be created');
-  assert.ok(fs.existsSync(env.INPUT_PUBLISH_DIR), 'publish-dir should be created');
+  const artifactPathMatch = outputContent.match(/artifact-path=(.*)/);
+  assert.ok(artifactPathMatch, 'artifact-path output should be present');
+  const actualPublishDir = path.dirname(artifactPathMatch[1].trim());
+  assert.ok(fs.existsSync(actualPublishDir), 'runner-safe publish-dir should be created');
 });
 
 test('success: writes subgraph-config.json with correct content', () => {
@@ -165,7 +177,7 @@ test('success: no project-path works when schema.graphql is already present', ()
   assert.strictEqual(spawnCalls.length, 3);
   assert.deepStrictEqual(spawnCalls[0].args, ['tool', 'restore']);
   assert.deepStrictEqual(spawnCalls[1].args, ['fusion', 'subgraph', 'config', 'set', 'http', '--url', 'http://localhost:4000', '-w', path.join(tmp, 'schema')]);
-  assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(tmp, 'publish', 'my-subgraph.fsp')]);
+  assert.deepStrictEqual(spawnCalls[2].args, ['fusion', 'subgraph', 'pack', '-s', path.join(tmp, 'schema', 'schema.graphql'), '-c', path.join(tmp, 'schema', 'subgraph-config.json'), '-p', path.join(expectedPublishDir(env), 'my-subgraph.fsp')]);
 });
 
 test('success: trims whitespace around project-path and directory inputs', () => {
@@ -173,7 +185,6 @@ test('success: trims whitespace around project-path and directory inputs', () =>
   const env = baseEnv(tmp, {
     INPUT_PROJECT_PATH: '   ',
     INPUT_SCHEMA_DIR: '  schema  ',
-    INPUT_PUBLISH_DIR: '  publish  ',
     INPUT_WORKING_DIRECTORY: tmp,
   });
 
@@ -185,8 +196,9 @@ test('success: trims whitespace around project-path and directory inputs', () =>
 
   assert.strictEqual(exitCode, 0);
   assert.strictEqual(spawnCalls.length, 3);
-  assert.strictEqual(fs.existsSync(path.join(tmp, 'publish')), true);
-  assert.strictEqual(fs.existsSync(path.join(tmp, 'publish', 'my-subgraph.metadata.json')), true);
+  const publishDir = expectedPublishDir(env);
+  assert.strictEqual(fs.existsSync(publishDir), true);
+  assert.strictEqual(fs.existsSync(path.join(publishDir, 'my-subgraph.metadata.json')), true);
   assert.ok(spawnCalls.every(call => call.opts.cwd === tmp), 'working-directory should still be respected');
 });
 
@@ -243,13 +255,13 @@ test('success: writes metadata JSON with correct fields', () => {
   const { exitCode } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  const metadataPath = path.join(env.INPUT_PUBLISH_DIR, 'my-subgraph.metadata.json');
+  const metadataPath = path.join(expectedPublishDir(env), 'my-subgraph.metadata.json');
   assert.ok(fs.existsSync(metadataPath), 'metadata JSON should be written');
   const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-  assert.strictEqual(meta.subgraphName,    'my-subgraph');
+  assert.strictEqual(meta.subgraphName, 'my-subgraph');
   assert.strictEqual(meta.artifactVersion, '1.0.0');
-  assert.strictEqual(meta.commitSha,       'deadbeef');
-  assert.strictEqual(meta.sourceRepoUrl,   'https://example.com/repo');
+  assert.strictEqual(meta.commitSha, 'deadbeef');
+  assert.strictEqual(meta.sourceRepoUrl, 'https://example.com/repo');
   assert.ok(meta.generationDateUtc, 'generationDateUtc should be present');
   // ISO 8601 format
   assert.match(meta.generationDateUtc, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
@@ -284,7 +296,7 @@ test('success: metadata commit-sha falls back to GITHUB_SHA when INPUT_COMMIT_SH
   const { exitCode } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  const metadataPath = path.join(env.INPUT_PUBLISH_DIR, 'my-subgraph.metadata.json');
+  const metadataPath = path.join(expectedPublishDir(env), 'my-subgraph.metadata.json');
   const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
   assert.strictEqual(meta.commitSha, 'sha-from-env');
 });
@@ -383,21 +395,22 @@ test('empty working-directory omits cwd from spawnSync options', () => {
   assert.ok(spawnCalls.every(call => !call.opts.cwd), 'no cwd should be set when working-directory is empty');
 });
 
-test('relative schema-dir and publish-dir resolve to absolute output paths', () => {
+test('relative schema-dir resolves and outputs use runner-safe absolute paths', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp, {
     INPUT_SCHEMA_DIR: 'schema',
-    INPUT_PUBLISH_DIR: 'publish',
     INPUT_WORKING_DIRECTORY: tmp,
   });
 
   const { exitCode, outputContent } = runWithEnv(env);
 
   assert.strictEqual(exitCode, 0);
-  const expectedArtifactPath = path.join(tmp, 'publish', 'my-subgraph.fsp');
-  const expectedMetadataPath = path.join(tmp, 'publish', 'my-subgraph.metadata.json');
+  const publishDir = expectedPublishDir(env);
+  const expectedArtifactPath = path.join(publishDir, 'my-subgraph.fsp');
+  const expectedMetadataPath = path.join(publishDir, 'my-subgraph.metadata.json');
   assert.match(outputContent, new RegExp(`artifact-path=${escapeRegExp(expectedArtifactPath)}`));
   assert.match(outputContent, new RegExp(`metadata-path=${escapeRegExp(expectedMetadataPath)}`));
+  assert.match(outputContent, new RegExp(`publish-dir=${escapeRegExp(publishDir)}`));
   assert.ok(path.isAbsolute(expectedArtifactPath));
   assert.ok(path.isAbsolute(expectedMetadataPath));
 });
@@ -431,13 +444,32 @@ test('exits 1 when schema-dir is missing', () => {
   assert.match(stderr, /schema-dir/i);
 });
 
-test('exits 1 when publish-dir is missing', () => {
+test('uses RUNNER_TEMP when provided for output location', () => {
   const tmp = makeTempDir();
-  const env = baseEnv(tmp);
-  delete env.INPUT_PUBLISH_DIR;
-  const { exitCode, stderr } = runWithEnv(env);
-  assert.strictEqual(exitCode, 1);
-  assert.match(stderr, /publish-dir/i);
+  const runnerTemp = path.join(tmp, 'runner-temp');
+  const env = baseEnv(tmp, { RUNNER_TEMP: runnerTemp, GITHUB_RUN_ID: '12345' });
+
+  const { exitCode, outputContent } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const publishDir = expectedPublishDir(env);
+  const expectedArtifactPath = path.join(publishDir, 'my-subgraph.fsp');
+  assert.match(outputContent, new RegExp(`artifact-path=${escapeRegExp(expectedArtifactPath)}`));
+  assert.ok(fs.existsSync(publishDir), 'publish-dir under RUNNER_TEMP should be created');
+});
+
+test('invalid GITHUB_RUN_ID falls back to local publish segment', () => {
+  const tmp = makeTempDir();
+  const runnerTemp = path.join(tmp, 'runner-temp');
+  const env = baseEnv(tmp, { RUNNER_TEMP: runnerTemp, GITHUB_RUN_ID: '../escape/attempt' });
+
+  const { exitCode, outputContent } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 0);
+  const publishDir = expectedPublishDir(env);
+  assert.strictEqual(path.basename(publishDir), 'local');
+  assert.match(outputContent, new RegExp(`publish-dir=${escapeRegExp(publishDir)}`));
+  assert.ok(fs.existsSync(publishDir), 'fallback local publish-dir should be created for invalid run id');
 });
 
 test('exits 1 when subgraph-name is missing', () => {

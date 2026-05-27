@@ -34,11 +34,6 @@ on:
                 description: "Path to the .csproj file used to export the GraphQL schema. Relative to the repository root (or to working-directory when set). When omitted or empty, the workflow expects a pre-existing schema.graphql in schema-dir; if that file is missing, the job fails."
                 required: false
                 type: string
-            publish-dir:
-                description: "Directory where the .fsp artifact and metadata JSON are written."
-                required: false
-                type: string
-                default: "fusion-artifacts"
             schema-dir:
                 description: "Directory used for intermediate schema files."
                 required: false
@@ -92,7 +87,6 @@ jobs:
                   fusion-release-tag: ${{ inputs['fusion-release-tag'] }}
                   github-token: ${{ secrets['github-token'] }}
                   project-path: ${{ inputs['project-path'] }}
-                  publish-dir: ${{ inputs['publish-dir'] }}
                   schema-dir: ${{ inputs['schema-dir'] }}
                   source-repo-url: ${{ inputs['source-repo-url'] }}
                   subgraph-http-url: ${{ inputs['subgraph-http-url'] }}
