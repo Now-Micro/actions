@@ -25,25 +25,15 @@ runs:
         echo "SUMMARY_FILE=$GITHUB_WORKSPACE/demo-fusion-compose-summary.txt" >> "$GITHUB_ENV"
         : > "$GITHUB_WORKSPACE/demo-fusion-compose-summary.txt"
 
-    - name: Install .NET SDK for Fusion compose
-      uses: ./dotnet/install
-      with:
-        dotnet-version: ${{ inputs.dotnet-version }}
-
-    - name: Configure GitHub NuGet sources
-      uses: ./nuget/configure-sources
-      with:
-        names: "Now-Micro, Trafera-LLC"
-        passwords: ${{ inputs.github-token }}
-        urls: "https://nuget.pkg.github.com/Now-Micro/index.json, https://nuget.pkg.github.com/trafera-LLC/index.json"
-        usernames: ${{ github.actor }}
-
     - name: Run fusion/compose with inline subgraph JSON
       id: compose
       uses: ./fusion/compose
       with:
         debug-mode: "true"
+        dotnet-version: ${{ inputs.dotnet-version }}
         gh-token: ${{ inputs.github-token }}
+        nuget-source-passwords: ${{ inputs.github-token }}
+        nuget-source-usernames: ${{ github.actor }}
         output-file: artifacts/gateway/gateway-placeholder.fgp
         subgraph-artifacts-json: |
           {
@@ -99,7 +89,7 @@ runs:
         mode: regex
         test-name: gateway sha256 is 64 hex chars
         summary-file: ${{ env.SUMMARY_FILE }}
-        
+
     - name: Publish summary
       if: always()
       shell: bash
