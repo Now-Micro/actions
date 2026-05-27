@@ -500,6 +500,29 @@ test('invalid GITHUB_RUN_ID falls back to local publish segment', () => {
   assert.ok(fs.existsSync(publishDir), 'fallback local publish-dir should be created for invalid run id');
 });
 
+test('exits 1 when schema-file-name includes path traversal', () => {
+  const tmp = makeTempDir();
+  const env = baseEnv(tmp, { INPUT_SCHEMA_FILE_NAME: '../schema.graphql' });
+
+  const { exitCode, stderr } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /schema-file-name/i);
+  assert.match(stderr, /basename/i);
+});
+
+test('exits 1 when schema-extensions-file-name is absolute path', () => {
+  const tmp = makeTempDir();
+  const absoluteName = path.resolve(tmp, 'schema.extensions.graphql');
+  const env = baseEnv(tmp, { INPUT_SCHEMA_EXTENSIONS_FILE_NAME: absoluteName });
+
+  const { exitCode, stderr } = runWithEnv(env);
+
+  assert.strictEqual(exitCode, 1);
+  assert.match(stderr, /schema-extensions-file-name/i);
+  assert.match(stderr, /basename/i);
+});
+
 test('exits 1 when subgraph-name is missing', () => {
   const tmp = makeTempDir();
   const env = baseEnv(tmp);

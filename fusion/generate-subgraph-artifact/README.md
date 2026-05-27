@@ -7,7 +7,7 @@ Exports a Hot Chocolate schema, builds subgraph config, packs a `.fsp` artifact,
 - `artifact-version` (required): Version string written to metadata JSON.
 - `commit-sha` (optional, default empty): Commit SHA written to metadata JSON. Falls back to `GITHUB_SHA` when empty.
 - `debug-mode` (optional, default `false`): Enables verbose logging.
-- `project-path` (optional, default empty): Path to the `.csproj` used for `dotnet run ... schema export`. If empty, `schema-dir/schema.graphql` must already exist.
+- `project-path` (optional, default empty): Path to the `.csproj` used for `dotnet run ... schema export`. If empty, `schema-dir/<schema-file-name>` must already exist (default `schema.graphql`).
 - `schema-dir` (required): Directory used for `schema.graphql`, `subgraph-config.json`, and optional `schema.extensions.graphql`.
 - `schema-extensions-file-name` (optional, default `schema.extensions.graphql`): Schema extensions file name resolved under `schema-dir`.
 - `schema-file-name` (optional, default `schema.graphql`): Schema file name resolved under `schema-dir`.
@@ -26,7 +26,7 @@ Exports a Hot Chocolate schema, builds subgraph config, packs a `.fsp` artifact,
 
 1. Ensures the local `.config/dotnet-tools.json` includes `hotchocolate.fusion.commandline`.
 2. Runs `dotnet tool restore`.
-3. Exports `schema.graphql` when `project-path` is provided.
+3. Exports the configured schema file name (`schema-file-name`, default `schema.graphql`) when `project-path` is provided.
 4. Writes `subgraph-config.json` with subgraph name and HTTP base address.
 5. Runs `dotnet fusion subgraph config set http`.
 6. Runs `dotnet fusion subgraph pack` and includes `-e` when the configured schema extensions file exists.
@@ -62,7 +62,7 @@ Exports a Hot Chocolate schema, builds subgraph config, packs a `.fsp` artifact,
     subgraph-http-url: https://reviews.example.com/graphql
 ```
 
-When `project-path` is omitted, make sure `schema-dir/schema.graphql` already exists before this action runs.
+When `project-path` is omitted, make sure `schema-dir/<schema-file-name>` already exists before this action runs (default `schema.graphql`).
 
 Artifacts are written to a runner-safe temp directory:
 

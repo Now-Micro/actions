@@ -1,6 +1,5 @@
 const fs = require('fs');
 const os = require('os');
-const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -46,18 +45,18 @@ function sanitizeRunId(value) {
   return 'local';
 }
 
-function sanitizeRunId(value) {
+function validateFileBasename(value, inputName) {
   const trimmed = (value || '').trim();
   if (!trimmed) {
-    return 'local';
+    exitWith(`Input "${inputName}" must not be empty.`);
   }
 
-  // Restrict to safe path-segment characters to avoid traversal/path injection.
-  if (/^[A-Za-z0-9._-]+$/.test(trimmed)) {
-    return trimmed;
+  // Prevent directory traversal and absolute path usage.
+  if (path.basename(trimmed) !== trimmed || path.isAbsolute(trimmed) || trimmed === '.' || trimmed === '..' || /[\\/]/.test(trimmed)) {
+    exitWith(`Input "${inputName}" must be a file basename without path separators.`);
   }
 
-  return 'local';
+  return trimmed;
 }
 
 function run() {
@@ -68,8 +67,8 @@ function run() {
   const githubOutput = process.env.GITHUB_OUTPUT || '';
   const projectPath = (process.env.INPUT_PROJECT_PATH || '').trim();
   const rawSchemaDir = (process.env.INPUT_SCHEMA_DIR || '').trim();
-  const schemaFileName = (process.env.INPUT_SCHEMA_FILE_NAME || 'schema.graphql').trim();
-  const schemaExtensionsFileName = (process.env.INPUT_SCHEMA_EXTENSIONS_FILE_NAME || 'schema.extensions.graphql').trim();
+  const schemaFileName = validateFileBasename((process.env.INPUT_SCHEMA_FILE_NAME || 'schema.graphql').trim() || 'schema.graphql', 'schema-file-name');
+  const schemaExtensionsFileName = validateFileBasename((process.env.INPUT_SCHEMA_EXTENSIONS_FILE_NAME || 'schema.extensions.graphql').trim() || 'schema.extensions.graphql', 'schema-extensions-file-name');
   const rawRunId = (process.env.GITHUB_RUN_ID || '').trim();
   const runId = sanitizeRunId(rawRunId);
   const runnerTemp = (process.env.RUNNER_TEMP || '').trim();
@@ -101,7 +100,6 @@ function run() {
   dlog(`metadata-path:      ${metadataPath}`);
   dlog(`project-path:       ${projectPath}`);
   dlog(`publish-root:       ${publishRoot}`);
-  dlog(`publish-root:       ${publishRoot}`);
   dlog(`publish-dir:        ${publishDir}`);
   dlog(`schema-dir:         ${schemaDir}`);
   dlog(`schema-file-name:   ${schemaFileName}`);
@@ -110,8 +108,6 @@ function run() {
   dlog(`source-repo-url:    ${sourceRepoUrl}`);
   dlog(`subgraph-http-url:  ${subgraphHttpUrl}`);
   dlog(`subgraph-name:      ${subgraphName}`);
-  dlog(`raw-run-id:         ${rawRunId || '(empty)'}`);
-  dlog(`sanitized-run-id:   ${runId}`);
   dlog(`raw-run-id:         ${rawRunId || '(empty)'}`);
   dlog(`sanitized-run-id:   ${runId}`);
   dlog(`working-directory:  ${resolvedWorkingDir || '(default)'}`);
@@ -190,7 +186,6 @@ function run() {
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `artifact-path=${artifactPath}\n`);
     fs.appendFileSync(githubOutput, `metadata-path=${metadataPath}\n`);
-    fs.appendFileSync(githubOutput, `publish-dir=${publishDir}\n`);
     fs.appendFileSync(githubOutput, `publish-dir=${publishDir}\n`);
     dlog('Outputs written to GITHUB_OUTPUT');
   }

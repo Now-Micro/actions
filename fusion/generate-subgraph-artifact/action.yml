@@ -14,7 +14,7 @@ inputs:
     required: false
     default: "false"
   project-path:
-    description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/schema.graphql must already exist (pre-populated) or the action will fail."
+    description: "Optional path to the .csproj file used to export the GraphQL schema. If omitted or empty, schema-dir/<schema-file-name> must already exist (default schema.graphql) or the action will fail."
     required: false
   schema-dir:
     description: "Directory used for intermediate schema files (schema.graphql, subgraph-config.json, and optional schema.extensions.graphql)."
