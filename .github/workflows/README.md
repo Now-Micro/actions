@@ -88,7 +88,7 @@ steps:
 ### When to use which
 
 | Scenario | Use |
-|---|---|
+| --- | --- |
 | Fan out work across multiple parallel jobs (e.g. per-directory publish) | Reusable workflow |
 | Sequence of steps that must share the same runner/workspace | Composite action |
 | Wrap logic for use inside an existing job | Composite action |
@@ -108,15 +108,18 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 2. Resolves the directories to check for coding standards and tests.
 3. Runs coding standards checks for each resolved directory.
 4. Runs tests for each resolved directory.
-5. Uploads test result artifacts for each test matrix entry.
+5. Resolves npm test directories independently from the .NET test directories.
+6. Runs npm tests for each resolved npm directory.
+7. Uploads test result artifacts for each .NET test matrix entry.
 
 #### Reusable Checks Inputs
 
 | Name | Required | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `enable-linting` | No | `false` | Run CSharpier linting. |
 | `enable-coding-standards` | No | `false` | Run coding standards checks. |
 | `enable-testing` | No | `false` | Run tests. |
+| `enable-npm-testing` | No | `false` | Run npm tests independently from .NET tests. |
 | `ci-debug-mode` | No | `false` | Enable verbose debug logging for discovery steps. |
 | `directory` | No | `""` | Specific directory to check. When empty, the workflow detects changed directories. |
 | `head-ref` | No | `""` | Head commit SHA to compare against the base. Pass `github.event.pull_request.head.sha` from PR workflows. |
@@ -132,6 +135,14 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `test-project-regex` | No | `""` | Regex used to identify the test project file. |
 | `solution-regex` | No | `""` | Regex used to identify the solution file. |
 | `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
+| `npm-test-directory` | No | `""` | Specific npm project directory to test. When empty, changed directories are detected using `npm-testing-path-pattern`. |
+| `npm-testing-path-pattern` | No | `^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\.json)$` | Regex used to find changed npm project directories. The pattern must include a capture group for the directory. |
+| `npm-test-command` | No | `npm test` | Command to run for each npm project directory. |
+| `npm-node-version` | No | `22.x` | Node.js version to use for npm tests. |
+| `npm-install-dependencies` | No | `true` | Install dependencies before running npm tests. Uses `npm ci` when a lockfile exists. |
+| `npm-cache` | No | `false` | Enable npm dependency caching. |
+| `npm-cache-dependency-path` | No | `""` | Path to the npm lockfile used for caching. |
+| `npm-fail-fast` | No | `false` | Cancel remaining npm matrix jobs when one fails. |
 | `workflow-name` | No | `""` | Workflow filename used when looking up the last successful run for optimization. |
 | `caller-job-name` | No | `""` | The name of the job in the calling workflow that invokes this reusable workflow (e.g. `checks`). Required when `optimize-base-ref` is `true`. GitHub prefixes every job name in the API response with the caller's job name (e.g. `checks / test-setup`), so this must be provided for the last-successful-run lookup to match correctly. See [Base-ref optimization](#base-ref-optimization) below. |
 | `overridden-changed-files` | No | `""` | JSON array of file paths to treat as changed. Skips git change detection entirely. Intended for testing and demo scenarios. |
@@ -171,10 +182,13 @@ jobs:
       enable-linting: "true"
       enable-coding-standards: "true"
       enable-testing: "true"
+      enable-npm-testing: "true"
       head-ref: ${{ github.event.pull_request.head.sha }}
       optimize-base-ref: "true"
       roslyn-version: "4.9.2"
       test-project-regex: '.*Tests\.csproj\s*$'
+      npm-test-directory: "frontend"
+      npm-test-command: "npm run test:ci"
       workflow-name: checks.yml
     secrets:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
@@ -225,7 +239,7 @@ Runs automatically on `push` to any `release/**` branch, or on `workflow_call`.
 #### NuGet Publish Inputs
 
 | Name | Required | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `artifact-retention-days` | No | `1` | Number of days to retain build artifacts. |
 | `ci-debug-mode` | No | `false` | Enable debug logging for project discovery and publish steps. |
 | `ignore-casing` | No | `true` | Ignore casing when matching package names and parsing refs. |
@@ -295,7 +309,7 @@ In both cases, for each directory:
 #### Pre-Release NuGet Inputs
 
 | Name | Required | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `artifact-retention-days` | No | `1` | Number of days to retain uploaded artifacts. |
 | `base-ref` | No | default branch | Base ref/branch to compare changes against. |
 | `ci-debug-mode` | No | `false` | Enable verbose logging for project discovery and publish steps. |
@@ -377,7 +391,7 @@ Installs dependencies, publishes a scoped npm package to GitHub Packages (or ano
 #### npm Publish Inputs
 
 | Name | Required | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `access` | No | `restricted` | Package access level. Use `public` for public packages or `restricted` for private/org-scoped packages. |
 | `ci-debug-mode` | No | `false` | Enable verbose debug logging during the publish steps. |
 | `dry-run` | No | `false` | When `true`, runs `npm publish --dry-run`. No package is actually published. |
