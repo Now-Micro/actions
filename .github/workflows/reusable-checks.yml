@@ -18,6 +18,11 @@ on:
                 required: false
                 type: string
                 default: "false"
+            enable-npm-testing:
+                description: "Run npm tests. Defaults to false."
+                required: false
+                type: string
+                default: "false"
             enable-testing:
                 description: "Run tests. Defaults to false."
                 required: false
@@ -25,13 +30,15 @@ on:
                 default: "false"
             # Shared
             ci-debug-mode:
-                description: "Enable verbose debug logging for discovery steps. Defaults to
+                description:
+                    "Enable verbose debug logging for discovery steps. Defaults to
                     false."
                 required: false
                 type: string
                 default: "false"
             directory:
-                description: "Directory to run the tests in. If this is given, only this
+                description:
+                    "Directory to run the tests in. If this is given, only this
                     directory will be checked for changes and used for the
                     respective checks. If you want to check all changed
                     directories, leave this empty and use the respective pattern
@@ -42,21 +49,24 @@ on:
                 type: string
                 default: ""
             head-ref:
-                description: "The head commit SHA to compare against the base. Defaults to
+                description:
+                    "The head commit SHA to compare against the base. Defaults to
                     github.sha."
                 required: false
                 type: string
                 default: ""
             # Coding standards
             coding-standards-path-pattern:
-                description: "Regex pattern (with capture group) for identifying changed
+                description:
+                    "Regex pattern (with capture group) for identifying changed
                     directories to run coding standards against. Default is
                     '^([^/.]+)/'."
                 required: false
                 type: string
                 default: "^([^/.]+)/"
             roslyn-version:
-                description: "Optional override for the Microsoft.CodeAnalysis.CSharp package
+                description:
+                    "Optional override for the Microsoft.CodeAnalysis.CSharp package
                     version used by the analyzers. Defaults to empty (bundled
                     version is used)."
                 required: false
@@ -64,14 +74,16 @@ on:
                 default: ""
             # Testing - change detection
             optimize-base-ref:
-                description: "When true, compares against the SHA of the last successful run on
+                description:
+                    "When true, compares against the SHA of the last successful run on
                     this branch instead of the default branch.  Default is
                     false."
                 required: false
                 type: string
                 default: "false"
             testing-path-pattern:
-                description: "Regex pattern (with capture group) for identifying changed
+                description:
+                    "Regex pattern (with capture group) for identifying changed
                     directories to run tests against. Defaults to
                     '^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(s\
                     ln|slnx))$'."
@@ -79,21 +91,24 @@ on:
                 type: string
                 default: "^([^/]+)/(?:(src|tests?)/.*\\.(cs|csproj|sln|slnx)|.*\\.(sln|slnx))$"
             transformer:
-                description: "sed-style transformer for converting source directories to test
+                description:
+                    "sed-style transformer for converting source directories to test
                     directories. Defaults to
                     's#(^|/)src/(.*)$#$1tests/$2.Tests#'."
                 required: false
                 type: string
                 default: "s#(^|/)src/(.*)$#$1tests/$2.Tests#"
             use-original-if-missing:
-                description: "Fall back to the original path if the transformed test directory
+                description:
+                    "Fall back to the original path if the transformed test directory
                     does not exist. Defaults to false."
                 required: false
                 type: string
                 default: "false"
             # Testing - run options
             fail-fast:
-                description: "Cancel remaining matrix jobs when any test job fails. Defaults to
+                description:
+                    "Cancel remaining matrix jobs when any test job fails. Defaults to
                     false."
                 required: false
                 type: string
@@ -104,13 +119,15 @@ on:
                 type: string
                 default: ""
             dotnet-version:
-                description: ".NET SDK version(s) to use when running tests. Comma-separated for
+                description:
+                    ".NET SDK version(s) to use when running tests. Comma-separated for
                     multiple. Defaults to 8.0.x."
                 required: false
                 type: string
                 default: "8.0.x"
             nuget-names:
-                description: "Comma-separated names of the NuGet sources to configure when
+                description:
+                    "Comma-separated names of the NuGet sources to configure when
                     running coding standards and tests jobs. Defaults to 'Now-Micro' (the GitHub Packages
                     feed in the Now-Micro organization).  It should be noted
                     that if you specify multiple urls for the nuget-urls input,
@@ -123,7 +140,8 @@ on:
                 type: string
                 default: "Now-Micro"
             nuget-urls:
-                description: "Comma-separated list of NuGet feed URLs to configure when running
+                description:
+                    "Comma-separated list of NuGet feed URLs to configure when running
                     tests. Defaults to
                     'https://nuget.pkg.github.com/{github.repository_owner}/ind\
                     ex.json', so you only need to specify this if you need to
@@ -134,26 +152,80 @@ on:
                 type: string
                 default: ""
             test-project-regex:
-                description: "Regex to identify the test project file within the test directory.
+                description:
+                    "Regex to identify the test project file within the test directory.
                     Defaults to empty (first .csproj found is used)."
                 required: false
                 type: string
                 default: ""
             solution-regex:
-                description: "Regex to identify the solution file to use for testing.
+                description:
+                    "Regex to identify the solution file to use for testing.
                     Defaults to empty (first solution file found, such as .sln or .slnx, is used)."
                 required: false
                 type: string
                 default: ""
             prefer-solution:
-                description: "Prefer a .sln file over individual project files when running
+                description:
+                    "Prefer a .sln file over individual project files when running
                     tests. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            # npm testing
+            npm-test-directory:
+                description:
+                    "Directory to run npm tests in. When empty, changed directories
+                    are selected using npm-testing-path-pattern. Defaults to empty."
+                required: false
+                type: string
+                default: ""
+            npm-testing-path-pattern:
+                description:
+                    "Regex pattern (with capture group) for identifying changed npm
+                    project directories. Defaults to
+                    '^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\\.json)$'."
+                required: false
+                type: string
+                default: "^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\\.json)$"
+            npm-test-command:
+                description:
+                    "Command to run for each npm project directory. Defaults to
+                    'npm test'."
+                required: false
+                type: string
+                default: "npm test"
+            npm-node-version:
+                description: "Node.js version to use for npm tests. Defaults to 22.x."
+                required: false
+                type: string
+                default: "22.x"
+            npm-install-dependencies:
+                description: "Install npm dependencies before testing. Defaults to true."
+                required: false
+                type: string
+                default: "true"
+            npm-cache:
+                description: "Enable npm dependency caching. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            npm-cache-dependency-path:
+                description: "Path to the npm lockfile used for caching. Defaults to empty."
+                required: false
+                type: string
+                default: ""
+            npm-fail-fast:
+                description:
+                    "Cancel remaining npm matrix jobs when one fails. Defaults to
+                    false."
                 required: false
                 type: string
                 default: "false"
             # Other
             caller-job-name:
-                description: "The calling workflow job name prefix used by GitHub for this
+                description:
+                    "The calling workflow job name prefix used by GitHub for this
                     reusable workflow invocation. Pass the calling job's display
                     name (`jobs.<id>.name`) when it is set; otherwise pass the
                     job id/YAML key (`jobs.<id>`). You can find the exact value
@@ -166,7 +238,8 @@ on:
                 type: string
                 default: ""
             overridden-changed-files:
-                description: "JSON array of file paths to treat as changed. When set, skips git
+                description:
+                    "JSON array of file paths to treat as changed. When set, skips git
                     change detection entirely and uses these paths for pattern
                     matching. Intended for testing and demo scenarios. Defaults
                     to empty (git change detection is used)."
@@ -174,7 +247,8 @@ on:
                 type: string
                 default: ""
             workflow-name:
-                description: "Filename of this checks workflow. Used when looking up the last
+                description:
+                    "Filename of this checks workflow. Used when looking up the last
                     successful run for base-ref optimization. If omitted, the
                     workflow will not be able to optimize the base ref and will
                     always compare against the default branch. Defaults to empty
@@ -184,7 +258,8 @@ on:
                 default: ""
         secrets:
             token-github-packages:
-                description: "PAT with read:packages permission for restoring NuGet packages
+                description:
+                    "PAT with read:packages permission for restoring NuGet packages
                     from GitHub Packages."
                 required: false
 
@@ -263,7 +338,8 @@ jobs:
               env:
                   MODE: ${{ steps.mode.outputs.mode }}
                   DIRECTORY: ${{ steps.mode.outputs.directory }}
-                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_root_directories || '[]'
+                  CHANGED_DIRS_JSON:
+                      ${{ steps.unique-dirs.outputs.unique_root_directories || '[]'
                       }}
               run: |
                   case "$MODE" in
@@ -280,7 +356,7 @@ jobs:
 
     code-standards:
         runs-on: ubuntu-22.04
-        needs: [ coding-standards-setup ]
+        needs: [coding-standards-setup]
         if: ${{ inputs['enable-coding-standards'] == 'true' &&
             needs.coding-standards-setup.outputs.directories_to_check != '[]' }}
         strategy:
@@ -304,6 +380,104 @@ jobs:
                   nuget-passwords: ${{ secrets['token-github-packages'] }}
                   nuget-urls: ${{ inputs['nuget-urls'] || format('https://nuget.pkg.github.com/{0}/index.json', github.repository_owner) }}
                   nuget-usernames: ${{ github.actor }}
+
+    npm-test-setup:
+        runs-on: ubuntu-22.04
+        if: ${{ inputs['enable-npm-testing'] == 'true' }}
+        outputs:
+            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
+        steps:
+            - name: Check out code
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
+            - name: Determine npm test mode
+              id: mode
+              shell: bash
+              env:
+                  DIRECTORY: ${{ inputs['npm-test-directory'] }}
+              run: |
+                  echo "npm test directory input: '$DIRECTORY'"
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
+            - name: Get Changed Files
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
+              id: changed-files
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ github.event.repository.default_branch }}
+
+            - name: Get Unique npm Project Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
+              id: unique-dirs
+              uses: Now-Micro/actions/get-unique-root-directories@v1
+              with:
+                  paths: ${{ inputs['overridden-changed-files'] ||
+                      steps.changed-files.outputs.changed_files }}
+                  pattern: ${{ inputs['npm-testing-path-pattern'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+
+            - name: Resolve npm test directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON:
+                      ${{ steps.unique-dirs.outputs.unique_root_directories ||
+                      '[]' }}
+              run: |
+                  case "$MODE" in
+                    directory)
+                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
+
+    npm-test:
+        runs-on: ubuntu-22.04
+        needs: [npm-test-setup]
+        if: ${{ inputs['enable-npm-testing'] == 'true' &&
+            needs.npm-test-setup.outputs.directories_to_test != '[]' }}
+        strategy:
+            fail-fast: ${{ inputs['npm-fail-fast'] == 'true' }}
+            matrix:
+                directory: ${{ fromJson(needs.npm-test-setup.outputs.directories_to_test) }}
+        steps:
+            - name: Check out code
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Node.js and install dependencies
+              uses: Now-Micro/actions/setup-node@v1
+              with:
+                  cache: ${{ inputs['npm-cache'] }}
+                  cache-dependency-path: ${{ inputs['npm-cache-dependency-path'] }}
+                  install-dependencies: ${{ inputs['npm-install-dependencies'] }}
+                  install-dependencies-directory: ${{ matrix.directory }}
+                  node-version: ${{ inputs['npm-node-version'] }}
+
+            - name: Run npm tests
+              shell: bash
+              working-directory: ${{ matrix.directory }}
+              env:
+                  NPM_TEST_COMMAND: ${{ inputs['npm-test-command'] }}
+              run: $NPM_TEST_COMMAND
 
     test-setup:
         runs-on: ubuntu-22.04
@@ -344,7 +518,8 @@ jobs:
 
             - name: Find Last Successful Checks Run on Branch
               id: last-success
-              if: ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
+              if:
+                  ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
                   && inputs['caller-job-name'] != '' }}
               uses: Now-Micro/actions/get-last-workflow-success-sha@v1
               with:
@@ -352,9 +527,11 @@ jobs:
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
                   default-branch: ${{ github.event.repository.default_branch }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
-                  job-names-that-must-succeed: ${{ inputs['caller-job-name'] != '' && format('{0}
+                  job-names-that-must-succeed:
+                      ${{ inputs['caller-job-name'] != '' && format('{0}
                       / test', inputs['caller-job-name']) || 'test' }}
-                  main-job-name: ${{ inputs['caller-job-name'] != '' && format('{0} / test-setup',
+                  main-job-name:
+                      ${{ inputs['caller-job-name'] != '' && format('{0} / test-setup',
                       inputs['caller-job-name']) || 'test-setup' }}
                   request-size: 50
                   retry-attempts: 3
@@ -380,7 +557,8 @@ jobs:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ github.event.repository.default_branch }}
 
-            - name: Calculate Intersection of Changed Files (still changed since last
+            - name:
+                  Calculate Intersection of Changed Files (still changed since last
                   successful run)
               id: changed-files-to-use
               if: ${{ steps.mode.outputs.mode == 'changes' &&
@@ -414,7 +592,8 @@ jobs:
               env:
                   MODE: ${{ steps.mode.outputs.mode }}
                   DIRECTORY: ${{ steps.mode.outputs.directory }}
-                  CHANGED_DIRS_JSON: ${{ steps.unique-dirs.outputs.unique_project_directories ||
+                  CHANGED_DIRS_JSON:
+                      ${{ steps.unique-dirs.outputs.unique_project_directories ||
                       '[]' }}
               run: |
                   case "$MODE" in
@@ -431,7 +610,7 @@ jobs:
 
     test:
         runs-on: ubuntu-22.04
-        needs: [ test-setup ]
+        needs: [test-setup]
         if: ${{ inputs['enable-testing'] == 'true' &&
             needs.test-setup.outputs.directories_to_test != '[]' }}
         strategy:

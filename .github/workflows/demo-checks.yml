@@ -47,6 +47,26 @@ jobs:
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 
+    # ── npm tests (via reusable workflow) ──────────────────────────────────
+    npm-test:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-npm-testing: "true"
+            npm-test-directory: src/demo/npm
+            npm-node-version: "22.x"
+
+    # ── npm tests – change detection (via reusable workflow) ───────────────
+    # Injects a known demo file path so npm-specific change detection is
+    # exercised independently from the .NET test change-detection path.
+    npm-test-change-detection:
+        uses: ./.github/workflows/reusable-checks.yml
+        with:
+            enable-npm-testing: "true"
+            npm-testing-path-pattern: "^(src/demo/npm)/(?:(src|test|tests)/.*|package\\.json)$"
+            overridden-changed-files: '["src/demo/npm/index.test.js"]'
+            npm-node-version: "22.x"
+            ci-debug-mode: "true"
+
     # ── Coding standards – change detection (via reusable workflow) ────────
     # Injects a known demo file path so the change-detection path is exercised
     # end-to-end without depending on which files happened to change on this branch.
