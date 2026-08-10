@@ -126,8 +126,8 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `coding-standards-path-pattern` | No | `^([^/.]+)/` | Regex used to find changed directories for coding standards checks. |
 | `roslyn-version` | No | `""` | Optional override for the Roslyn analyzer package version. |
 | `optimize-base-ref` | No | `false` | Compare test changes against the last successful run on the branch when possible. |
-| `testing-path-pattern` | No | `^([^/]+)/(?:(src | tests?)/.*\.(cs | csproj | sln | slnx) | .*\.(sln | slnx))$` | Regex used to find changed directories for tests. |
-| `transformer` | No | `s#(^ | /)src/(.*)$#$1tests/$2.Tests#` | Transform source directories into test directories. |
+| `testing-path-pattern` | No | `^([^/]+)/(?:(src|tests?)/.*\.(cs|csproj|sln|slnx)|.*\.(sln|slnx))$` | Regex used to find changed directories for tests. |
+| `transformer` | No | `s#(^|/)src/(.*)$#$1tests/$2.Tests#` | Transform source directories into test directories. |
 | `use-original-if-missing` | No | `false` | Keep the original path when the transformed test directory does not exist. |
 | `fail-fast` | No | `false` | Cancel remaining test matrix jobs when one fails. |
 | `test-args` | No | `""` | Additional arguments passed to `dotnet test`. |
