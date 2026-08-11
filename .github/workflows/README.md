@@ -136,7 +136,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `solution-regex` | No | `""` | Regex used to identify the solution file. |
 | `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
 | `npm-test-directory` | No | `""` | Specific npm project directory to test. When empty, changed directories are detected using `npm-testing-path-pattern`. |
-| `npm-testing-path-pattern` | No | `^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\.json)$` | Regex used to find changed npm project directories. The pattern must include a capture group for the directory. |
+| `npm-testing-path-pattern` | No | `^([^/]+)/(?:(src|test|tests)/.*|(?:package(?:-lock)?\.json|pnpm-lock\.yaml|yarn\.lock))$` | Regex used to find changed npm project directories, including npm, pnpm, and yarn lockfile-only changes. The pattern must include a capture group for the directory. |
 | `npm-test-command` | No | `npm test` | Command to run for each npm project directory. |
 | `npm-node-version` | No | `22.x` | Node.js version to use for npm tests. |
 | `npm-package-manager` | No | `npm` | Package manager to use for npm tests and dependency installation. Supported values are `npm`, `pnpm`, and `yarn`. |

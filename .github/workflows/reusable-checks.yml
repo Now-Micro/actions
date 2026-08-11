@@ -184,10 +184,10 @@ on:
                 description:
                     "Regex pattern (with capture group) for identifying changed npm
                     project directories. Defaults to
-                    '^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\\.json)$'."
+                    '^([^/]+)/(?:(src|test|tests)/.*|(?:package(?:-lock)?\\.json|pnpm-lock\\.yaml|yarn\\.lock))$'."
                 required: false
                 type: string
-                default: "^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\\.json)$"
+                default: "^([^/]+)/(?:(src|test|tests)/.*|(?:package(?:-lock)?\\.json|pnpm-lock\\.yaml|yarn\\.lock))$"
             npm-test-command:
                 description:
                     "Command to run for each npm project directory. Defaults to
