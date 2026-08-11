@@ -1,6 +1,6 @@
 # Setup Node.js Environment
 
-This action installs the requested Node.js version, optionally enables npm caching, and can run a lockfile-aware npm install for you.
+This action installs the requested Node.js version, optionally enables package-manager caching, and can run a lockfile-aware dependency install for npm, pnpm, or yarn.
 
 ## Usage
 
@@ -13,7 +13,10 @@ This action installs the requested Node.js version, optionally enables npm cachi
     scope: '@now-micro'
     cache: true
     cache-dependency-path: package-lock.json
+    package-manager: npm
     install-dependencies: true
     install-dependencies-directory: src/demo/npm
     token-github-packages: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+  `package-manager` defaults to `npm`. Set it to `pnpm` or `yarn` to enable that package manager and use its lockfile-aware install command. The `cache` input uses the selected package manager's cache.

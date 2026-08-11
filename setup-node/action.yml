@@ -2,51 +2,77 @@ name: Setup Node.js Environment
 description: Composite action to set up Node.js with caching for GitHub Actions workflows.
 inputs:
   cache:
-    description: 'Enable dependency caching (true/false)'
+    description: "Enable dependency caching (true/false)"
     required: false
-    default: 'false'
+    default: "false"
   cache-dependency-path:
-    description: 'Path to the dependency lock file for caching (e.g., package-lock.json)'
+    description: "Path to the dependency lock file for caching (e.g., package-lock.json)"
     required: false
   install-dependencies:
-    description: 'Install dependencies using npm ci (true/false)'
+    description: "Install dependencies using the selected package manager (true/false)"
     required: false
-    default: 'false'
+    default: "false"
   install-dependencies-directory:
-    description: 'Directory to run the dependency install in.'
+    description: "Directory to run the dependency install in."
     required: false
-    default: '.'
+    default: "."
   node-version:
-    description: 'The Node.js version to use'
+    description: "The Node.js version to use"
     required: false
-    default: '24.x'
+    default: "24.x"
+  package-manager:
+    description: "Package manager to use for caching and dependency installation (npm, pnpm, or yarn)"
+    required: false
+    default: "npm"
   registry-url:
-    description: 'npm registry URL to configure for package publication.'
+    description: "npm registry URL to configure for package publication."
     required: false
-    default: ''
+    default: ""
   scope:
-    description: 'npm scope to configure for the registry.'
+    description: "npm scope to configure for the registry."
     required: false
-    default: ''
+    default: ""
   show-version:
-    description: 'Show Node.js and npm version (true/false)'
+    description: "Show Node.js and npm version (true/false)"
     required: false
-    default: 'false'
+    default: "false"
   token-github-packages:
-    description: 'Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN.'
+    description: "Token used to authenticate to the npm registry. Passed as NODE_AUTH_TOKEN."
     required: false
-    default: ''
-  
+    default: ""
+
 runs:
   using: "composite"
   steps:
+    - name: Validate package manager
+      shell: bash
+      env:
+        PACKAGE_MANAGER: ${{ inputs['package-manager'] }}
+      run: |
+        case "$PACKAGE_MANAGER" in
+          npm|pnpm|yarn)
+            ;;
+          *)
+            echo "Unsupported package manager: '$PACKAGE_MANAGER'. Expected npm, pnpm, or yarn." >&2
+            exit 1
+            ;;
+        esac
+
+        if [[ "$PACKAGE_MANAGER" != "npm" ]]; then
+          if command -v corepack >/dev/null 2>&1; then
+            corepack enable "$PACKAGE_MANAGER"
+          elif ! command -v "$PACKAGE_MANAGER" >/dev/null 2>&1; then
+            npm install --global "$PACKAGE_MANAGER"
+          fi
+        fi
+
     - name: Set up Node.js ${{ inputs.node-version }}
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       env:
         NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
       with:
         cache-dependency-path: ${{ inputs.cache-dependency-path || '' }}
-        cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
+        cache: ${{ inputs.cache == 'true' && inputs['package-manager'] || '' }}
         node-version: ${{ inputs.node-version }}
         registry-url: ${{ inputs.registry-url || '' }}
         scope: ${{ inputs.scope || '' }}
@@ -57,14 +83,37 @@ runs:
       shell: bash
       env:
         NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
+        PACKAGE_MANAGER: ${{ inputs['package-manager'] }}
       run: |
-        if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
-          echo "📦 Installing dependencies with npm ci"
-          npm ci
-        else
-          echo "⚠️ No lockfile found; installing dependencies with npm install --no-package-lock"
-          npm install --no-package-lock --no-audit --no-fund
-        fi
+        case "$PACKAGE_MANAGER" in
+          npm)
+            if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+              echo "📦 Installing dependencies with npm ci"
+              npm ci
+            else
+              echo "⚠️ No lockfile found; installing dependencies with npm install --no-package-lock"
+              npm install --no-package-lock --no-audit --no-fund
+            fi
+            ;;
+          pnpm)
+            if [[ -f pnpm-lock.yaml ]]; then
+              echo "📦 Installing dependencies with pnpm install --frozen-lockfile"
+              pnpm install --frozen-lockfile
+            else
+              echo "⚠️ No lockfile found; installing dependencies with pnpm install --no-frozen-lockfile"
+              pnpm install --no-frozen-lockfile
+            fi
+            ;;
+          yarn)
+            if [[ -f yarn.lock ]]; then
+              echo "📦 Installing dependencies with yarn install --frozen-lockfile"
+              yarn install --frozen-lockfile
+            else
+              echo "⚠️ No lockfile found; installing dependencies with yarn install"
+              yarn install
+            fi
+            ;;
+        esac
 
     - name: Show Node.js and npm version
       shell: bash
