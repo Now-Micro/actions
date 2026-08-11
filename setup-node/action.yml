@@ -115,8 +115,13 @@ runs:
             ;;
           yarn)
             if [[ -f yarn.lock ]]; then
-              echo "📦 Installing dependencies with yarn install --frozen-lockfile"
-              yarn install --frozen-lockfile
+              if yarn --help 2>&1 | grep -q -- '--immutable'; then
+                echo "📦 Installing dependencies with yarn install --immutable"
+                yarn install --immutable
+              else
+                echo "📦 Installing dependencies with yarn install --frozen-lockfile"
+                yarn install --frozen-lockfile
+              fi
             else
               echo "⚠️ No lockfile found; installing dependencies with yarn install"
               yarn install
