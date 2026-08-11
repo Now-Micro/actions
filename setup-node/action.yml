@@ -58,13 +58,7 @@ runs:
             ;;
         esac
 
-        if [[ "$PACKAGE_MANAGER" != "npm" ]]; then
-          if command -v corepack >/dev/null 2>&1; then
-            corepack enable "$PACKAGE_MANAGER"
-          elif ! command -v "$PACKAGE_MANAGER" >/dev/null 2>&1; then
-            npm install --global "$PACKAGE_MANAGER"
-          fi
-        fi
+        # Package manager enablement is handled after actions/setup-node so it uses the configured Node.js version.
 
     - name: Set up Node.js ${{ inputs.node-version }}
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
