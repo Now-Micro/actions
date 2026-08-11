@@ -1,0 +1,8 @@
+{
+    "name": "setup-node-demo-pnpm",
+    "private": true,
+    "packageManager": "pnpm@9.15.0",
+    "scripts": {
+        "test": "node -e \"if (!process.env.npm_config_user_agent.startsWith('pnpm/')) process.exit(1)\""
+    }
+}
