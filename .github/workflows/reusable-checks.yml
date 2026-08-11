@@ -490,7 +490,7 @@ jobs:
                   if [ "$NPM_TEST_COMMAND" = "npm test" ]; then
                     "$NPM_PACKAGE_MANAGER" test
                   else
-                    eval "$NPM_TEST_COMMAND"
+                    $NPM_TEST_COMMAND
                   fi
 
     test-setup:
