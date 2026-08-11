@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const CS_PROJ_EXTENSION = '.csproj';
+const DEFAULT_PROJECT_FILE_NAME = '.csproj';
 
 function parseBool(val, def) {
     if (val === undefined || val === null) return def;
@@ -10,6 +10,15 @@ function parseBool(val, def) {
     if (['false', '0', 'no', 'off'].includes(s)) return false;
     if (['true', '1', 'yes', 'on'].includes(s)) return true;
     return def;
+}
+
+function normalizeProjectFileName(value) {
+    const normalized = String(value ?? '').trim();
+    if (!normalized) return DEFAULT_PROJECT_FILE_NAME;
+    if (/[\\/]/.test(normalized)) {
+        throw new Error('project-file-name must not contain path separators');
+    }
+    return normalized;
 }
 
 function normalizePath(input) {
@@ -73,7 +82,7 @@ function directoryExists(value) {
     }
 }
 
-function toDirectoryOnly(value) {
+function toDirectoryOnly(value, projectFileName = DEFAULT_PROJECT_FILE_NAME) {
     const normalized = normalizePath(value);
     if (!normalized) return '';
     if (!normalized.includes('/')) {
@@ -87,17 +96,18 @@ function toDirectoryOnly(value) {
         } catch (err) {
             // Ignore filesystem probing errors and fall back to heuristics.
         }
-        if (normalized.toLowerCase().endsWith(CS_PROJ_EXTENSION)) return '.';
+        if (normalized.toLowerCase().endsWith(projectFileName.toLowerCase())) return '.';
         return normalized;
     }
     const dir = path.posix.dirname(normalized);
     return normalizePath(dir);
 }
 
-function findNearestCsproj(inputPath) {
+function findNearestProjectFile(inputPath, projectFileName = DEFAULT_PROJECT_FILE_NAME) {
     const normalized = normalizePath(inputPath);
     if (!normalized) return '';
 
+    const target = projectFileName.toLowerCase();
     const absoluteFile = path.resolve(normalized);
     let currentDir;
     try {
@@ -111,7 +121,7 @@ function findNearestCsproj(inputPath) {
     while (true) {
         try {
             const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-            const match = entries.find(entry => entry.isFile() && entry.name.toLowerCase().endsWith(CS_PROJ_EXTENSION));
+            const match = entries.find(entry => entry.isFile() && entry.name.toLowerCase().endsWith(target));
             if (match) {
                 const relative = path.relative(process.cwd(), path.join(currentDir, match.name));
                 return normalizePath(relative);
@@ -126,7 +136,7 @@ function findNearestCsproj(inputPath) {
         currentDir = parent;
     }
 
-    // No csproj found.
+    // No matching project file found.
     return '';
 }
 
@@ -134,6 +144,13 @@ function run() {
     const pattern = process.env.INPUT_PATTERN;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
+    let projectFileName;
+    try {
+        projectFileName = normalizeProjectFileName(process.env.INPUT_PROJECT_FILE_NAME);
+    } catch (error) {
+        console.error(`Invalid project file name: ${error.message}`);
+        process.exit(1);
+    }
     const useOriginalIfMissing = parseBool(process.env.INPUT_USE_ORIGINAL_IF_MISSING, false);
     const throwIfTransformedNotFound = parseBool(process.env.INPUT_THROW_IF_TRANSFORMED_NOT_FOUND, true);
     const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
@@ -149,6 +166,7 @@ function run() {
         console.log(`🔍 INPUT_PATTERN: ${pattern}`);
         console.log(`🔍 INPUT_PATHS: ${raw}`);
         console.log(`🔍 Cleaned paths: ${paths}`);
+        console.log(`🔍 PROJECT_FILE_NAME: ${projectFileName}`);
         console.log(`🔍 USE_ORIGINAL_IF_MISSING: ${useOriginalIfMissing}`);
         console.log(`🔍 THROW_IF_TRANSFORMED_NOT_FOUND: ${throwIfTransformedNotFound}`);
         if (fallbackRegexPattern) console.log(`🔍 FALLBACK_REGEX: ${fallbackRegexPattern}`);
@@ -197,10 +215,10 @@ function run() {
             if (debugMode) console.log(`🔍 Path '${p}' skipped; does not match pattern.`);
             continue;
         }
-        const resolved = findNearestCsproj(p);
+        const resolved = findNearestProjectFile(p, projectFileName);
         let candidate = resolved;
         let usedFallbackMatch = false;
-        if (!resolved.toLowerCase().endsWith(CS_PROJ_EXTENSION) && fallbackRe) {
+        if (!resolved.toLowerCase().endsWith(projectFileName.toLowerCase()) && fallbackRe) {
             const fallbackSource = resolved || p;
             const match = fallbackRe.exec(fallbackSource);
             if (match) {
@@ -221,7 +239,7 @@ function run() {
             continue;
         }
 
-        const finalValue = toDirectoryOnly(candidate);
+        const finalValue = toDirectoryOnly(candidate, projectFileName);
         const transformedValue = transformOutputPath(finalValue, transformer);
         let outputValue = transformedValue;
         const transformedMissing = transformer && transformedValue && !directoryExists(transformedValue);
@@ -266,4 +284,15 @@ function run() {
 }
 
 if (require.main === module) run();
-module.exports = { run, findNearestCsproj, normalizePath, parseBool, toDirectoryOnly, parseTransformer, transformOutputPath, directoryExists };
+module.exports = {
+    run,
+    findNearestProjectFile,
+    findNearestCsproj: findNearestProjectFile,
+    normalizePath,
+    parseBool,
+    normalizeProjectFileName,
+    toDirectoryOnly,
+    parseTransformer,
+    transformOutputPath,
+    directoryExists,
+};
