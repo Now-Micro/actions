@@ -19,4 +19,4 @@ This action installs the requested Node.js version, optionally enables package-m
     token-github-packages: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-  `package-manager` defaults to `npm`. Set it to `pnpm` or `yarn` to enable that package manager and use its lockfile-aware install command. The `cache` input uses the selected package manager's cache.
+  `package-manager` defaults to `npm`. Set it to `pnpm` or `yarn` to enable that package manager and use its lockfile-aware install command. When using `pnpm` or `yarn`, make sure `cache-dependency-path` points to `pnpm-lock.yaml` or `yarn.lock` respectively. The `cache` input uses the selected package manager's cache.
