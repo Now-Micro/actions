@@ -58,12 +58,13 @@ jobs:
 
     # ── Node.js tests – change detection (via reusable workflow) ───────────
     # Injects a known demo file path so Node.js-specific change detection is
-    # exercised independently from the .NET test change-detection path.
+    # exercised independently from the .NET test change-detection path. The
+    # reusable workflow auto-detects the project directory by locating the
+    # nearest package.json to the changed file, so no path pattern is needed.
     node-test-change-detection:
         uses: ./.github/workflows/reusable-checks.yml
         with:
             enable-node-testing: "true"
-            node-testing-path-pattern: "^(src/demo/npm)/(?:(src|test|tests)/.*|package\\.json)$"
             overridden-changed-files: '["src/demo/npm/index.test.js"]'
             node-version: "22.x"
             ci-debug-mode: "true"
