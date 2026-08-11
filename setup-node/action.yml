@@ -85,6 +85,15 @@ runs:
         NODE_AUTH_TOKEN: ${{ inputs['token-github-packages'] }}
         PACKAGE_MANAGER: ${{ inputs['package-manager'] }}
       run: |
+        if [[ "$PACKAGE_MANAGER" != "npm" ]]; then
+          if command -v corepack >/dev/null 2>&1; then
+            corepack enable "$PACKAGE_MANAGER"
+          else
+            echo "corepack is required to use '$PACKAGE_MANAGER' with this action. Please use a Node.js version that includes corepack." >&2
+            exit 1
+          fi
+        fi
+
         case "$PACKAGE_MANAGER" in
           npm)
             if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
