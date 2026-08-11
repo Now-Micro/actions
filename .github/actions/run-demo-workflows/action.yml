@@ -46,6 +46,9 @@ runs:
     - name: Demo - checks-workflow
       uses: ./.github/actions/demo-checks-workflow
 
+    - name: Demo - setup-node package managers
+      uses: ./.github/actions/demo-setup-node
+
     - name: Demo - pre-release-workflow
       uses: ./.github/actions/demo-pre-release-workflow
       with:

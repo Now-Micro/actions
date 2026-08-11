@@ -1,0 +1,44 @@
+name: Demo - Setup Node.js
+description: Demonstrates setup-node with npm, pnpm, and yarn.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup and test npm
+      uses: ./setup-node
+      with:
+        install-dependencies: "true"
+        install-dependencies-directory: .github/actions/demo-setup-node/npm
+        node-version: "22.x"
+        package-manager: npm
+
+    - name: Run npm case
+      shell: bash
+      working-directory: .github/actions/demo-setup-node/npm
+      run: npm test
+
+    - name: Setup and test pnpm
+      uses: ./setup-node
+      with:
+        install-dependencies: "true"
+        install-dependencies-directory: .github/actions/demo-setup-node/pnpm
+        node-version: "22.x"
+        package-manager: pnpm
+
+    - name: Run pnpm case
+      shell: bash
+      working-directory: .github/actions/demo-setup-node/pnpm
+      run: pnpm test
+
+    - name: Setup and test yarn
+      uses: ./setup-node
+      with:
+        install-dependencies: "true"
+        install-dependencies-directory: .github/actions/demo-setup-node/yarn
+        node-version: "22.x"
+        package-manager: yarn
+
+    - name: Run yarn case
+      shell: bash
+      working-directory: .github/actions/demo-setup-node/yarn
+      run: yarn test

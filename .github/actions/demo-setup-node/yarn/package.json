@@ -1,0 +1,8 @@
+{
+    "name": "setup-node-demo-yarn",
+    "private": true,
+    "packageManager": "yarn@1.22.22",
+    "scripts": {
+        "test": "node -e \"if (!process.env.npm_config_user_agent.startsWith('yarn/')) process.exit(1)\""
+    }
+}

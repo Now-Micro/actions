@@ -1,0 +1,7 @@
+{
+    "name": "setup-node-demo-npm",
+    "private": true,
+    "scripts": {
+        "test": "node -e \"if (!process.env.npm_config_user_agent.startsWith('npm/')) process.exit(1)\""
+    }
+}
