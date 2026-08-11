@@ -54,8 +54,11 @@ Values are de-duplicated in final output.
 
 ```yaml
 with:
+   # Match changed files under src or a top-level test directory and capture the project root.
    pattern: '^(src/[^/]+)/'
+   # Comma-separated source/test paths to resolve to project directories.
    paths: 'src/App/Program.cs,tests/App.Tests/Unit/Test1.cs'
+   # Serialize the unique directories as a JSON array.
    output-is-json: 'true'
 ```
 
@@ -63,8 +66,11 @@ with:
 
 ```yaml
 with:
+   # Select solution files as candidates for project-directory resolution.
    pattern: '.*\\.slnx$'
+   # Path to the changed solution file.
    paths: 'src/demo/get-unique-project-directories/Trafera.Messaging.slnx'
+   # Derive a fallback directory from the first path segment if no project file is found.
    fallback-regex: '^([^/]+)'
 ```
 
@@ -72,8 +78,11 @@ with:
 
 ```yaml
 with:
+   # Match source files whose output directory should be transformed.
    pattern: '^.*/src/.*\\.(cs|csproj|sln|slnx)$'
+   # Source file to resolve before applying the transformer.
    paths: 'src/My.Library/File.cs'
+   # Map the source project path to its corresponding tests project path.
    transformer: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#'
 ```
 
@@ -81,9 +90,13 @@ with:
 
 ```yaml
 with:
+   # Match source C# files for project-directory resolution.
    pattern: '^.*/src/.*\\.cs$'
+   # Source file whose project path should be transformed.
    paths: 'src/My.Library/File.cs'
+   # Map the source project path to its tests project path.
    transformer: 's#^(.*?)/src/(.*)$#$1/tests/$2.Tests#'
+   # Keep the original project directory when the transformed directory is absent.
    use-original-if-missing: 'true'
 ```
 
@@ -91,8 +104,11 @@ with:
 
 ```yaml
 with:
+   # Match all C# files.
    pattern: '.*\\.cs$'
+   # Multiple paths can be supplied as a comma-separated list.
    paths: 'src/App/File1.cs,src/App/File2.cs'
+   # Return the unique directories as comma-separated text instead of JSON.
    output-is-json: 'false'
 ```
 
@@ -100,7 +116,10 @@ with:
 
 ```yaml
 with:
-   pattern: '\.(m?js|cjs|jsx|ts|tsx)$'
-   paths: 'packages/app/src/index.js,packages/lib/test/index.test.js'
+   # Match every supplied path so each one is checked for a nearby package.json.
+   pattern: '.*'
+   # Comma-separated directories or paths to inspect.
+   paths: 'packages/app/src,packages/lib/test'
+   # Use package.json to identify each Node.js project directory.
    project-file-name: 'package.json'
 ```
