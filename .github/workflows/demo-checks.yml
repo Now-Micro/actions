@@ -52,7 +52,8 @@ jobs:
         uses: ./.github/workflows/reusable-checks.yml
         with:
             enable-npm-testing: "true"
-            npm-test-directory: src/demo/npm
+            npm-test-directory: .github/actions/demo-setup-node/pnpm
+            npm-package-manager: "pnpm"
             npm-node-version: "22.x"
 
     # ── npm tests – change detection (via reusable workflow) ───────────────

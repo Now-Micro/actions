@@ -200,6 +200,13 @@ on:
                 required: false
                 type: string
                 default: "22.x"
+            npm-package-manager:
+                description:
+                    "Package manager to use for npm tests and dependency installation.
+                    Defaults to npm. Supported values are npm, pnpm, and yarn."
+                required: false
+                type: string
+                default: "npm"
             npm-install-dependencies:
                 description: "Install npm dependencies before testing. Defaults to true."
                 required: false
@@ -471,13 +478,20 @@ jobs:
                   install-dependencies: ${{ inputs['npm-install-dependencies'] }}
                   install-dependencies-directory: ${{ matrix.directory }}
                   node-version: ${{ inputs['npm-node-version'] }}
+                  package-manager: ${{ inputs['npm-package-manager'] }}
 
             - name: Run npm tests
               shell: bash
               working-directory: ${{ matrix.directory }}
               env:
+                  NPM_PACKAGE_MANAGER: ${{ inputs['npm-package-manager'] }}
                   NPM_TEST_COMMAND: ${{ inputs['npm-test-command'] }}
-              run: $NPM_TEST_COMMAND
+              run: |
+                  if [ "$NPM_TEST_COMMAND" = "npm test" ]; then
+                    "$NPM_PACKAGE_MANAGER" test
+                  else
+                    eval "$NPM_TEST_COMMAND"
+                  fi
 
     test-setup:
         runs-on: ubuntu-22.04

@@ -139,6 +139,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `npm-testing-path-pattern` | No | `^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\.json)$` | Regex used to find changed npm project directories. The pattern must include a capture group for the directory. |
 | `npm-test-command` | No | `npm test` | Command to run for each npm project directory. |
 | `npm-node-version` | No | `22.x` | Node.js version to use for npm tests. |
+| `npm-package-manager` | No | `npm` | Package manager to use for npm tests and dependency installation. Supported values are `npm`, `pnpm`, and `yarn`. |
 | `npm-install-dependencies` | No | `true` | Install dependencies before running npm tests. Uses `npm ci` when a lockfile exists. |
 | `npm-cache` | No | `false` | Enable npm dependency caching. |
 | `npm-cache-dependency-path` | No | `""` | Path to the npm lockfile used for caching. |
