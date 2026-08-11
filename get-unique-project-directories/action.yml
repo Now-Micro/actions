@@ -7,7 +7,7 @@ inputs:
     required: false
     default: "false"
   fallback-regex:
-    description: "Optional regex applied when no .csproj is found; if it matches, the first capture group (or full match) is used before directory flattening."
+    description: "Optional regex applied when no file matching project-file-name is found; if it matches, the first capture group (or full match) is used before directory flattening."
     required: false
     default: ""
   output-is-json:
@@ -21,7 +21,7 @@ inputs:
     description: "Comma-separated list of paths to evaluate."
     required: true
   project-file-name:
-    description: "File name (or suffix) that identifies a project's root directory, matched case-insensitively via endsWith. Defaults to '.csproj' when empty (see DEFAULT_PROJECT_FILE_NAME in get-unique-project-directories.js). Set to an exact file name such as 'package.json' to locate other manifest types."
+    description: "File name (or suffix) that identifies a project's root directory, matched case-insensitively via endsWith. Whitespace is trimmed, empty values use '.csproj', and path separators are rejected. Set to an exact file name such as 'package.json' to locate other manifest types."
     required: false
     default: ""
   transformer:

@@ -22,7 +22,7 @@ Values are de-duplicated in final output.
    Comma-separated file path list to evaluate.
 
 - `project-file-name` (optional, default: `.csproj`)  
-   File name (or suffix) that identifies a project's root directory, matched case-insensitively via `endsWith`. Defaults to `.csproj` for .NET projects. Set to an exact file name such as `package.json` to locate Node.js project directories instead.
+   File name (or suffix) that identifies a project's root directory, matched case-insensitively via `endsWith`. Leading and trailing whitespace is trimmed, whitespace-only values default to `.csproj`, and values containing `/` or `\\` are rejected. Set to an exact file name such as `package.json` to locate Node.js project directories instead.
 
 - `output-is-json` (optional, default: `true`)  
   - `true`: output is JSON array string  
@@ -100,7 +100,7 @@ with:
 
 ```yaml
 with:
-   pattern: '\\.(m?js|cjs|jsx|ts|tsx)$'
+   pattern: '\.(m?js|cjs|jsx|ts|tsx)$'
    paths: 'packages/app/src/index.js,packages/lib/test/index.test.js'
    project-file-name: 'package.json'
 ```

@@ -12,6 +12,15 @@ function parseBool(val, def) {
     return def;
 }
 
+function normalizeProjectFileName(value) {
+    const normalized = String(value ?? '').trim();
+    if (!normalized) return DEFAULT_PROJECT_FILE_NAME;
+    if (/[\\/]/.test(normalized)) {
+        throw new Error('project-file-name must not contain path separators');
+    }
+    return normalized;
+}
+
 function normalizePath(input) {
     if (typeof input !== 'string') return '';
     const stripped = input.trim().replace(/['"\[\]]/g, '');
@@ -135,7 +144,13 @@ function run() {
     const pattern = process.env.INPUT_PATTERN;
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const outputIsJson = parseBool(process.env.INPUT_OUTPUT_IS_JSON, true);
-    const projectFileName = process.env.INPUT_PROJECT_FILE_NAME || DEFAULT_PROJECT_FILE_NAME;
+    let projectFileName;
+    try {
+        projectFileName = normalizeProjectFileName(process.env.INPUT_PROJECT_FILE_NAME);
+    } catch (error) {
+        console.error(`Invalid project file name: ${error.message}`);
+        process.exit(1);
+    }
     const useOriginalIfMissing = parseBool(process.env.INPUT_USE_ORIGINAL_IF_MISSING, false);
     const throwIfTransformedNotFound = parseBool(process.env.INPUT_THROW_IF_TRANSFORMED_NOT_FOUND, true);
     const fallbackRegexPattern = process.env.INPUT_FALLBACK_REGEX || '';
@@ -275,6 +290,7 @@ module.exports = {
     findNearestCsproj: findNearestProjectFile,
     normalizePath,
     parseBool,
+    normalizeProjectFileName,
     toDirectoryOnly,
     parseTransformer,
     transformOutputPath,
