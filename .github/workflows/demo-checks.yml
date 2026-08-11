@@ -47,24 +47,26 @@ jobs:
         secrets:
             token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
 
-    # ── npm tests (via reusable workflow) ──────────────────────────────────
-    npm-test:
+    # ── Node.js tests (via reusable workflow) ──────────────────────────────
+    node-test:
         uses: ./.github/workflows/reusable-checks.yml
         with:
-            enable-npm-testing: "true"
-            npm-test-directory: src/demo/npm
-            npm-node-version: "22.x"
+            enable-node-testing: "true"
+            node-test-directory: .github/actions/demo-setup-node/pnpm
+            node-package-manager: "pnpm"
+            node-version: "22.x"
 
-    # ── npm tests – change detection (via reusable workflow) ───────────────
-    # Injects a known demo file path so npm-specific change detection is
-    # exercised independently from the .NET test change-detection path.
-    npm-test-change-detection:
+    # ── Node.js tests – change detection (via reusable workflow) ───────────
+    # Injects a known demo file path so Node.js-specific change detection is
+    # exercised independently from the .NET test change-detection path. The
+    # reusable workflow auto-detects the project directory by locating the
+    # nearest package.json to the changed file, so no path pattern is needed.
+    node-test-change-detection:
         uses: ./.github/workflows/reusable-checks.yml
         with:
-            enable-npm-testing: "true"
-            npm-testing-path-pattern: "^(src/demo/npm)/(?:(src|test|tests)/.*|package\\.json)$"
+            enable-node-testing: "true"
             overridden-changed-files: '["src/demo/npm/index.test.js"]'
-            npm-node-version: "22.x"
+            node-version: "22.x"
             ci-debug-mode: "true"
 
     # ── Coding standards – change detection (via reusable workflow) ────────

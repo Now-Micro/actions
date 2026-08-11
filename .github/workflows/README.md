@@ -119,7 +119,7 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `enable-linting` | No | `false` | Run CSharpier linting. |
 | `enable-coding-standards` | No | `false` | Run coding standards checks. |
 | `enable-testing` | No | `false` | Run tests. |
-| `enable-npm-testing` | No | `false` | Run npm tests independently from .NET tests. |
+| `enable-node-testing` | No | `false` | Run Node.js tests independently from .NET tests. |
 | `ci-debug-mode` | No | `false` | Enable verbose debug logging for discovery steps. |
 | `directory` | No | `""` | Specific directory to check. When empty, the workflow detects changed directories. |
 | `head-ref` | No | `""` | Head commit SHA to compare against the base. Pass `github.event.pull_request.head.sha` from PR workflows. |
@@ -135,14 +135,14 @@ Runs the repo's shared PR checks: linting, coding standards, and tests. It is de
 | `test-project-regex` | No | `""` | Regex used to identify the test project file. |
 | `solution-regex` | No | `""` | Regex used to identify the solution file. |
 | `prefer-solution` | No | `false` | Prefer a solution file over individual projects for testing. |
-| `npm-test-directory` | No | `""` | Specific npm project directory to test. When empty, changed directories are detected using `npm-testing-path-pattern`. |
-| `npm-testing-path-pattern` | No | `^([^/]+)/(?:(src|test|tests)/.*|package(?:-lock)?\.json)$` | Regex used to find changed npm project directories. The pattern must include a capture group for the directory. |
-| `npm-test-command` | No | `npm test` | Command to run for each npm project directory. |
-| `npm-node-version` | No | `22.x` | Node.js version to use for npm tests. |
-| `npm-install-dependencies` | No | `true` | Install dependencies before running npm tests. Uses `npm ci` when a lockfile exists. |
-| `npm-cache` | No | `false` | Enable npm dependency caching. |
-| `npm-cache-dependency-path` | No | `""` | Path to the npm lockfile used for caching. |
-| `npm-fail-fast` | No | `false` | Cancel remaining npm matrix jobs when one fails. |
+| `node-test-directory` | No | `""` | Specific Node.js project directory to test. When empty, changed directories are detected automatically by locating the nearest `package.json` for each changed file (source/test file changes, `package.json` changes, and the lockfile matching `node-package-manager` all trigger detection). |
+| `node-test-command` | No | `npm test` | Command to run for each Node.js project directory. |
+| `node-version` | No | `22.x` | Node.js version to use for Node.js tests. |
+| `node-package-manager` | No | `npm` | Package manager to use for Node.js tests and dependency installation. Supported values are `npm`, `pnpm`, and `yarn`. |
+| `node-install-dependencies` | No | `true` | Install dependencies before running Node.js tests. |
+| `node-cache` | No | `false` | Enable Node.js package-manager dependency caching. |
+| `node-cache-dependency-path` | No | `""` | Path to the package-manager lockfile used for caching. |
+| `node-fail-fast` | No | `false` | Cancel remaining Node.js matrix jobs when one fails. |
 | `workflow-name` | No | `""` | Workflow filename used when looking up the last successful run for optimization. |
 | `caller-job-name` | No | `""` | The name of the job in the calling workflow that invokes this reusable workflow (e.g. `checks`). Required when `optimize-base-ref` is `true`. GitHub prefixes every job name in the API response with the caller's job name (e.g. `checks / test-setup`), so this must be provided for the last-successful-run lookup to match correctly. See [Base-ref optimization](#base-ref-optimization) below. |
 | `overridden-changed-files` | No | `""` | JSON array of file paths to treat as changed. Skips git change detection entirely. Intended for testing and demo scenarios. |
@@ -182,13 +182,13 @@ jobs:
       enable-linting: "true"
       enable-coding-standards: "true"
       enable-testing: "true"
-      enable-npm-testing: "true"
+      enable-node-testing: "true"
       head-ref: ${{ github.event.pull_request.head.sha }}
       optimize-base-ref: "true"
       roslyn-version: "4.9.2"
       test-project-regex: '.*Tests\.csproj\s*$'
-      npm-test-directory: "frontend"
-      npm-test-command: "npm run test:ci"
+      node-test-directory: "frontend"
+      node-test-command: "npm run test:ci"
       workflow-name: checks.yml
     secrets:
       token-github-packages: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
