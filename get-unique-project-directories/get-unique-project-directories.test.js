@@ -86,6 +86,65 @@ test('finds csproj in parent directory when nested', () => {
     });
 });
 
+test('project-file-name finds package.json in same directory (returns directory)', () => {
+    withTmpTree(() => {
+        touch('packages/app/package.json');
+        touch('packages/app/src/index.js');
+    }, () => {
+        const paths = 'packages/app/src/index.js';
+        const r = runWith({
+            INPUT_PATTERN: '\\.js$',
+            INPUT_PATHS: paths,
+            INPUT_PROJECT_FILE_NAME: 'package.json',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["packages\/app"\]/);
+    });
+});
+
+test('project-file-name finds package.json in parent directory when nested', () => {
+    withTmpTree(() => {
+        touch('packages/app/package.json');
+        touch('packages/app/test/sub/index.test.js');
+    }, () => {
+        const paths = 'packages/app/test/sub/index.test.js';
+        const r = runWith({
+            INPUT_PATTERN: '\\.js$',
+            INPUT_PATHS: paths,
+            INPUT_PROJECT_FILE_NAME: 'package.json',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["packages\/app"\]/);
+    });
+});
+
+test('project-file-name returns no entry when package.json does not exist anywhere', () => {
+    withTmpTree(() => {
+        touch('packages/app/README.md');
+    }, () => {
+        const paths = 'packages/app/README.md';
+        const r = runWith({
+            INPUT_PATTERN: '.*',
+            INPUT_PATHS: paths,
+            INPUT_PROJECT_FILE_NAME: 'package.json',
+        });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\[\]/);
+    });
+});
+
+test('project-file-name defaults to .csproj when not provided', () => {
+    withTmpTree(() => {
+        touch('Messaging/Trafera.Messaging.Abstractions/src/Trafera.Messaging.Abstractions.csproj');
+        touch('Messaging/Trafera.Messaging.Abstractions/src/SomeFile.cs');
+    }, () => {
+        const paths = 'Messaging/Trafera.Messaging.Abstractions/src/SomeFile.cs';
+        const r = runWith({ INPUT_PATTERN: '.*\\.cs$', INPUT_PATHS: paths });
+        assert.strictEqual(r.exitCode, 0);
+        assert.match(r.outputContent, /unique_project_directories=\["Messaging\/Trafera\.Messaging\.Abstractions\/src"\]/);
+    });
+});
+
 test('returns no entry when no csproj exists anywhere', () => {
     withTmpTree(() => {
         touch('Messaging/Trafera.Messaging.Project3/README.md');

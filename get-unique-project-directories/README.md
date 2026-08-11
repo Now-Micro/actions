@@ -1,12 +1,12 @@
 # get-unique-project-directories
 
-Returns unique parent project directories (nearest `.csproj` directory) from a list of input paths.
+Returns unique parent project directories (nearest matching project file, e.g. `.csproj` or `package.json`) from a list of input paths.
 
 For each path:
 
 - it first checks whether the path matches `pattern`
-- if matched, it walks up the tree to find the nearest `.csproj`
-- if found, it returns that `.csproj` directory
+- if matched, it walks up the tree to find the nearest file matching `project-file-name` (defaults to `.csproj`)
+- if found, it returns that project file's directory
 - if not found, it can optionally use `fallback-regex`
 - it can optionally transform output values with `transformer`
 - it can optionally fall back to original values when transformed directories do not exist (`use-original-if-missing`)
@@ -21,6 +21,9 @@ Values are de-duplicated in final output.
 - `paths` (required)  
    Comma-separated file path list to evaluate.
 
+- `project-file-name` (optional, default: `.csproj`)  
+   File name (or suffix) that identifies a project's root directory, matched case-insensitively via `endsWith`. Defaults to `.csproj` for .NET projects. Set to an exact file name such as `package.json` to locate Node.js project directories instead.
+
 - `output-is-json` (optional, default: `true`)  
   - `true`: output is JSON array string  
   - `false`: output is comma-separated string
@@ -29,7 +32,7 @@ Values are de-duplicated in final output.
    Enables debug logging.
 
 - `fallback-regex` (optional, default: empty)  
-   Applied only when no `.csproj` is found for a matched path.  
+   Applied only when no matching project file is found for a matched path.  
    If regex matches, capture group 1 is used; otherwise full match is used.
 
 - `transformer` (optional, default: empty)  
@@ -91,4 +94,13 @@ with:
    pattern: '.*\\.cs$'
    paths: 'src/App/File1.cs,src/App/File2.cs'
    output-is-json: 'false'
+```
+
+### 6) Find nearest Node.js project directory (`package.json`)
+
+```yaml
+with:
+   pattern: '\\.(m?js|cjs|jsx|ts|tsx)$'
+   paths: 'packages/app/src/index.js,packages/lib/test/index.test.js'
+   project-file-name: 'package.json'
 ```
