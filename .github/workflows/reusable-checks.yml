@@ -187,7 +187,7 @@ on:
                     JavaScript, package.json, and npm, pnpm, or yarn lockfiles."
                 required: false
                 type: string
-                default: '\.(m?js|cjs|jsx|ts|tsx)\$|(^|/)package\.json\$|(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)\$'
+                default: '\.(m?js|cjs|jsx|ts|tsx)$|(^|/)package\.json$|(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$'
             node-test-command:
                 description:
                     "Command to run for each Node.js project directory. Defaults to
