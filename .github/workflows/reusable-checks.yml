@@ -428,11 +428,13 @@ jobs:
               id: unique-dirs
               uses: Now-Micro/actions/get-unique-project-directories@v1
               with:
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
                   paths: ${{ inputs['overridden-changed-files'] ||
                       steps.changed-files.outputs.changed_files }}
                   pattern: ${{ inputs['node-testing-path-pattern'] }}
                   project-file-name: "package.json"
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  transformer: ${{ inputs.transformer }}
+                  use-original-if-missing: "false"
 
             - name: Resolve Node.js test directories
               id: resolve-directories
