@@ -434,7 +434,7 @@ jobs:
                   pattern: ${{ inputs['node-testing-path-pattern'] }}
                   project-file-name: "package.json"
                   transformer: ${{ inputs.transformer }}
-                  use-original-if-missing: "false"
+                  use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
 
             - name: Resolve Node.js test directories
               id: resolve-directories
