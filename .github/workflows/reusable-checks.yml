@@ -440,8 +440,8 @@ jobs:
                       ${{ inputs['caller-job-name'] != '' && format('{0}
                       / test', inputs['caller-job-name']) || 'test' }}
                   main-job-name:
-                      ${{ inputs['caller-job-name'] != '' && format('{0} / test-setup',
-                      inputs['caller-job-name']) || 'test-setup' }}
+                      ${{ inputs['caller-job-name'] != '' && format('{0} / node-test-setup',
+                      inputs['caller-job-name']) || 'node-test-setup' }}
                   request-size: 50
                   retry-attempts: 3
                   workflow-name: ${{ inputs['workflow-name'] }}
