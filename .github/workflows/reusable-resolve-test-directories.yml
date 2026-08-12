@@ -27,7 +27,6 @@ on:
                     to identify each project's root directory."
                 required: true
                 type: string
-                default: ""
             transformer:
                 description:
                     "Optional sed-style/regex transformer applied to each resolved
@@ -101,7 +100,7 @@ on:
                 required: false
                 type: string
                 default: "false"
-            require-token-github-packages:
+            require-github-token:
                 description:
                     "Fail early when the token-github-packages secret is missing.
                     Defaults to true."
@@ -126,7 +125,7 @@ jobs:
             directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
             - name: Validate token-github-packages secret
-              if: ${{ inputs['require-token-github-packages'] == 'true' }}
+              if: ${{ inputs['require-github-token'] == 'true' }}
               shell: bash
               env:
                   TOKEN: ${{ secrets['token-github-packages'] }}

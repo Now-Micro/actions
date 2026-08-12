@@ -400,12 +400,10 @@ jobs:
             overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
             path-pattern: ${{ inputs['node-testing-path-pattern'] }}
             project-file-name: "package.json"
-            require-token-github-packages: "false"
+            require-github-token: "false"
             run-job-key: "node-test"
             setup-job-key: "node-test-setup"
             workflow-name: ${{ inputs['workflow-name'] }}
-        secrets:
-            token-github-packages: ${{ secrets['token-github-packages'] }}
 
     node-test:
         runs-on: ubuntu-22.04
@@ -457,7 +455,7 @@ jobs:
             overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
             path-pattern: ${{ inputs['testing-path-pattern'] }}
             project-file-name: ".csproj"
-            require-token-github-packages: "true"
+            require-github-token: "true"
             run-job-key: "test"
             setup-job-key: "test-setup"
             transformer: ${{ inputs.transformer }}
