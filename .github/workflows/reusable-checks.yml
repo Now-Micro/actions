@@ -394,17 +394,6 @@ jobs:
         outputs:
             directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
         steps:
-            - name: Validate token-github-packages secret
-              shell: bash
-              env:
-                  TOKEN: ${{ secrets['token-github-packages'] }}
-              run: |
-                  if [ -z "$TOKEN" ]; then
-                    echo "::error::The 'token-github-packages' secret is required, but it was not provided or is empty." >&2
-                    exit 1
-                  fi
-                  echo "✅ token-github-packages secret is present."
-
             - name: Check out code
               uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
               with:
