@@ -400,7 +400,7 @@ jobs:
                   TOKEN: ${{ secrets['token-github-packages'] }}
               run: |
                   if [ -z "$TOKEN" ]; then
-                    echo "::error::The 'token-github-packages' secret is required when 'enable-coding-standards' or 'enable-testing' is true, but it was not provided or is empty." >&2
+                    echo "::error::The 'token-github-packages' secret is required, but it was not provided or is empty." >&2
                     exit 1
                   fi
                   echo "✅ token-github-packages secret is present."
