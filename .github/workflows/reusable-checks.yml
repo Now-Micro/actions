@@ -389,72 +389,21 @@ jobs:
                   nuget-usernames: ${{ github.actor }}
 
     node-test-setup:
-        runs-on: ubuntu-22.04
+        uses: ./.github/workflows/reusable-resolve-test-directories.yml
         if: ${{ inputs['enable-node-testing'] == 'true' }}
-        outputs:
-            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
-        steps:
-            - name: Check out code
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-              with:
-                  fetch-depth: 0
-
-            - name: Determine Node.js test mode
-              id: mode
-              shell: bash
-              env:
-                  DIRECTORY: ${{ inputs['node-test-directory'] }}
-              run: |
-                  echo "Node.js test directory input: '$DIRECTORY'"
-                  if [ -n "$DIRECTORY" ]; then
-                    echo "mode=directory" >> "$GITHUB_OUTPUT"
-                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
-                    exit 0
-                  fi
-
-                  echo "mode=changes" >> "$GITHUB_OUTPUT"
-
-            - name: Get Changed Files
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' }}
-              id: changed-files
-              uses: Now-Micro/actions/get-changed-files@v1
-              with:
-                  head-ref: ${{ inputs['head-ref'] || github.sha }}
-                  base-ref: ${{ github.event.repository.default_branch }}
-
-            - name: Get Unique Node.js Project Directories
-              if: ${{ steps.mode.outputs.mode == 'changes' }}
-              id: unique-dirs
-              uses: Now-Micro/actions/get-unique-project-directories@v1
-              with:
-                  paths: ${{ inputs['overridden-changed-files'] ||
-                      steps.changed-files.outputs.changed_files }}
-                  pattern: ${{ inputs['node-testing-path-pattern'] }}
-                  project-file-name: "package.json"
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-
-            - name: Resolve Node.js test directories
-              id: resolve-directories
-              shell: bash
-              env:
-                  MODE: ${{ steps.mode.outputs.mode }}
-                  DIRECTORY: ${{ steps.mode.outputs.directory }}
-                  CHANGED_DIRS_JSON:
-                      ${{ steps.unique-dirs.outputs.unique_project_directories ||
-                      '[]' }}
-              run: |
-                  case "$MODE" in
-                    directory)
-                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
-                      ;;
-                    changes)
-                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
-                      ;;
-                    *)
-                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
-                      ;;
-                  esac
+        with:
+            caller-job-name: ${{ inputs['caller-job-name'] }}
+            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+            directory: ${{ inputs['node-test-directory'] }}
+            head-ref: ${{ inputs['head-ref'] }}
+            optimize-base-ref: ${{ inputs['optimize-base-ref'] }}
+            overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
+            path-pattern: ${{ inputs['node-testing-path-pattern'] }}
+            project-file-name: "package.json"
+            require-github-token: "false"
+            run-job-key: "node-test"
+            setup-job-key: "node-test-setup"
+            workflow-name: ${{ inputs['workflow-name'] }}
 
     node-test:
         runs-on: ubuntu-22.04
@@ -495,133 +444,25 @@ jobs:
                   fi
 
     test-setup:
-        runs-on: ubuntu-22.04
+        uses: ./.github/workflows/reusable-resolve-test-directories.yml
         if: ${{ inputs['enable-testing'] == 'true' }}
-        outputs:
-            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
-        steps:
-            - name: Validate token-github-packages secret
-              shell: bash
-              env:
-                  TOKEN: ${{ secrets['token-github-packages'] }}
-              run: |
-                  if [ -z "$TOKEN" ]; then
-                    echo "::error::The 'token-github-packages' secret is required when 'enable-coding-standards' or 'enable-testing' is true, but it was not provided or is empty." >&2
-                    exit 1
-                  fi
-                  echo "✅ token-github-packages secret is present."
-
-            - name: Check out code
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-              with:
-                  fetch-depth: 0
-
-            - name: Determine test mode
-              id: mode
-              shell: bash
-              env:
-                  DIRECTORY: ${{ inputs.directory }}
-              run: |
-                  echo "Directory input: '$DIRECTORY'"
-                  if [ -n "$DIRECTORY" ]; then
-                    echo "mode=directory" >> "$GITHUB_OUTPUT"
-                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
-                    exit 0
-                  fi
-
-                  echo "mode=changes" >> "$GITHUB_OUTPUT"
-
-            - name: Find Last Successful Checks Run on Branch
-              id: last-success
-              if:
-                  ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
-                  && inputs['caller-job-name'] != '' }}
-              uses: Now-Micro/actions/get-last-workflow-success-sha@v1
-              with:
-                  branch: ${{ github.head_ref }}
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-                  default-branch: ${{ github.event.repository.default_branch }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  job-names-that-must-succeed:
-                      ${{ inputs['caller-job-name'] != '' && format('{0}
-                      / test', inputs['caller-job-name']) || 'test' }}
-                  main-job-name:
-                      ${{ inputs['caller-job-name'] != '' && format('{0} / test-setup',
-                      inputs['caller-job-name']) || 'test-setup' }}
-                  request-size: 50
-                  retry-attempts: 3
-                  workflow-name: ${{ inputs['workflow-name'] }}
-
-            - name: Get Changed Files Between Last Successful Run and Head
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' }}
-              id: changed-files-against-last-success
-              uses: Now-Micro/actions/get-changed-files@v1
-              with:
-                  head-ref: ${{ inputs['head-ref'] || github.sha }}
-                  base-ref: ${{ steps.last-success.outputs.last_success_sha ||
-                      github.event.repository.default_branch }}
-
-            - name: Get Changed Files Between Default Branch and Head
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' &&
-                  steps.last-success.outputs.last_success_sha != '' }}
-              id: changed-files-against-main
-              uses: Now-Micro/actions/get-changed-files@v1
-              with:
-                  head-ref: ${{ inputs['head-ref'] || github.sha }}
-                  base-ref: ${{ github.event.repository.default_branch }}
-
-            - name:
-                  Calculate Intersection of Changed Files (still changed since last
-                  successful run)
-              id: changed-files-to-use
-              if: ${{ steps.mode.outputs.mode == 'changes' &&
-                  inputs['overridden-changed-files'] == '' &&
-                  steps.last-success.outputs.last_success_sha != '' }}
-              uses: Now-Micro/actions/compare-json-arrays@v1
-              with:
-                  array-a: ${{ steps.changed-files-against-last-success.outputs.changed_files }}
-                  array-b: ${{ steps.changed-files-against-main.outputs.changed_files }}
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-                  mode: "intersection"
-
-            - name: Get Unique Project Directories
-              if: ${{ steps.mode.outputs.mode == 'changes' }}
-              id: unique-dirs
-              uses: Now-Micro/actions/get-unique-project-directories@v1
-              with:
-                  paths: ${{ inputs['overridden-changed-files'] ||
-                      steps.changed-files-to-use.outputs.result ||
-                      steps.changed-files-against-last-success.outputs.changed_files
-                      }}
-                  pattern: ${{ inputs['testing-path-pattern'] }}
-                  debug-mode: ${{ inputs['ci-debug-mode'] }}
-                  fallback-regex: ${{ inputs['testing-path-pattern'] }}
-                  transformer: ${{ inputs.transformer }}
-                  use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
-
-            - name: Resolve test directories
-              id: resolve-directories
-              shell: bash
-              env:
-                  MODE: ${{ steps.mode.outputs.mode }}
-                  DIRECTORY: ${{ steps.mode.outputs.directory }}
-                  CHANGED_DIRS_JSON:
-                      ${{ steps.unique-dirs.outputs.unique_project_directories ||
-                      '[]' }}
-              run: |
-                  case "$MODE" in
-                    directory)
-                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
-                      ;;
-                    changes)
-                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
-                      ;;
-                    *)
-                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
-                      ;;
-                  esac
+        with:
+            caller-job-name: ${{ inputs['caller-job-name'] }}
+            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+            directory: ${{ inputs.directory }}
+            head-ref: ${{ inputs['head-ref'] }}
+            optimize-base-ref: ${{ inputs['optimize-base-ref'] }}
+            overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
+            path-pattern: ${{ inputs['testing-path-pattern'] }}
+            project-file-name: ".csproj"
+            require-github-token: "true"
+            run-job-key: "test"
+            setup-job-key: "test-setup"
+            transformer: ${{ inputs.transformer }}
+            use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
+            workflow-name: ${{ inputs['workflow-name'] }}
+        secrets:
+            token-github-packages: ${{ secrets['token-github-packages'] }}
 
     test:
         runs-on: ubuntu-22.04
