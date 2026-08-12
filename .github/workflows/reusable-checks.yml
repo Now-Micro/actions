@@ -181,6 +181,13 @@ on:
                 required: false
                 type: string
                 default: ""
+            node-testing-path-pattern:
+                description:
+                    "Regex used to identify changed Node.js files. Defaults to
+                    JavaScript, package.json, and npm, pnpm, or yarn lockfiles."
+                required: false
+                type: string
+                default: '\.(m?js|cjs|jsx|ts|tsx)\$|(^|/)package\.json\$|(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)\$'
             node-test-command:
                 description:
                     "Command to run for each Node.js project directory. Defaults to
@@ -416,20 +423,6 @@ jobs:
                   head-ref: ${{ inputs['head-ref'] || github.sha }}
                   base-ref: ${{ github.event.repository.default_branch }}
 
-            - name: Determine Node.js change-detection pattern
-              if: ${{ steps.mode.outputs.mode == 'changes' }}
-              id: pattern
-              shell: bash
-              env:
-                  PACKAGE_MANAGER: ${{ inputs['node-package-manager'] }}
-              run: |
-                  case "$PACKAGE_MANAGER" in
-                    pnpm) lockfile='pnpm-lock\.yaml' ;;
-                    yarn) lockfile='yarn\.lock' ;;
-                    *) lockfile='package-lock\.json' ;;
-                  esac
-                  echo "pattern=\\.(m?js|cjs|jsx|ts|tsx)\$|(^|/)package\\.json\$|(^|/)${lockfile}\$" >> "$GITHUB_OUTPUT"
-
             - name: Get Unique Node.js Project Directories
               if: ${{ steps.mode.outputs.mode == 'changes' }}
               id: unique-dirs
@@ -437,7 +430,7 @@ jobs:
               with:
                   paths: ${{ inputs['overridden-changed-files'] ||
                       steps.changed-files.outputs.changed_files }}
-                  pattern: ${{ steps.pattern.outputs.pattern }}
+                  pattern: ${{ inputs['node-testing-path-pattern'] }}
                   project-file-name: "package.json"
                   debug-mode: ${{ inputs['ci-debug-mode'] }}
 
