@@ -392,18 +392,18 @@ jobs:
         uses: ./.github/workflows/reusable-resolve-test-directories.yml
         if: ${{ inputs['enable-node-testing'] == 'true' }}
         with:
+            caller-job-name: ${{ inputs['caller-job-name'] }}
+            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
             directory: ${{ inputs['node-test-directory'] }}
-            path-pattern: ${{ inputs['node-testing-path-pattern'] }}
-            project-file-name: "package.json"
             head-ref: ${{ inputs['head-ref'] }}
             optimize-base-ref: ${{ inputs['optimize-base-ref'] }}
-            workflow-name: ${{ inputs['workflow-name'] }}
-            caller-job-name: ${{ inputs['caller-job-name'] }}
-            setup-job-key: "node-test-setup"
-            run-job-key: "node-test"
             overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
-            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+            path-pattern: ${{ inputs['node-testing-path-pattern'] }}
+            project-file-name: "package.json"
             require-token-github-packages: "false"
+            run-job-key: "node-test"
+            setup-job-key: "node-test-setup"
+            workflow-name: ${{ inputs['workflow-name'] }}
         secrets:
             token-github-packages: ${{ secrets['token-github-packages'] }}
 
@@ -449,20 +449,20 @@ jobs:
         uses: ./.github/workflows/reusable-resolve-test-directories.yml
         if: ${{ inputs['enable-testing'] == 'true' }}
         with:
+            caller-job-name: ${{ inputs['caller-job-name'] }}
+            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
             directory: ${{ inputs.directory }}
-            path-pattern: ${{ inputs['testing-path-pattern'] }}
-            project-file-name: ".csproj"
-            transformer: ${{ inputs.transformer }}
-            use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
             head-ref: ${{ inputs['head-ref'] }}
             optimize-base-ref: ${{ inputs['optimize-base-ref'] }}
-            workflow-name: ${{ inputs['workflow-name'] }}
-            caller-job-name: ${{ inputs['caller-job-name'] }}
-            setup-job-key: "test-setup"
-            run-job-key: "test"
             overridden-changed-files: ${{ inputs['overridden-changed-files'] }}
-            ci-debug-mode: ${{ inputs['ci-debug-mode'] }}
+            path-pattern: ${{ inputs['testing-path-pattern'] }}
+            project-file-name: ".csproj"
             require-token-github-packages: "true"
+            run-job-key: "test"
+            setup-job-key: "test-setup"
+            transformer: ${{ inputs.transformer }}
+            use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
+            workflow-name: ${{ inputs['workflow-name'] }}
         secrets:
             token-github-packages: ${{ secrets['token-github-packages'] }}
 

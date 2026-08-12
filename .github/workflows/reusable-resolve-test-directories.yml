@@ -24,11 +24,10 @@ on:
             project-file-name:
                 description:
                     "File name (or suffix) passed to get-unique-project-directories
-                    to identify each project's root directory. Defaults to
-                    '.csproj'."
-                required: false
+                    to identify each project's root directory."
+                required: true
                 type: string
-                default: ".csproj"
+                default: ""
             transformer:
                 description:
                     "Optional sed-style/regex transformer applied to each resolved
@@ -77,18 +76,16 @@ on:
                 description:
                     "Job id of this setup job within the calling workflow (e.g.
                     'test-setup' or 'node-test-setup'), used to build the
-                    last-successful-run lookup key. Defaults to 'test-setup'."
-                required: false
+                    last-successful-run lookup key."
+                required: true
                 type: string
-                default: "test-setup"
             run-job-key:
                 description:
                     "Job id of the downstream matrix job that must have succeeded
                     (e.g. 'test' or 'node-test'), used to build the
-                    last-successful-run lookup key. Defaults to 'test'."
-                required: false
+                    last-successful-run lookup key."
+                required: true
                 type: string
-                default: "test"
             overridden-changed-files:
                 description:
                     "JSON array of file paths to treat as changed. Skips git change
