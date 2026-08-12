@@ -1,0 +1,256 @@
+name: Reusable - Resolve Test Directories
+
+permissions:
+    contents: read
+    actions: read
+
+on:
+    workflow_call:
+        inputs:
+            directory:
+                description:
+                    "Specific directory to test. When empty, changed directories
+                    are detected using path-pattern. Defaults to empty."
+                required: false
+                type: string
+                default: ""
+            path-pattern:
+                description:
+                    "Regex (with capture group) used both as the change-detection
+                    pattern and the fallback-regex passed to
+                    get-unique-project-directories."
+                required: true
+                type: string
+            project-file-name:
+                description:
+                    "File name (or suffix) passed to get-unique-project-directories
+                    to identify each project's root directory. Defaults to
+                    '.csproj'."
+                required: false
+                type: string
+                default: ".csproj"
+            transformer:
+                description:
+                    "Optional sed-style/regex transformer applied to each resolved
+                    directory. Defaults to empty (no transformation)."
+                required: false
+                type: string
+                default: ""
+            use-original-if-missing:
+                description:
+                    "Fall back to the original directory if the transformed
+                    directory does not exist. Defaults to false."
+                required: false
+                type: string
+                default: "false"
+            head-ref:
+                description:
+                    "The head commit SHA to compare against the base. Defaults to
+                    github.sha."
+                required: false
+                type: string
+                default: ""
+            optimize-base-ref:
+                description:
+                    "When true, compares against the SHA of the last successful run
+                    on this branch instead of the default branch. Defaults to
+                    false."
+                required: false
+                type: string
+                default: "false"
+            workflow-name:
+                description:
+                    "Filename of the calling checks workflow, used to look up the
+                    last successful run for base-ref optimization. Defaults to
+                    empty (optimization disabled)."
+                required: false
+                type: string
+                default: ""
+            caller-job-name:
+                description:
+                    "The calling workflow job name prefix used by GitHub for this
+                    reusable workflow invocation. Defaults to empty."
+                required: false
+                type: string
+                default: ""
+            setup-job-key:
+                description:
+                    "Job id of this setup job within the calling workflow (e.g.
+                    'test-setup' or 'node-test-setup'), used to build the
+                    last-successful-run lookup key. Defaults to 'test-setup'."
+                required: false
+                type: string
+                default: "test-setup"
+            run-job-key:
+                description:
+                    "Job id of the downstream matrix job that must have succeeded
+                    (e.g. 'test' or 'node-test'), used to build the
+                    last-successful-run lookup key. Defaults to 'test'."
+                required: false
+                type: string
+                default: "test"
+            overridden-changed-files:
+                description:
+                    "JSON array of file paths to treat as changed. Skips git change
+                    detection entirely. Intended for testing and demo scenarios.
+                    Defaults to empty."
+                required: false
+                type: string
+                default: ""
+            ci-debug-mode:
+                description:
+                    "Enable verbose debug logging for discovery steps. Defaults to
+                    false."
+                required: false
+                type: string
+                default: "false"
+            require-token-github-packages:
+                description:
+                    "Fail early when the token-github-packages secret is missing.
+                    Defaults to true."
+                required: false
+                type: string
+                default: "true"
+        secrets:
+            token-github-packages:
+                description:
+                    "PAT with read:packages permission for restoring packages from
+                    GitHub Packages."
+                required: false
+        outputs:
+            directories_to_test:
+                description: "Resolved directories to test."
+                value: ${{ jobs.resolve.outputs.directories_to_test }}
+
+jobs:
+    resolve:
+        runs-on: ubuntu-22.04
+        outputs:
+            directories_to_test: ${{ steps.resolve-directories.outputs.directories_to_test }}
+        steps:
+            - name: Validate token-github-packages secret
+              if: ${{ inputs['require-token-github-packages'] == 'true' }}
+              shell: bash
+              env:
+                  TOKEN: ${{ secrets['token-github-packages'] }}
+              run: |
+                  if [ -z "$TOKEN" ]; then
+                    echo "::error::The 'token-github-packages' secret is required, but it was not provided or is empty." >&2
+                    exit 1
+                  fi
+                  echo "✅ token-github-packages secret is present."
+
+            - name: Check out code
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              with:
+                  fetch-depth: 0
+
+            - name: Determine test mode
+              id: mode
+              shell: bash
+              env:
+                  DIRECTORY: ${{ inputs.directory }}
+              run: |
+                  echo "Directory input: '$DIRECTORY'"
+                  if [ -n "$DIRECTORY" ]; then
+                    echo "mode=directory" >> "$GITHUB_OUTPUT"
+                    echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
+                  echo "mode=changes" >> "$GITHUB_OUTPUT"
+
+            - name: Find Last Successful Checks Run on Branch
+              id: last-success
+              if:
+                  ${{ inputs['optimize-base-ref'] == 'true' && inputs['workflow-name'] != ''
+                  && inputs['caller-job-name'] != '' }}
+              uses: Now-Micro/actions/get-last-workflow-success-sha@v1
+              with:
+                  branch: ${{ github.head_ref }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  default-branch: ${{ github.event.repository.default_branch }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  job-names-that-must-succeed:
+                      ${{ inputs['caller-job-name'] != '' && format('{0} / {1}',
+                      inputs['caller-job-name'], inputs['run-job-key']) ||
+                      inputs['run-job-key'] }}
+                  main-job-name:
+                      ${{ inputs['caller-job-name'] != '' && format('{0} / {1}',
+                      inputs['caller-job-name'], inputs['setup-job-key']) ||
+                      inputs['setup-job-key'] }}
+                  request-size: 50
+                  retry-attempts: 3
+                  workflow-name: ${{ inputs['workflow-name'] }}
+
+            - name: Get Changed Files Between Last Successful Run and Head
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' }}
+              id: changed-files-against-last-success
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ steps.last-success.outputs.last_success_sha ||
+                      github.event.repository.default_branch }}
+
+            - name: Get Changed Files Between Default Branch and Head
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' &&
+                  steps.last-success.outputs.last_success_sha != '' }}
+              id: changed-files-against-main
+              uses: Now-Micro/actions/get-changed-files@v1
+              with:
+                  head-ref: ${{ inputs['head-ref'] || github.sha }}
+                  base-ref: ${{ github.event.repository.default_branch }}
+
+            - name:
+                  Calculate Intersection of Changed Files (still changed since last
+                  successful run)
+              id: changed-files-to-use
+              if: ${{ steps.mode.outputs.mode == 'changes' &&
+                  inputs['overridden-changed-files'] == '' &&
+                  steps.last-success.outputs.last_success_sha != '' }}
+              uses: Now-Micro/actions/compare-json-arrays@v1
+              with:
+                  array-a: ${{ steps.changed-files-against-last-success.outputs.changed_files }}
+                  array-b: ${{ steps.changed-files-against-main.outputs.changed_files }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  mode: "intersection"
+
+            - name: Get Unique Project Directories
+              if: ${{ steps.mode.outputs.mode == 'changes' }}
+              id: unique-dirs
+              uses: Now-Micro/actions/get-unique-project-directories@v1
+              with:
+                  paths: ${{ inputs['overridden-changed-files'] ||
+                      steps.changed-files-to-use.outputs.result ||
+                      steps.changed-files-against-last-success.outputs.changed_files
+                      }}
+                  pattern: ${{ inputs['path-pattern'] }}
+                  debug-mode: ${{ inputs['ci-debug-mode'] }}
+                  fallback-regex: ${{ inputs['path-pattern'] }}
+                  project-file-name: ${{ inputs['project-file-name'] }}
+                  transformer: ${{ inputs.transformer }}
+                  use-original-if-missing: ${{ inputs['use-original-if-missing'] }}
+
+            - name: Resolve test directories
+              id: resolve-directories
+              shell: bash
+              env:
+                  MODE: ${{ steps.mode.outputs.mode }}
+                  DIRECTORY: ${{ steps.mode.outputs.directory }}
+                  CHANGED_DIRS_JSON:
+                      ${{ steps.unique-dirs.outputs.unique_project_directories ||
+                      '[]' }}
+              run: |
+                  case "$MODE" in
+                    directory)
+                      echo "directories_to_test=$(jq -nc --arg dir "$DIRECTORY" '[ $dir ]')" >> "$GITHUB_OUTPUT"
+                      ;;
+                    changes)
+                      echo "directories_to_test=$CHANGED_DIRS_JSON" >> "$GITHUB_OUTPUT"
+                      ;;
+                    *)
+                      echo "directories_to_test=[]" >> "$GITHUB_OUTPUT"
+                      ;;
+                  esac
