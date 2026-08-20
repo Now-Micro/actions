@@ -115,9 +115,37 @@ test('exclude-action-pattern excludes matching actions from the SHA check', () =
     assert.strictEqual(withPattern.violations.length, 1);
     assert.match(withPattern.violations[0].uses, /actions\/checkout@v4/);
 
+    // Without an explicit pattern, the default only excludes the Now-Micro/actions repo (trafera-llc/some-action isn't "actions").
     const withoutPattern = runWith({ INPUT_SCAN_PATHS: dir });
     assert.strictEqual(withoutPattern.exitCode, 1);
-    assert.strictEqual(withoutPattern.violations.length, 3);
+    assert.strictEqual(withoutPattern.violations.length, 2);
+});
+
+test('default exclude-action-pattern ignores Now-Micro/actions and trafera-llc/actions', () => {
+    const dir = makeTempDir();
+    writeFixture(dir, 'defaults.yml', [
+        '      - uses: Now-Micro/actions/setup-node@v1',
+        '      - uses: Now-Micro/actions@main',
+        '      - uses: trafera-llc/actions/some-subaction@v2',
+        '      - uses: trafera-llc/actions@main',
+        '      - uses: actions/checkout@v4',
+    ].join('\n'));
+    const r = runWith({ INPUT_SCAN_PATHS: dir });
+    assert.strictEqual(r.exitCode, 1);
+    assert.strictEqual(r.violations.length, 1);
+    assert.match(r.violations[0].uses, /actions\/checkout@v4/);
+});
+
+test('explicit exclude-action-pattern overrides (does not merge with) the default', () => {
+    const dir = makeTempDir();
+    writeFixture(dir, 'override.yml', [
+        '      - uses: Now-Micro/actions/setup-node@v1',
+        '      - uses: some-other-org/tool@v2',
+    ].join('\n'));
+    const r = runWith({ INPUT_SCAN_PATHS: dir, INPUT_EXCLUDE_ACTION_PATTERN: '^some-other-org/' });
+    assert.strictEqual(r.exitCode, 1);
+    assert.strictEqual(r.violations.length, 1);
+    assert.match(r.violations[0].uses, /Now-Micro\/actions\/setup-node@v1/);
 });
 
 test('exclude-dirs skips scanning specified directories', () => {

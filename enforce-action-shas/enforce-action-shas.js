@@ -4,6 +4,8 @@ const path = require('path');
 const SHA_REGEX = /^[0-9a-f]{40}$/i;
 const USES_LINE_REGEX = /^\s*(?:-\s*)?uses:\s*['"]?([^'"#\s]+)/;
 const YAML_FILE_REGEX = /\.ya?ml$/i;
+// Applied only when exclude-action-pattern is not provided; an explicit input replaces this rather than merging with it.
+const DEFAULT_EXCLUDE_ACTION_PATTERN = '^(Now-Micro|trafera-llc)/actions(/|$)';
 
 function parseBool(val, def) {
     if (val === undefined || val === null || val === '') return def;
@@ -102,13 +104,13 @@ function run() {
     const debugMode = parseBool(process.env.INPUT_DEBUG_MODE, false);
     const scanPaths = parseList(process.env.INPUT_SCAN_PATHS || '.github/workflows');
     const excludeDirs = parseList(process.env.INPUT_EXCLUDE_DIRS);
-    const excludeActionPatternRaw = (process.env.INPUT_EXCLUDE_ACTION_PATTERN || '').trim();
+    const excludeActionPatternRaw = (process.env.INPUT_EXCLUDE_ACTION_PATTERN || DEFAULT_EXCLUDE_ACTION_PATTERN).trim();
 
     if (debugMode) {
         console.log('🔍 Debug mode is ON');
         console.log(`🔍 INPUT_SCAN_PATHS: ${scanPaths.join(', ') || '(none)'}`);
         console.log(`🔍 INPUT_EXCLUDE_DIRS: ${excludeDirs.join(', ') || '(none)'}`);
-        console.log(`🔍 INPUT_EXCLUDE_ACTION_PATTERN: ${excludeActionPatternRaw || '(none)'}`);
+        console.log(`🔍 INPUT_EXCLUDE_ACTION_PATTERN: ${excludeActionPatternRaw}`);
     }
 
     if (scanPaths.length === 0) {

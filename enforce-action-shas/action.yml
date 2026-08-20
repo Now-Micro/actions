@@ -7,9 +7,9 @@ inputs:
     required: false
     default: "false"
   exclude-action-pattern:
-    description: 'Regular expression matched against the "owner/repo[/path]" portion of a uses: reference. Matching actions are excluded from the SHA check (e.g. "^(Now-Micro|trafera-llc)/").'
+    description: 'Regular expression matched against the "owner/repo[/path]" portion of a uses: reference. Matching actions are excluded from the SHA check. Defaults to excluding Now-Micro/actions and trafera-llc/actions; providing this input replaces the default entirely rather than adding to it.'
     required: false
-    default: ""
+    default: "^(Now-Micro|trafera-llc)/actions(/|$)"
   exclude-dirs:
     description: "Comma-separated list of directory path fragments to exclude from scanning."
     required: false

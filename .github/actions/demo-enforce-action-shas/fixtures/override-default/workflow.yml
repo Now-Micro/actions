@@ -1,0 +1,8 @@
+jobs:
+  build:
+    steps:
+      - uses: Now-Micro/actions/setup-node@v1
+      - uses: Now-Micro/actions/testing-node@v1
+      - uses: Now-Micro/actions/testing3-node-23@v1
+      - uses: some-other-org/tool/something@v1
+      - uses: some-other-org/tool-into/thing@main

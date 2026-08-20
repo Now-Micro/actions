@@ -72,7 +72,7 @@ runs:
         expected: "1"
         actual: ${{ steps.t3.outputs.violation-count }}
 
-    - name: Without exclude-action-pattern all unpinned refs count
+    - name: Without exclude-action-pattern the default still excludes Now-Micro/actions
       id: t4
       continue-on-error: true
       uses: ./enforce-action-shas
@@ -82,11 +82,44 @@ runs:
     - name: Assert t4 violation count
       uses: ./src/testing/assert
       with:
-        test-name: "no exclude pattern reports all 3 violations"
+        test-name: "default pattern excludes Now-Micro/actions, leaving 2 violations"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.t4.outputs.violation-count }}
+
+    - name: Default exclude-action-pattern ignores Now-Micro/actions and trafera-llc/actions
+      id: t9
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/default-exclude"
+        debug-mode: "true"
+    - name: Assert t9 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "default pattern excludes both orgs' actions repos"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t9.outputs.violation-count }}
+
+    - name: Explicit exclude-action-pattern replaces (does not merge with) the default
+      id: t10
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/override-default"
+        exclude-action-pattern: "^some-other-org/"
+        debug-mode: "true"
+    - name: Assert t10 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "explicit pattern overrides default, Now-Micro/actions is no longer excluded"
         summary-file: ${{ steps.pre.outputs.summary_file }}
         mode: exact
         expected: "3"
-        actual: ${{ steps.t4.outputs.violation-count }}
+        actual: ${{ steps.t10.outputs.violation-count }}
 
     - name: exclude-dirs skips the offending directory
       id: t5
