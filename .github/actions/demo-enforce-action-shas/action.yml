@@ -1,0 +1,152 @@
+name: "Demo - Enforce Action SHAs"
+description: "Scans fixture workflow files and fails when a uses: reference is not pinned to a full commit SHA"
+author: "Trafera"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Title - Enforce Action SHAs Demo
+      uses: ./.github/actions/output-demo-title
+      with:
+        title: Enforce Action SHAs Demo
+        path: ./.github/actions/demo-enforce-action-shas
+
+    - name: Prepare summary file path
+      shell: bash
+      id: pre
+      run: echo "summary_file=$(pwd)/eas-summary.txt" >> $GITHUB_OUTPUT
+
+    - name: All pinned actions produce zero violations
+      id: t1
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/clean"
+        debug-mode: "true"
+    - name: Assert t1 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "clean fixture has zero violations"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "0"
+        actual: ${{ steps.t1.outputs.violation-count }}
+
+    - name: Unpinned tag refs are reported and fail
+      id: t2
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/violations"
+        debug-mode: "true"
+    - name: Assert t2 outcome
+      uses: ./src/testing/assert
+      with:
+        test-name: "violations fixture fails the step"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "failure"
+        actual: ${{ steps.t2.outcome }}
+    - name: Assert t2 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "violations fixture reports 2 violations"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "2"
+        actual: ${{ steps.t2.outputs.violation-count }}
+
+    - name: exclude-action-pattern excludes matching actions
+      id: t3
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/mixed-exclude"
+        exclude-action-pattern: "^(Now-Micro|trafera-llc)/"
+        debug-mode: "true"
+    - name: Assert t3 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "excluded actions leave only 1 real violation"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t3.outputs.violation-count }}
+
+    - name: Without exclude-action-pattern all unpinned refs count
+      id: t4
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/mixed-exclude"
+        debug-mode: "true"
+    - name: Assert t4 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "no exclude pattern reports all 3 violations"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "3"
+        actual: ${{ steps.t4.outputs.violation-count }}
+
+    - name: exclude-dirs skips the offending directory
+      id: t5
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/excluded-dirs"
+        exclude-dirs: "skip"
+        debug-mode: "true"
+    - name: Assert t5 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "excluded directory is skipped"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "0"
+        actual: ${{ steps.t5.outputs.violation-count }}
+
+    - name: Without exclude-dirs the offending file is reported
+      id: t6
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/excluded-dirs"
+        debug-mode: "true"
+    - name: Assert t6 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "without exclude-dirs violation is reported"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "1"
+        actual: ${{ steps.t6.outputs.violation-count }}
+
+    - name: Invalid exclude-action-pattern regex fails
+      id: t7
+      continue-on-error: true
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/clean"
+        exclude-action-pattern: "([unclosed"
+    - name: Assert t7 outcome
+      uses: ./src/testing/assert
+      with:
+        test-name: "invalid exclude-action-pattern fails the step"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "failure"
+        actual: ${{ steps.t7.outcome }}
+
+    - name: Nonexistent scan-paths is skipped without failing
+      id: t8
+      uses: ./enforce-action-shas
+      with:
+        scan-paths: ".github/actions/demo-enforce-action-shas/fixtures/does-not-exist"
+        debug-mode: "true"
+    - name: Assert t8 violation count
+      uses: ./src/testing/assert
+      with:
+        test-name: "nonexistent scan path yields zero violations"
+        summary-file: ${{ steps.pre.outputs.summary_file }}
+        mode: exact
+        expected: "0"
+        actual: ${{ steps.t8.outputs.violation-count }}
