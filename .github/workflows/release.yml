@@ -82,7 +82,8 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
             echo "name=${{ inputs.name }}" >> "$GITHUB_OUTPUT"
-            { echo "body<<EOF"; echo "${{ inputs.body }}"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+            body_delim="BODY_EOF_$(date +%s%N)"
+            { echo "body<<${body_delim}"; echo "${{ inputs.body }}"; echo "${body_delim}"; } >> "$GITHUB_OUTPUT"
             echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
             echo "draft=${{ inputs.draft }}" >> "$GITHUB_OUTPUT"
             echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
