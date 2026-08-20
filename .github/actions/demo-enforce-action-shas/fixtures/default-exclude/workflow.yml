@@ -1,0 +1,8 @@
+jobs:
+  build:
+    steps:
+      - uses: Now-Micro/actions/setup-node@v1
+      - uses: Now-Micro/actions@main
+      - uses: trafera-llc/actions/some-subaction@v2
+      - uses: trafera-llc/actions@main
+      - uses: actions/checkout@v4

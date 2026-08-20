@@ -1,0 +1,44 @@
+name: "Enforce Action SHAs"
+description: "Scans GitHub workflow YAML files and fails when a uses: reference is not pinned to a full commit SHA"
+author: "Trafera"
+inputs:
+  debug-mode:
+    description: "Enable verbose logging of every file and uses: reference scanned."
+    required: false
+    default: "false"
+  exclude-action-pattern:
+    description: 'Regular expression matched against the "owner/repo[/path]" portion of a uses: reference. Matching actions are excluded from the SHA check. Defaults to excluding Now-Micro/actions and trafera-llc/actions; providing this input replaces the default entirely rather than adding to it.'
+    required: false
+    default: "^(Now-Micro|trafera-llc)/actions(/|$)"
+  exclude-dirs:
+    description: "Comma-separated list of directory path fragments to exclude from scanning."
+    required: false
+    default: ""
+  scan-paths:
+    description: "Comma-separated list of directories (or individual YAML files) to recursively scan."
+    required: false
+    default: ".github/workflows"
+
+outputs:
+  violation-count:
+    description: "Number of uses: references that are not pinned to a full commit SHA."
+    value: ${{ steps.enforce.outputs.violation-count }}
+  violations:
+    description: "JSON array of violation objects: { file, line, uses, reason }."
+    value: ${{ steps.enforce.outputs.violations }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: Now-Micro/actions/setup-node@v1
+
+    - name: Enforce action SHAs
+      id: enforce
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/enforce-action-shas.js"
+      env:
+        INPUT_SCAN_PATHS: ${{ inputs.scan-paths }}
+        INPUT_EXCLUDE_DIRS: ${{ inputs.exclude-dirs }}
+        INPUT_EXCLUDE_ACTION_PATTERN: ${{ inputs.exclude-action-pattern }}
+        INPUT_DEBUG_MODE: ${{ inputs.debug-mode }}

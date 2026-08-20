@@ -19,6 +19,9 @@ runs:
       with:
         fetch-depth: 0
 
+    - name: Demo - enforce-action-shas
+      uses: ./.github/actions/demo-enforce-action-shas
+
     - name: Demo - Fusion subgraph demo composite
       uses: ./.github/actions/demo-fusion-subgraph-workflow
       with:
