@@ -142,7 +142,13 @@ function run() {
             if (debugMode) console.log(`🔍 Scan path '${scanPath}' does not exist, skipping`);
             continue;
         }
-        const stat = fs.statSync(scanPath);
+        let stat;
+        try {
+            stat = fs.statSync(scanPath);
+        } catch (e) {
+            console.error(`⚠️ Skipping scan path '${scanPath}' because it could not be read: ${e.message}`);
+            continue;
+        }
         const files = stat.isDirectory()
             ? collectYamlFiles(scanPath, excludeDirs, debugMode)
             : (YAML_FILE_REGEX.test(scanPath) ? [scanPath] : []);

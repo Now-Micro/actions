@@ -197,6 +197,21 @@ test('nonexistent scan path is skipped without crashing', () => {
     assert.match(r.out, /does not exist, skipping/);
 });
 
+test('scan path that throws on stat is skipped with a warning instead of crashing', () => {
+    const dir = makeTempDir();
+    writeFixture(dir, 'sample.yml', `      - uses: actions/checkout@${PINNED_SHA}\n`);
+    const origStat = fs.statSync;
+    fs.statSync = p => { if (p === dir) throw new Error('EACCES: permission denied'); return origStat(p); };
+    try {
+        const r = runWith({ INPUT_SCAN_PATHS: dir });
+        assert.strictEqual(r.exitCode, 0);
+        assert.strictEqual(r.violations.length, 0);
+        assert.match(r.err, /could not be read: EACCES: permission denied/);
+    } finally {
+        fs.statSync = origStat;
+    }
+});
+
 test('blank entries in scan-paths resolve to no paths and exit 1', () => {
     const r = runWith({ INPUT_SCAN_PATHS: ' , ,', INPUT_DEBUG_MODE: 'true' });
     assert.strictEqual(r.exitCode, 1);
