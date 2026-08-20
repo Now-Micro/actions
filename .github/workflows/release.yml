@@ -7,6 +7,7 @@ on:
         description: "Tag name to release (identifier)"
         required: true
         type: string
+        default: "v1"
       name:
         description: "Release name (defaults to tag)"
         required: false
@@ -15,6 +16,7 @@ on:
         description: "Release notes body (optional; ignored if generate-release-notes=true)"
         required: false
         type: string
+        default: "Initial Release"
       target:
         description: "Target commitish (branch or SHA). Ignored if tag already exists."
         required: false
