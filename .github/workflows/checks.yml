@@ -21,6 +21,14 @@ jobs:
           # Fetch full history so that before and after commits exist locally
           fetch-depth: 0
 
+      - name: Ensure 3rd party actions use SHA instead of tags
+        uses: Now-Micro/actions/enforce-action-shas@v1
+        with:
+          debug-mode: true
+          scan-paths: .
+          # demo-enforce-action-shas fixtures intentionally contain unpinned refs to test the linter itself
+          exclude-dirs: .git,coverage,node_modules,.github/actions/demo-enforce-action-shas/fixtures
+
       - name: Find Last Successful Checks Run on Branch
         id: last-success
         if: ${{ vars.CHECKS_OPTIMIZE_BASE_REF == 'true' }}

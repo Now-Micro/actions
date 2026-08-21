@@ -1,5 +1,9 @@
 name: Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -304,6 +308,7 @@ jobs:
           INPUT_DRAFT: ${{ needs.resolve-inputs.outputs.draft }}
           INPUT_PRERELEASE: ${{ needs.resolve-inputs.outputs.prerelease }}
           INPUT_GENERATE_NOTES: ${{ needs.resolve-inputs.outputs.generate-release-notes }}
+          EVENT_NAME: ${{ github.event_name }}
           ORIGINAL_SHA: ${{ steps.rename_release.outputs.original_sha }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -336,6 +341,19 @@ jobs:
             }
 
             const { data } = await github.rest.repos.createRelease(params);
+
+            // Tag the release body so cleanup can identify releases owned by this specific
+            // workflow (as opposed to other GITHUB_TOKEN-created releases, e.g. npm/NuGet
+            // publish workflows) and the triggering event (to exclude workflow_dispatch runs).
+            const ownerMarker = '<!-- release-managed-by: release.yml -->';
+            const eventMarker = `<!-- release-event: ${process.env.EVENT_NAME || 'unknown'} -->`;
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: data.id,
+              body: `${data.body || ''}\n\n${ownerMarker}\n${eventMarker}`,
+            });
+
             core.setOutput('release_id', String(data.id));
             core.setOutput('html_url', data.html_url || '');
             core.setOutput('upload_url', data.upload_url || '');
@@ -357,6 +375,87 @@ jobs:
           echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
           echo "html_url=$html_url" >> "$GITHUB_OUTPUT"
           echo "upload_url=$upload_url" >> "$GITHUB_OUTPUT"
+
+      - name: Delete oldest release created by this workflow
+        id: cleanup
+        if: ${{ steps.release_out.outputs.release_id != '' }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          CURRENT_RELEASE_ID: ${{ steps.release_out.outputs.release_id }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const MIN_RELEASES_TO_KEEP = 25;
+            const currentReleaseId = Number(process.env.CURRENT_RELEASE_ID);
+            core.info(`🔍 Cleanup starting. Current release id=${currentReleaseId}`);
+
+            core.info('🔍 Fetching all releases (paginated)...');
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            core.info(`🔍 Fetched ${releases.length} total release(s) from the repo.`);
+
+            // Ownership is determined by an explicit marker embedded in the release body by this
+            // workflow's "Create release" step, not by author, since other GITHUB_TOKEN-created
+            // releases (e.g. npm/NuGet publish workflows) are also authored by github-actions[bot].
+            // Legacy policy: any release without this marker (created before it existed, or by a
+            // different workflow) is always left untouched — it is never a deletion candidate and
+            // never counts toward MIN_RELEASES_TO_KEEP.
+            const OWNER_MARKER = 'release-managed-by: release.yml';
+            const isManagedByThisWorkflow = r => typeof r.body === 'string' && r.body.includes(OWNER_MARKER);
+            const isFromWorkflowDispatch = r => typeof r.body === 'string' && r.body.includes('release-event: workflow_dispatch');
+
+            const workflowReleases = releases.filter(isManagedByThisWorkflow);
+            const legacyCount = releases.length - workflowReleases.length;
+            core.info(`🔍 Found ${workflowReleases.length} release(s) managed by this workflow (marker='${OWNER_MARKER}'); ${legacyCount} legacy/unrelated release(s) are unmarked and will be left untouched.`);
+            for (const r of workflowReleases) {
+              const tags = [
+                r.id === currentReleaseId ? 'current' : null,
+                isFromWorkflowDispatch(r) ? 'workflow_dispatch - excluded from deletion' : null,
+              ].filter(Boolean).join(', ');
+              core.info(`🔍   - id=${r.id} tag=${r.tag_name} created_at=${r.created_at}${tags ? ` (${tags})` : ''}`);
+            }
+
+            if (workflowReleases.length < MIN_RELEASES_TO_KEEP) {
+              core.info(`🔍 Only ${workflowReleases.length} workflow-created release(s) exist, which is below the minimum of ${MIN_RELEASES_TO_KEEP}. Skipping deletion.`);
+              return;
+            }
+            core.info(`🔍 ${workflowReleases.length} workflow-created release(s) meet/exceed the minimum of ${MIN_RELEASES_TO_KEEP}. Proceeding to find the oldest one to delete.`);
+
+            const candidates = workflowReleases.filter(r => r.id !== currentReleaseId && !isFromWorkflowDispatch(r));
+            if (candidates.length === 0) {
+              core.info('🔍 No prior workflow-created releases eligible for deletion (excluding the current release and any workflow_dispatch releases).');
+              return;
+            }
+
+            const oldest = candidates.reduce((a, b) =>
+              new Date(a.created_at) < new Date(b.created_at) ? a : b
+            );
+            core.info(`🔍 Oldest candidate selected for deletion: id=${oldest.id} tag=${oldest.tag_name} name='${oldest.name || ''}' created_at=${oldest.created_at}`);
+
+            core.info(`🔍 Deleting release id=${oldest.id}...`);
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: oldest.id,
+            });
+            core.info(`✅ Deleted release id=${oldest.id} tag=${oldest.tag_name}`);
+
+            core.info(`🔍 Deleting tag ref refs/tags/${oldest.tag_name}...`);
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${oldest.tag_name}`,
+              });
+              core.info(`✅ Deleted tag ref refs/tags/${oldest.tag_name}`);
+            } catch (e) {
+              core.info(`⚠️ Could not delete tag ref refs/tags/${oldest.tag_name} (may not exist or is protected): ${e.message}`);
+            }
+
+            core.info('🔍 Cleanup complete.');
 
       - name: Summary
         if: always()

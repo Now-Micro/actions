@@ -74,7 +74,7 @@ runs:
         fi
 
     - name: Azure login
-      uses: azure/login@v2
+      uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
       with:
         client-id: ${{ inputs.azure-client-id }}
         tenant-id: ${{ inputs.azure-tenant-id }}
@@ -88,7 +88,7 @@ runs:
         resource-group-name: ${{ inputs.resource-group-name }}
 
     - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
+      uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
       with:
         app-name: ${{ inputs.app-name }}
         package: ./${{ inputs.artifact-name }}/${{ inputs.path-to-package }}
