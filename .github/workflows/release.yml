@@ -1,5 +1,9 @@
 name: Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -338,14 +342,16 @@ jobs:
 
             const { data } = await github.rest.repos.createRelease(params);
 
-            // Tag the release body with the triggering event so cleanup can identify
-            // workflow_dispatch releases and exclude them from deletion consideration.
+            // Tag the release body so cleanup can identify releases owned by this specific
+            // workflow (as opposed to other GITHUB_TOKEN-created releases, e.g. npm/NuGet
+            // publish workflows) and the triggering event (to exclude workflow_dispatch runs).
+            const ownerMarker = '<!-- release-managed-by: release.yml -->';
             const eventMarker = `<!-- release-event: ${process.env.EVENT_NAME || 'unknown'} -->`;
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: data.id,
-              body: `${data.body || ''}\n\n${eventMarker}`,
+              body: `${data.body || ''}\n\n${ownerMarker}\n${eventMarker}`,
             });
 
             core.setOutput('release_id', String(data.id));
@@ -391,11 +397,19 @@ jobs:
             });
             core.info(`🔍 Fetched ${releases.length} total release(s) from the repo.`);
 
-            // Only consider releases this workflow created (via GITHUB_TOKEN), covering both
-            // workflow_dispatch and push-triggered runs; manually-created releases are left alone.
+            // Ownership is determined by an explicit marker embedded in the release body by this
+            // workflow's "Create release" step, not by author, since other GITHUB_TOKEN-created
+            // releases (e.g. npm/NuGet publish workflows) are also authored by github-actions[bot].
+            // Legacy policy: any release without this marker (created before it existed, or by a
+            // different workflow) is always left untouched — it is never a deletion candidate and
+            // never counts toward MIN_RELEASES_TO_KEEP.
+            const OWNER_MARKER = 'release-managed-by: release.yml';
+            const isManagedByThisWorkflow = r => typeof r.body === 'string' && r.body.includes(OWNER_MARKER);
             const isFromWorkflowDispatch = r => typeof r.body === 'string' && r.body.includes('release-event: workflow_dispatch');
-            const workflowReleases = releases.filter(r => r.author?.login === 'github-actions[bot]');
-            core.info(`🔍 Found ${workflowReleases.length} release(s) authored by github-actions[bot]:`);
+
+            const workflowReleases = releases.filter(isManagedByThisWorkflow);
+            const legacyCount = releases.length - workflowReleases.length;
+            core.info(`🔍 Found ${workflowReleases.length} release(s) managed by this workflow (marker='${OWNER_MARKER}'); ${legacyCount} legacy/unrelated release(s) are unmarked and will be left untouched.`);
             for (const r of workflowReleases) {
               const tags = [
                 r.id === currentReleaseId ? 'current' : null,
