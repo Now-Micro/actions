@@ -1,12 +1,16 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag name to release (identifier)"
         required: true
         type: string
+        default: "v1"
       name:
         description: "Release name (defaults to tag)"
         required: false
@@ -15,6 +19,7 @@ on:
         description: "Release notes body (optional; ignored if generate-release-notes=true)"
         required: false
         type: string
+        default: "Initial Release"
       target:
         description: "Target commitish (branch or SHA). Ignored if tag already exists."
         required: false
@@ -54,8 +59,52 @@ permissions:
   contents: write
 
 jobs:
+  resolve-inputs:
+    name: Resolve inputs
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      name: ${{ steps.resolve.outputs.name }}
+      body: ${{ steps.resolve.outputs.body }}
+      target: ${{ steps.resolve.outputs.target }}
+      draft: ${{ steps.resolve.outputs.draft }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      generate-release-notes: ${{ steps.resolve.outputs.generate-release-notes }}
+      overwrite-strategy: ${{ steps.resolve.outputs.overwrite-strategy }}
+      skip-tests: ${{ steps.resolve.outputs.skip-tests }}
+    steps:
+      # workflow_dispatch inputs aren't available on push events, so a push to main
+      # resolves to the same values as the workflow_dispatch defaults shown in the UI.
+      - name: Resolve effective inputs
+        id: resolve
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "name=${{ inputs.name }}" >> "$GITHUB_OUTPUT"
+            body_delim="BODY_EOF_$(date +%s%N)"
+            { echo "body<<${body_delim}"; echo "${{ inputs.body }}"; echo "${body_delim}"; } >> "$GITHUB_OUTPUT"
+            echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
+            echo "draft=${{ inputs.draft }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=${{ inputs.prerelease }}" >> "$GITHUB_OUTPUT"
+            echo "generate-release-notes=${{ inputs.generate-release-notes }}" >> "$GITHUB_OUTPUT"
+            echo "overwrite-strategy=${{ inputs.overwrite-strategy }}" >> "$GITHUB_OUTPUT"
+            echo "skip-tests=${{ inputs['skip-tests'] }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v1" >> "$GITHUB_OUTPUT"
+            echo "name=" >> "$GITHUB_OUTPUT"
+            { echo "body<<EOF"; echo "Initial Release"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+            echo "target=main" >> "$GITHUB_OUTPUT"
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "generate-release-notes=true" >> "$GITHUB_OUTPUT"
+            echo "overwrite-strategy=rename" >> "$GITHUB_OUTPUT"
+            echo "skip-tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
   run-node-tests:
     name: Run Node tests
+    needs: [resolve-inputs]
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     steps:
@@ -64,14 +113,15 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run Node tests
-        if: ${{ !fromJson(inputs['skip-tests']) }}
+        if: ${{ !fromJson(needs.resolve-inputs.outputs.skip-tests) }}
         uses: ./.github/actions/run-node-tests
       - name: Skipping Node tests
-        if: ${{ fromJson(inputs['skip-tests']) }}
+        if: ${{ fromJson(needs.resolve-inputs.outputs.skip-tests) }}
         run: echo "skip-tests input=true; skipping Node tests"
 
   run-workflow-tests:
     name: Run workflow tests
+    needs: [resolve-inputs]
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     steps:
@@ -80,18 +130,18 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run demo composites
-        if: ${{ !fromJson(inputs['skip-tests']) }}
+        if: ${{ !fromJson(needs.resolve-inputs.outputs.skip-tests) }}
         uses: ./.github/actions/run-demo-workflows
         with:
           github-token: ${{ secrets.TOKEN_GITHUB_PACKAGES }}
           github-release-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Skipping demo workflows
-        if: ${{ fromJson(inputs['skip-tests']) }}
+        if: ${{ fromJson(needs.resolve-inputs.outputs.skip-tests) }}
         run: echo "skip-tests input=true; skipping demo workflows"
 
   publish:
     name: Publish release
-    needs: [run-node-tests, run-workflow-tests]
+    needs: [resolve-inputs, run-node-tests, run-workflow-tests]
     if: ${{ github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     outputs:
@@ -106,7 +156,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const tag = `${{ inputs.tag }}`;
+            const tag = `${{ needs.resolve-inputs.outputs.tag }}`;
             try {
               const { data } = await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
@@ -128,14 +178,14 @@ jobs:
 
       - name: Rename existing release (if requested)
         id: rename_release
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'rename' }}
+        if: ${{ steps.get.outputs.exists == 'true' && needs.resolve-inputs.outputs.overwrite-strategy == 'rename' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Instead of deleting the existing release, rename it and move its tag to a backup name
             const release_id = Number(`${{ steps.get.outputs.id }}`);
-            const currentTag = `${{ inputs.tag }}`;
+            const currentTag = `${{ needs.resolve-inputs.outputs.tag }}`;
             const now = new Date().toISOString().replace(/[:.]/g, '-');
             const backupTag = `${currentTag}-backup-${now}`;
 
@@ -196,7 +246,7 @@ jobs:
             core.info(`Renamed release id ${release_id} -> name='${newName}', tag='${backupTag}'`);
 
       - name: Delete existing release (if requested)
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'delete' }}
+        if: ${{ steps.get.outputs.exists == 'true' && needs.resolve-inputs.outputs.overwrite-strategy == 'delete' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -210,10 +260,10 @@ jobs:
             core.info(`Deleted existing release id ${release_id}`);
 
       - name: Delete tag for existing release (if requested)
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy != 'none' }}
+        if: ${{ steps.get.outputs.exists == 'true' && needs.resolve-inputs.outputs.overwrite-strategy != 'none' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          TAG_NAME: ${{ inputs.tag }}
+          TAG_NAME: ${{ needs.resolve-inputs.outputs.tag }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -236,7 +286,7 @@ jobs:
 
       - name: Use existing release (no overwrite requested)
         id: create_or_reuse
-        if: ${{ steps.get.outputs.exists == 'true' && inputs.overwrite-strategy == 'none' }}
+        if: ${{ steps.get.outputs.exists == 'true' && needs.resolve-inputs.outputs.overwrite-strategy == 'none' }}
         run: |
           echo "release_id=${{ steps.get.outputs.id }}" >> $GITHUB_OUTPUT
           echo "html_url=${{ steps.get.outputs.html_url }}" >> $GITHUB_OUTPUT
@@ -244,16 +294,16 @@ jobs:
 
       - name: Create release
         id: create
-        if: ${{ steps.get.outputs.exists != 'true' || inputs.overwrite-strategy != 'none' }}
+        if: ${{ steps.get.outputs.exists != 'true' || needs.resolve-inputs.outputs.overwrite-strategy != 'none' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          INPUT_TAG: ${{ inputs.tag }}
-          INPUT_NAME: ${{ inputs.name }}
-          INPUT_BODY: ${{ inputs.body }}
-          INPUT_TARGET: ${{ inputs.target }}
-          INPUT_DRAFT: ${{ inputs.draft }}
-          INPUT_PRERELEASE: ${{ inputs.prerelease }}
-          INPUT_GENERATE_NOTES: ${{ inputs.generate-release-notes }}
+          INPUT_TAG: ${{ needs.resolve-inputs.outputs.tag }}
+          INPUT_NAME: ${{ needs.resolve-inputs.outputs.name }}
+          INPUT_BODY: ${{ needs.resolve-inputs.outputs.body }}
+          INPUT_TARGET: ${{ needs.resolve-inputs.outputs.target }}
+          INPUT_DRAFT: ${{ needs.resolve-inputs.outputs.draft }}
+          INPUT_PRERELEASE: ${{ needs.resolve-inputs.outputs.prerelease }}
+          INPUT_GENERATE_NOTES: ${{ needs.resolve-inputs.outputs.generate-release-notes }}
           ORIGINAL_SHA: ${{ steps.rename_release.outputs.original_sha }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -311,6 +361,6 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "Release tag: ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Overwrite strategy: ${{ inputs.overwrite-strategy }}" >> $GITHUB_STEP_SUMMARY
+          echo "Release tag: ${{ needs.resolve-inputs.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Overwrite strategy: ${{ needs.resolve-inputs.outputs.overwrite-strategy }}" >> $GITHUB_STEP_SUMMARY
           echo "Release URL: ${{ steps.release_out.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
