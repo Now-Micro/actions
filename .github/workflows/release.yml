@@ -218,6 +218,9 @@ jobs:
               originalSha = existing.target_commitish || undefined;
             } 
 
+            // Only treat the backup tag as usable once its ref is actually created; otherwise a
+            // later step could pass a nonexistent tag name to generateReleaseNotes and fail.
+            let backupTagCreated = false;
             if (originalSha) {
               try {
                 await github.rest.git.createRef({
@@ -227,6 +230,7 @@ jobs:
                   sha: originalSha,
                 });
                 core.info(`Created backup tag refs/tags/${backupTag} -> ${originalSha}`);
+                backupTagCreated = true;
               } catch (e) {
                 core.info(`Failed to create backup tag refs/tags/${backupTag}: ${e.message}`);
               }
@@ -237,7 +241,7 @@ jobs:
             // Expose the determined original SHA and backup tag as step outputs so the create
             // release step can reuse the same commit and anchor auto-generated notes correctly.
             core.setOutput('original_sha', originalSha || '');
-            core.setOutput('backup_tag', backupTag);
+            core.setOutput('backup_tag', backupTagCreated ? backupTag : '');
 
             // Update the release to point to the backup tag name and update its display name
             await github.rest.repos.updateRelease({
