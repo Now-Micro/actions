@@ -26,7 +26,8 @@ jobs:
         with:
           debug-mode: true
           scan-paths: .
-          exclude-dirs: .git,coverage,node_modules
+          # demo-enforce-action-shas fixtures intentionally contain unpinned refs to test the linter itself
+          exclude-dirs: .git,coverage,node_modules,.github/actions/demo-enforce-action-shas/fixtures
 
       - name: Find Last Successful Checks Run on Branch
         id: last-success

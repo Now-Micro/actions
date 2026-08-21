@@ -1,22 +1,22 @@
 name: Configure ASPNETCORE_ENVIRONMENT variable
-description: 'Uses azure cli to configure ASPNETCORE_ENVIRONMENT value'
+description: "Uses azure cli to configure ASPNETCORE_ENVIRONMENT value"
 inputs:
   app-name:
-    description: 'Azure Web App name for Assets service'
+    description: "Azure Web App name for Assets service"
     required: true
   aspnet-environment:
-    description: 'ASP.NET Core environment (Development/Staging/Production)'
+    description: "ASP.NET Core environment (Development/Staging/Production)"
     required: false
-    default: 'Production'
+    default: "Production"
   resource-group-name:
-    description: 'Azure Resource Group name'
+    description: "Azure Resource Group name"
     required: true
 
 runs:
-  using: 'composite'
-  steps:      
+  using: "composite"
+  steps:
     - name: Configure Assets Service Environment
-      uses: azure/cli@v2
+      uses: azure/cli@9f7ce6f37c31b777ec6c6b6d1dfe7db79f497956 # v2
       with:
         azcliversion: latest
         inlineScript: |
@@ -24,28 +24,28 @@ runs:
           APP_NAME=$(echo "${{ inputs.app-name }}" | tr -d '\r\n' | xargs)
           ASPNET_ENV=$(echo "${{ inputs.aspnet-environment }}" | tr -d '\r\n' | xargs)
           RESOURCE_GROUP=$(echo "${{ inputs.resource-group-name }}" | tr -d '\r\n' | xargs)
-          
+
           echo "App Name: '$APP_NAME'"
           echo "ASP.NET Environment: '$ASPNET_ENV'"
           echo "Resource Group Name: '$RESOURCE_GROUP'"
-          
+
           # Exit early if any required inputs are missing
           if [ -z "$APP_NAME" ] || [ -z "$ASPNET_ENV" ] || [ -z "$RESOURCE_GROUP" ]; then
             echo "ERROR: Missing required inputs. All values above must be provided."
             exit 1
           fi
-          
+
           # Check if app exists
           echo "Verifying app '$APP_NAME' exists in resource group '$RESOURCE_GROUP'..."
           if ! az webapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
             echo "ERROR: App '$APP_NAME' does not exist in resource group '$RESOURCE_GROUP'"
             exit 1
           fi
-          
+
           # Configure environment based on ASP.NET environment
           echo "Setting ASPNETCORE_ENVIRONMENT to '$ASPNET_ENV'..."
           az webapp config appsettings set --name "$APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --settings ASPNETCORE_ENVIRONMENT="$ASPNET_ENV"
-          
+
           echo "✓ Successfully configured ASPNETCORE_ENVIRONMENT=$ASPNET_ENV for $APP_NAME"
